@@ -6,19 +6,51 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-
+    <!-- TextureView per l'output della fotocamera -->
     <TextureView
+        android:id="@+id/textureView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/textureView"/>
+        android:layout_height="match_parent" />
 
+    <!-- ImageView per l'output elaborato -->
     <ImageView
+        android:id="@+id/imageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#000"
-        android:id="@+id/imageView"/>
+        android:background="#000" />
 
+    <!-- Bordi -->
+    <View
+        android:id="@+id/topBorder"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_alignParentTop="true"
+        android:background="@android:color/transparent" />
 
+    <View
+        android:id="@+id/bottomBorder"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_alignParentBottom="true"
+        android:background="@android:color/transparent" />
+
+    <View
+        android:id="@+id/leftBorder"
+        android:layout_width="6dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@android:color/transparent" />
+
+    <View
+        android:id="@+id/rightBorder"
+        android:layout_width="6dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@android:color/transparent" />
 
     <!-- TextView per il numero -->
     <TextView
@@ -31,6 +63,6 @@
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="16dp"
         android:layout_marginTop="10dp"
-        android:textSize="70sp"/>
+        android:textSize="70sp" />
 
 </RelativeLayout>

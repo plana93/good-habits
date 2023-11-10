@@ -130,10 +130,19 @@ class MainActivity : AppCompatActivity() {
             }
             // Aggiorna questa funzione per gestire l'attivazione del bordo verde
             private fun onPoseDetected() {
-                //colorScreenBorders(Color.GREEN)
+                colorScreenBorders(Color.GREEN)
 
                 showToast("Pose detected for $K consecutive frames!")
                 // ... Altre azioni da eseguire quando uno scheletro è rilevato per K frame consecutivi ...
+            }
+
+            private fun colorScreenBorders(color: Int){
+                runOnUiThread {
+                    findViewById<View>(R.id.topBorder).setBackgroundColor(color)
+                    findViewById<View>(R.id.bottomBorder).setBackgroundColor(color)
+                    findViewById<View>(R.id.leftBorder).setBackgroundColor(color)
+                    findViewById<View>(R.id.rightBorder).setBackgroundColor(color)
+                }
             }
 
             private fun preprocessImage(bitmap: Bitmap): TensorImage {
