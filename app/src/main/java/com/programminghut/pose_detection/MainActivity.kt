@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import android.widget.TextView
 import android.view.View
 import android.widget.Toast
+import kotlin.math.abs
 
 
 class MainActivity : AppCompatActivity() {
@@ -44,11 +45,19 @@ class MainActivity : AppCompatActivity() {
     var count_repetition = 0
     var consecutiveFramesWithPose = 0
     val K = 5
+    var originPose_shoulderKneeLeft = 0.0
+    var originPose_shoulderHipLeft = 0.0
+    var originPose_shoulderHipRight = 0.0
+    var originPose_hipKneeLeft = 0.0
+    var originPose_hipKneeRight = 0.0
+
+    var shoulderKneeLeft = 0.0
     var shoulderHipLeft = 0.0
     var shoulderHipRight = 0.0
     var hipKneeLeft = 0.0
     var hipKneeRight = 0.0
-
+    var start_to_monitoring = false
+    var step1Complete = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,14 +75,22 @@ class MainActivity : AppCompatActivity() {
         paint.setColor(Color.YELLOW)
 
 
+
         numberTextView = findViewById(R.id.numberTextView)
         count_repetition = 0
         numberTextView.text = count_repetition.toString() // Inizializza con il valore attuale del contatore
         numberTextView.setTextColor(Color.WHITE)
-
+        data class SquatMetric(var distance_shoulderKneeLeft: Double,
+            var distance_shoulderHipLeft: Double,
+                               var distance_shoulderHipRight: Double,
+                               var distance_hipKneeLeft: Double,
+                               var distance_hipKneeRight: Double,
+        )
 
 
         textureView.surfaceTextureListener = object:TextureView.SurfaceTextureListener{
+
+
             override fun onSurfaceTextureAvailable(p0: SurfaceTexture, p1: Int, p2: Int) {
                 open_camera()
             }
@@ -90,26 +107,90 @@ class MainActivity : AppCompatActivity() {
                 bitmap = textureView.bitmap!!
                 val tensorImage = preprocessImage(bitmap)
                 val outputFeature0 = runPoseDetection(tensorImage)
+                //updatePoseState(outputFeature0)
+                if (!step1Complete){
+                    startStep1(outputFeature0, threshold_pose, textureView)
+                }
+                else{
+                    if (start_to_monitoring){
+                        startStep2(outputFeature0)
+                    }
+                    else{
+                        startStep3(outputFeature0)
+                    }
+                }
+
+                val mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+                drawPoseOnBitmap(mutableBitmap, outputFeature0, threshold_pose)
+                imageView.setImageBitmap(mutableBitmap)
+            }
+
+            private fun startStep1(
+                outputFeature0: FloatArray,
+                threshold_pose: Double,
+                textureView: TextureView,
+            ){
 
                 if (hasSkeletonDetected(outputFeature0, threshold_pose)) {
                     consecutiveFramesWithPose++
                     if (consecutiveFramesWithPose >= K) {
-                        onPoseDetected()
+                        onPoseDetected(outputFeature0)
+                        step1Complete = true
+                        start_to_monitoring = true
                     }
                 } else {
                     consecutiveFramesWithPose = 0
                 }
-                updatePoseState(outputFeature0)
 
                 val canvas = textureView.lockCanvas()
                 canvas?.let {
                     drawGreenBorder(it)
                     textureView.unlockCanvasAndPost(it)
                 }
-                val mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-                drawPoseOnBitmap(mutableBitmap, outputFeature0, threshold_pose)
-                imageView.setImageBitmap(mutableBitmap)
             }
+
+            private fun startStep2(outputFeature0: FloatArray) {
+                var squatMetric = computeSquatMetric(outputFeature0)
+                showToast("Start step 2")
+                if (detectedSquat(squatMetric)){
+                    start_to_monitoring = false
+                    count_repetition++
+                    numberTextView.text = count_repetition.toString()
+                }
+
+            }
+            private fun startStep3(outputFeature0: FloatArray) {
+                var squatMetric = computeSquatMetric(outputFeature0)
+                showToast("Start step 3")
+
+                if (detectedOriginalPosition(squatMetric)){
+                    start_to_monitoring = true
+                }
+
+            }
+
+            private fun detectedSquat(squatMetric: SquatMetric): Boolean {
+                val shoulderKneeLeft = squatMetric.distance_shoulderKneeLeft
+                val shoulderHipLeft = squatMetric.distance_shoulderHipLeft
+                val shoulderHipRight =  squatMetric.distance_shoulderHipRight
+                val hipKneeLeft = squatMetric.distance_hipKneeLeft
+                val hipKneeRight = squatMetric.distance_hipKneeRight
+                showToast("new $shoulderKneeLeft")
+                showToast("original $originPose_shoulderKneeLeft")
+                return (abs(shoulderKneeLeft) < abs(originPose_shoulderKneeLeft) - 0.06)
+            }
+
+            private fun detectedOriginalPosition(squatMetric: SquatMetric): Boolean {
+                val shoulderKneeLeft = squatMetric.distance_shoulderKneeLeft
+                val shoulderHipLeft = squatMetric.distance_shoulderHipLeft
+                val shoulderHipRight =  squatMetric.distance_shoulderHipRight
+                val hipKneeLeft = squatMetric.distance_hipKneeLeft
+                val hipKneeRight = squatMetric.distance_hipKneeRight
+
+                val checkDistance = abs(shoulderKneeLeft - originPose_shoulderKneeLeft)
+                return (checkDistance < 0.03)
+            }
+
 
             private fun hasSkeletonDetected(outputFeature0: FloatArray, threshold_pose: Double): Boolean {
                 // Verifica se tutti i keypoints hanno uno score maggiore della soglia
@@ -122,18 +203,93 @@ class MainActivity : AppCompatActivity() {
                 return true  // Tutti i keypoints hanno uno score maggiore della soglia
             }
 
-
             private fun showToast(message: String) {
                 runOnUiThread {
                     Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
                 }
             }
-            // Aggiorna questa funzione per gestire l'attivazione del bordo verde
-            private fun onPoseDetected() {
-                colorScreenBorders(Color.GREEN)
 
+            private fun onPoseDetected(outputFeature0: FloatArray) {
+                colorScreenBorders(Color.GREEN)
+                start_to_monitoring = true
                 showToast("Pose detected for $K consecutive frames!")
-                // ... Altre azioni da eseguire quando uno scheletro è rilevato per K frame consecutivi ...
+                var squatMetric = computeSquatMetric(outputFeature0)
+                originPose_shoulderKneeLeft = squatMetric.distance_shoulderKneeLeft
+                originPose_shoulderHipLeft = squatMetric.distance_shoulderHipLeft
+                originPose_shoulderHipRight =  squatMetric.distance_shoulderHipRight
+                originPose_hipKneeLeft = squatMetric.distance_hipKneeLeft
+                originPose_hipKneeRight = squatMetric.distance_hipKneeRight
+            }
+
+            private fun computeSquatMetric(outputFeature0: FloatArray):SquatMetric{
+                //take the vector of interest
+                val shoulderLeft_position = 5
+                val shoulderRight_position = 8
+                val hipLeft_position = 11
+                val hipRight_position = 14
+                val kneeLeft_position = 12
+                val kneeRight_position = 15
+
+                var position = shoulderLeft_position
+                val shoulderLeft_x = outputFeature0[position*3+1]
+                val shoulderLeft_y = outputFeature0[position*3+0]
+                position = shoulderRight_position
+                val shoulderRight_x = outputFeature0[position*3+1]
+                val shoulderRight_y = outputFeature0[position*3+0]
+                position = hipLeft_position
+                val hipLeft_x = outputFeature0[position*3+1]
+                val hipLeft_y = outputFeature0[position*3+0]
+                position = hipRight_position
+                val hipRight_x = outputFeature0[position*3+1]
+                val hipRight_y = outputFeature0[position*3+0]
+                position = kneeLeft_position
+                val kneeLeft_x = outputFeature0[position*3+1]
+                val kneeLeft_y = outputFeature0[position*3+0]
+                position = kneeRight_position
+                val kneeRight_x = outputFeature0[position*3+1]
+                val kneeRight_y = outputFeature0[position*3+0]
+
+
+                val shoulderKneeLeft = calculateDistance(
+                    x1 = shoulderLeft_x,
+                    y1 = shoulderLeft_y,
+                    x2 = kneeLeft_x,
+                    y2 = kneeLeft_y,
+                )
+
+                val shoulderHipLeft = calculateDistance(
+                    x1 = shoulderLeft_x,
+                    y1 = shoulderLeft_y,
+                    x2 = hipLeft_x,
+                    y2 = hipLeft_y,
+                )
+                val shoulderHipRight = calculateDistance(
+                    x1 = shoulderRight_x,
+                    y1 = shoulderRight_y,
+                    x2 = hipRight_x,
+                    y2 = hipRight_y,
+                )
+                val hipKneeLeft = calculateDistance(
+                    x1 = hipLeft_x,
+                    y1 = hipLeft_y,
+                    x2 = kneeLeft_x,
+                    y2 = kneeLeft_y,
+                )
+                val hipKneeRight = calculateDistance(
+                    x1 = hipRight_x,
+                    y1 = hipRight_y,
+                    x2 = kneeRight_x,
+                    y2 = kneeRight_y,
+                )
+
+                return SquatMetric(
+                    distance_shoulderKneeLeft = shoulderKneeLeft,
+                    distance_shoulderHipLeft = shoulderHipLeft,
+                    distance_shoulderHipRight = shoulderHipRight,
+                    distance_hipKneeLeft = hipKneeLeft,
+                    distance_hipKneeRight = hipKneeRight
+                )
+
             }
 
             private fun colorScreenBorders(color: Int){
@@ -188,52 +344,9 @@ class MainActivity : AppCompatActivity() {
                 return linePaint
             }
 
-            private fun updatePoseState(outputFeature0: FloatArray) {
-                val scoreThreshold = 0.45
-
-                val shoulderLeftX = outputFeature0[5 * 3 + 1] * bitmap.width
-                val shoulderLeftY = outputFeature0[5 * 3] * bitmap.height
-                val hipLeftX = outputFeature0[11 * 3 + 1] * bitmap.width
-                val hipLeftY = outputFeature0[11 * 3] * bitmap.height
-
-                val shoulderRightX = outputFeature0[6 * 3 + 1] * bitmap.width
-                val shoulderRightY = outputFeature0[6 * 3] * bitmap.height
-                val hipRightX = outputFeature0[12 * 3 + 1] * bitmap.width
-                val hipRightY = outputFeature0[12 * 3] * bitmap.height
-
-                val distanceShoulderHipLeft = calculateDistance(shoulderLeftX, shoulderLeftY, hipLeftX, hipLeftY)
-                val distanceShoulderHipRight = calculateDistance(shoulderRightX, shoulderRightY, hipRightX, hipRightY)
-                val distanceHipKneeLeft = calculateDistance(hipLeftX, hipLeftY, outputFeature0[13 * 3 + 1] * bitmap.width, outputFeature0[13 * 3] * bitmap.height)
-                val distanceHipKneeRight = calculateDistance(hipRightX, hipRightY, outputFeature0[14 * 3 + 1] * bitmap.width, outputFeature0[14 * 3] * bitmap.height)
-
-                if (distanceShoulderHipLeft > 0 && distanceShoulderHipRight > 0 && distanceHipKneeLeft > 0 && distanceHipKneeRight > 0) {
-                    shoulderHipLeft = distanceShoulderHipLeft
-                    shoulderHipRight = distanceShoulderHipRight
-                    hipKneeLeft = distanceHipKneeLeft
-                    hipKneeRight = distanceHipKneeRight
-                    consecutiveFramesWithPose++
-
-                    if (consecutiveFramesWithPose >= 5) {
-                        onStep1Complete()
-                    }
-                } else {
-                    consecutiveFramesWithPose = 0
-                }
-            }
-
-            private fun onStep1Complete() {
-                //colorScreenBorders(Color.GREEN)
-                startStep2()
-            }
-
-            private fun startStep2() {
-                // Inserisci qui la logica per lo Step 2
-            }
-
             private fun calculateDistance(x1: Float, y1: Float, x2: Float, y2: Float): Double {
                 return Math.sqrt(Math.pow((x2 - x1).toDouble(), 2.0) + Math.pow((y2 - y1).toDouble(), 2.0))
             }
-
 
             private fun drawGreenBorder(canvas: Canvas) {
                 val greenPaint = Paint()
@@ -244,6 +357,7 @@ class MainActivity : AppCompatActivity() {
                 val rect = Rect(0, 0, canvas.width, canvas.height)
                 canvas.drawRect(rect, greenPaint)
             }
+
             private fun getEmojiResources(): Array<Int> {
                 return arrayOf(
                     R.drawable.nose_emoji,
@@ -267,7 +381,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             private fun drawEmojiOnCanvas(
-                keypointX: Float, keypointY: Float, x: Int, w: Int, h: Int,
+                keypointX: Float,
+                keypointY: Float,
+                x: Int,
+                w: Int,
+                h: Int,
                 emojiResources: Array<Int>, canvas: Canvas
             ) {
                 val emojiDrawable = ContextCompat.getDrawable(this@MainActivity, emojiResources[x / 3])
@@ -280,7 +398,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             private fun connectKeypoints(
-                score: Float, x: Int, w: Int, h: Int, linePaint: Paint, canvas: Canvas, outputFeature0: FloatArray
+                score: Float,
+                x: Int,
+                w: Int,
+                h: Int,
+                linePaint: Paint,
+                canvas: Canvas,
+                outputFeature0: FloatArray
             ) {
                 val connections = arrayOf(
                     Pair(0, 1), Pair(0, 2), Pair(1, 3), Pair(2, 4),
