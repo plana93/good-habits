@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import android.widget.TextView
 import android.view.View
 import android.widget.Toast
+import java.util.Collections.copy
 import kotlin.math.abs
 
 
@@ -58,9 +59,11 @@ class MainActivity : AppCompatActivity() {
     var hipKneeRight = 0.0
     var start_to_monitoring = false
     var step1Complete = false
-
+    var selectedCameraIndex = -1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        selectedCameraIndex = intent.getIntExtra("cameraIndex", -1)
+
         setContentView(R.layout.activity_main)
         get_permissions()
 
@@ -85,7 +88,17 @@ class MainActivity : AppCompatActivity() {
                                var distance_shoulderHipRight: Double,
                                var distance_hipKneeLeft: Double,
                                var distance_hipKneeRight: Double,
-        )
+        ){
+            // Costruttore di copia
+            constructor(other: SquatMetric) : this(
+                other.distance_shoulderKneeLeft,
+                other.distance_shoulderHipLeft,
+                other.distance_shoulderHipRight,
+                other.distance_hipKneeLeft,
+                other.distance_hipKneeRight
+            )
+        }
+
 
 
         textureView.surfaceTextureListener = object:TextureView.SurfaceTextureListener{
@@ -107,7 +120,6 @@ class MainActivity : AppCompatActivity() {
                 bitmap = textureView.bitmap!!
                 val tensorImage = preprocessImage(bitmap)
                 val outputFeature0 = runPoseDetection(tensorImage)
-                //updatePoseState(outputFeature0)
                 if (!step1Complete){
                     startStep1(outputFeature0, threshold_pose, textureView)
                 }
@@ -150,7 +162,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             private fun startStep2(outputFeature0: FloatArray) {
-                var squatMetric = computeSquatMetric(outputFeature0)
+                val squatMetric = computeSquatMetric(outputFeature0)
                 showToast("Start step 2")
                 if (detectedSquat(squatMetric)){
                     start_to_monitoring = false
@@ -213,8 +225,9 @@ class MainActivity : AppCompatActivity() {
                 colorScreenBorders(Color.GREEN)
                 start_to_monitoring = true
                 showToast("Pose detected for $K consecutive frames!")
-                var squatMetric = computeSquatMetric(outputFeature0)
+                val squatMetric = computeSquatMetric(outputFeature0)
                 originPose_shoulderKneeLeft = squatMetric.distance_shoulderKneeLeft
+                showToast("START original $originPose_shoulderKneeLeft")
                 originPose_shoulderHipLeft = squatMetric.distance_shoulderHipLeft
                 originPose_shoulderHipRight =  squatMetric.distance_shoulderHipRight
                 originPose_hipKneeLeft = squatMetric.distance_hipKneeLeft
@@ -223,11 +236,11 @@ class MainActivity : AppCompatActivity() {
 
             private fun computeSquatMetric(outputFeature0: FloatArray):SquatMetric{
                 //take the vector of interest
-                val shoulderLeft_position = 5
+                val shoulderLeft_position = 6
                 val shoulderRight_position = 8
                 val hipLeft_position = 11
-                val hipRight_position = 14
-                val kneeLeft_position = 12
+                val hipRight_position = 12
+                val kneeLeft_position = 14
                 val kneeRight_position = 15
 
                 var position = shoulderLeft_position
@@ -365,18 +378,18 @@ class MainActivity : AppCompatActivity() {
                     R.drawable.eye_emoji,
                     R.drawable.ear_emoji,
                     R.drawable.left_ear_emoji,
-                    R.drawable.dot,
-                    R.drawable.dot,
-                    R.drawable.dot,
-                    R.drawable.dot,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
                     R.drawable.smile_emoji,
                     R.drawable.dot,
-                    R.drawable.dot
+                    R.drawable.smile_emoji,
+                    R.drawable.smile_emoji,
+                    R.drawable.smile_emoji,
+                    R.drawable.smile_emoji,
+                    R.drawable.smile_emoji,
+                    R.drawable.smile_emoji,
+                    R.drawable.smile_emoji,
+                    R.drawable.dot,
+                    R.drawable.smile_emoji,
+                    R.drawable.smile_emoji
                 )
             }
 
@@ -436,7 +449,7 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("MissingPermission")
     fun open_camera(){
-        cameraManager.openCamera(cameraManager.cameraIdList[1], object:CameraDevice.StateCallback(){
+        cameraManager.openCamera(cameraManager.cameraIdList[selectedCameraIndex], object:CameraDevice.StateCallback(){
             override fun onOpened(p0: CameraDevice) {
                 var captureRequest = p0.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
                 var surface = Surface(textureView.surfaceTexture)
