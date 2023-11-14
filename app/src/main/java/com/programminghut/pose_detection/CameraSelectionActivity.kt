@@ -31,8 +31,12 @@ interface OnCameraSelectedListener {
 }
 
 class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
+    lateinit  var outputFeature0_base_position: FloatArray
+    lateinit var outputFeature0_squat_position: FloatArray
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        outputFeature0_base_position = intent.getFloatArrayExtra("base_position")!!
+        outputFeature0_squat_position = intent.getFloatArrayExtra("squat_position")!!
 
         setContent {
             Pose_detectionTheme {
@@ -46,9 +50,12 @@ class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
         }
     }
 
+
     override fun onCameraSelected(cameraIndex: Int) {
         val intent = Intent(this, MainActivity::class.java)
         intent.putExtra("cameraIndex", cameraIndex)
+        intent.putExtra("base_position", outputFeature0_base_position)
+        intent.putExtra("squat_position", outputFeature0_squat_position)
         startActivity(intent)
     }
 }
