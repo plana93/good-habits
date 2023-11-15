@@ -28,23 +28,27 @@ import android.view.View
 import android.widget.Toast
 import java.util.Collections.copy
 import kotlin.math.abs
+import kotlin.Pair
 
 data class SquatMetric(
     var distance_shoulderKneeLeft: Double,
     var check_shoulderKneeLeft: Boolean,
-    var distance_shoulderHipLeft: Double,
-    var distance_shoulderHipRight: Double,
-    var distance_hipKneeLeft: Double,
-    var distance_hipKneeRight: Double,
+    var distance_shoulderKneeRight: Double,
+    var check_shoulderKneeRight: Boolean,
+    var footLeft : Pair<Float, Float>,
+    var footRight : Pair<Float, Float>,
+    var check_foots: Pair<Float,Float>
+
 ) {
     // Costruttore di copia
     constructor(other: SquatMetric) : this(
         other.distance_shoulderKneeLeft,
         other.check_shoulderKneeLeft,
-        other.distance_shoulderHipLeft,
-        other.distance_shoulderHipRight,
-        other.distance_hipKneeLeft,
-        other.distance_hipKneeRight
+        other.distance_shoulderKneeRight,
+        other.check_shoulderKneeRight,
+        other.footLeft,
+        other.footRight,
+        other.check_foots,
     )
 }
 
@@ -135,6 +139,7 @@ class MainActivity : AppCompatActivity() {
                         textureView
                     )
                 } else {
+                    checkAllBody()
                     if (start_to_monitoring) {
                         startStep2(outputFeature0)
                     } else {
@@ -192,27 +197,69 @@ class MainActivity : AppCompatActivity() {
                 squatMetric_current = computeSquatMetric(outputFeature0)
                 showToast("Start step 3")
 
-                if (detectedOriginalPosition()) {
+                if (detectedOriginalPosition()  ) {
                     start_to_monitoring = true
                 }
 
             }
 
             private fun detectedSquat(): Boolean {
-                val shoulderKneeLeft = squatMetric_current.distance_shoulderKneeLeft
-                val check_shoulderKneeLeft = squatMetric_current.check_shoulderKneeLeft
-                showToast("SQUAT ${squatMetric_squat.distance_shoulderKneeLeft}")
-                return ((abs(shoulderKneeLeft) <= abs(squatMetric_squat.distance_shoulderKneeLeft) + 0.06) && check_shoulderKneeLeft)
+                var shoulderKneeLeft = squatMetric_current.distance_shoulderKneeLeft
+                var check_shoulderKneeLeft = squatMetric_current.check_shoulderKneeLeft
+                var shoulderKneeRight = squatMetric_current.distance_shoulderKneeRight
+                var check_shoulderKneeRight = squatMetric_current.check_shoulderKneeRight
+                var footLeft_y = abs(squatMetric_current.footLeft.second)
+                var footRight_y = abs(squatMetric_current.footRight.second)
+
+
+                var condition = (
+                        (abs(shoulderKneeLeft) <= (abs(squatMetric_squat.distance_shoulderKneeLeft) + 0.01)
+                        && check_shoulderKneeLeft)
+                                ||
+                                (abs(shoulderKneeRight) <= (abs(squatMetric_squat.distance_shoulderKneeRight) + 0.01)
+                        && check_shoulderKneeRight)
+                        )
+
+                var condition_foot =  (footLeft_y <= (abs(footRight_y+0.01))) && (footLeft_y >= (abs(footRight_y-0.01)))
+
+                return condition && condition_foot
             }
 
             private fun detectedOriginalPosition(): Boolean {
-                val shoulderKneeLeft = squatMetric_current.distance_shoulderKneeLeft
-                val check_shoulderKneeLeft = squatMetric_current.check_shoulderKneeLeft
-                showToast("BASE ${squatMetric_base.distance_shoulderKneeLeft}")
+                var shoulderKneeLeft = squatMetric_current.distance_shoulderKneeLeft
+                var check_shoulderKneeLeft = squatMetric_current.check_shoulderKneeLeft
+                var shoulderKneeRight = squatMetric_current.distance_shoulderKneeRight
+                var check_shoulderKneeRight = squatMetric_current.check_shoulderKneeRight
+                var footLeft_y = abs(squatMetric_current.footLeft.second)
+                var footRight_y = abs(squatMetric_current.footRight.second)
 
-                return ((abs(shoulderKneeLeft) <= abs(squatMetric_base.distance_shoulderKneeLeft) - 0.06) && check_shoulderKneeLeft)
+                var condition = (
+                        (abs(shoulderKneeLeft) <= (abs(squatMetric_base.distance_shoulderKneeLeft) + 0.1) &&
+                        abs(shoulderKneeLeft) >= (abs(squatMetric_base.distance_shoulderKneeLeft) - 0.01) &&
+                        check_shoulderKneeLeft )
+                                ||
+                                (abs(shoulderKneeRight) <= (abs(squatMetric_base.distance_shoulderKneeRight) + 0.1) &&
+                        abs(shoulderKneeRight) >= (abs(squatMetric_base.distance_shoulderKneeRight) - 0.01) &&
+                        check_shoulderKneeRight)
+                        )
+                var condition_foot =  (footLeft_y <= (abs(footRight_y+0.01))) && (footLeft_y >= (abs(footRight_y-0.01)))
+
+                return condition && condition_foot
             }
 
+            private fun checkAllBody() {
+                var body_score = (squatMetric_current.check_foots.first>0.2 &&
+                        squatMetric_current.check_foots.second>0.2 &&
+                        squatMetric_current.check_shoulderKneeLeft &&
+                        squatMetric_current.check_shoulderKneeRight)
+                if (body_score) {
+                    step1Complete = true
+                    colorScreenBorders(Color.GREEN)
+                } else{
+                    step1Complete = false
+                    colorScreenBorders(Color.RED)
+                }
+            }
 
             private fun hasSkeletonDetected(
                 outputFeature0: FloatArray,
@@ -250,71 +297,70 @@ class MainActivity : AppCompatActivity() {
             private fun computeSquatMetric(outputFeature0: FloatArray): SquatMetric {
                 //take the vector of interest
                 val shoulderLeft_position = 6
-                val shoulderRight_position = 8
+                val shoulderRight_position = 5
                 val hipLeft_position = 11
                 val hipRight_position = 12
                 val kneeLeft_position = 14
-                val kneeRight_position = 15
+                val kneeRight_position = 13
+                val footLeft_position = 16
+                val footRight_position = 15
 
                 var position = shoulderLeft_position
                 val shoulderLeft_x = outputFeature0[position * 3 + 1]
                 val shoulderLeft_y = outputFeature0[position * 3 + 0]
-                position = shoulderRight_position
-                val shoulderRight_x = outputFeature0[position * 3 + 1]
-                val shoulderRight_y = outputFeature0[position * 3 + 0]
-                position = hipLeft_position
-                val hipLeft_x = outputFeature0[position * 3 + 1]
-                val hipLeft_y = outputFeature0[position * 3 + 0]
-                position = hipRight_position
-                val hipRight_x = outputFeature0[position * 3 + 1]
-                val hipRight_y = outputFeature0[position * 3 + 0]
+                val shoulderLeft_score = outputFeature0[position * 3 + 2]
+
                 position = kneeLeft_position
                 val kneeLeft_x = outputFeature0[position * 3 + 1]
                 val kneeLeft_y = outputFeature0[position * 3 + 0]
+                val kneeLeft_score = outputFeature0[position * 3 + 2]
+
+
+                position = shoulderRight_position
+                val shoulderRight_x = outputFeature0[position * 3 + 1]
+                val shoulderRight_y = outputFeature0[position * 3 + 0]
+                val shoulderRight_score = outputFeature0[position * 3 + 2]
+
+
                 position = kneeRight_position
                 val kneeRight_x = outputFeature0[position * 3 + 1]
                 val kneeRight_y = outputFeature0[position * 3 + 0]
+                val kneeRight_score = outputFeature0[position * 3 + 2]
 
+                position = footLeft_position
+                val footLeft_x = outputFeature0[position * 3 + 1]
+                val footLeft_y = outputFeature0[position * 3 + 0]
+                val footLeft_score = outputFeature0[position * 3 + 2]
 
-                val shoulderKneeLeft = calculateDistance(
+                position = footRight_position
+                val footRight_x = outputFeature0[position * 3 + 1]
+                val footRight_y = outputFeature0[position * 3 + 0]
+                val footRight_score = outputFeature0[position * 3 + 2]
+
+                var shoulderKneeLeft = calculateDistance(
                     x1 = shoulderLeft_x,
                     y1 = shoulderLeft_y,
                     x2 = kneeLeft_x,
                     y2 = kneeLeft_y,
                 )
+                var shoulderKneeLeft_score = (shoulderLeft_score > 0.2) && (kneeLeft_score > 0.2)
 
-                val shoulderHipLeft = calculateDistance(
-                    x1 = shoulderLeft_x,
-                    y1 = shoulderLeft_y,
-                    x2 = hipLeft_x,
-                    y2 = hipLeft_y,
-                )
-                val shoulderHipRight = calculateDistance(
+                var shoulderKneeRight= calculateDistance(
                     x1 = shoulderRight_x,
                     y1 = shoulderRight_y,
-                    x2 = hipRight_x,
-                    y2 = hipRight_y,
-                )
-                val hipKneeLeft = calculateDistance(
-                    x1 = hipLeft_x,
-                    y1 = hipLeft_y,
-                    x2 = kneeLeft_x,
-                    y2 = kneeLeft_y,
-                )
-                val hipKneeRight = calculateDistance(
-                    x1 = hipRight_x,
-                    y1 = hipRight_y,
                     x2 = kneeRight_x,
                     y2 = kneeRight_y,
                 )
+                var shoulderKneeRight_score = (shoulderRight_score > 0.2) && (kneeRight_score > 0.2)
 
                 return SquatMetric(
                     distance_shoulderKneeLeft = shoulderKneeLeft,
-                    check_shoulderKneeLeft = true,
-                    distance_shoulderHipLeft = shoulderHipLeft,
-                    distance_shoulderHipRight = shoulderHipRight,
-                    distance_hipKneeLeft = hipKneeLeft,
-                    distance_hipKneeRight = hipKneeRight
+                    check_shoulderKneeLeft = shoulderKneeLeft_score,
+                    distance_shoulderKneeRight = shoulderKneeRight,
+                    check_shoulderKneeRight = shoulderKneeRight_score,
+                    footLeft = Pair(footLeft_x, footLeft_y),
+                    footRight = Pair(footRight_x, footRight_y),
+                    check_foots = Pair(footLeft_score, footRight_score)
                 )
 
             }
@@ -402,7 +448,7 @@ class MainActivity : AppCompatActivity() {
                     R.drawable.eye_emoji,
                     R.drawable.ear_emoji,
                     R.drawable.left_ear_emoji,
-                    R.drawable.smile_emoji,
+                    R.drawable.dot,
                     R.drawable.dot,
                     R.drawable.smile_emoji,
                     R.drawable.smile_emoji,
@@ -410,7 +456,7 @@ class MainActivity : AppCompatActivity() {
                     R.drawable.smile_emoji,
                     R.drawable.smile_emoji,
                     R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
+                    R.drawable.dot,
                     R.drawable.dot,
                     R.drawable.smile_emoji,
                     R.drawable.smile_emoji
