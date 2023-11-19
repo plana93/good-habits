@@ -101,11 +101,8 @@ class MainActivity : AppCompatActivity() {
         numberTextView = findViewById(R.id.numberTextView)
         count_repetition = 0
         numberTextView.text =
-            count_repetition.toString() // Inizializza con il valore attuale del contatore
+            count_repetition.toString()
         numberTextView.setTextColor(Color.WHITE)
-
-
-
 
         textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
 
@@ -159,7 +156,6 @@ class MainActivity : AppCompatActivity() {
                 threshold_pose: Double,
                 textureView: TextureView,
             ) {
-
                 if (hasSkeletonDetected(outputFeature0, threshold_pose)) {
                     consecutiveFramesWithPose++
                     if (consecutiveFramesWithPose >= K) {
@@ -213,14 +209,14 @@ class MainActivity : AppCompatActivity() {
 
 
                 var condition = (
-                        (abs(shoulderKneeLeft) <= (abs(squatMetric_squat.distance_shoulderKneeLeft) + 0.01)
+                        (abs(shoulderKneeLeft) <= (abs(squatMetric_squat.distance_shoulderKneeLeft) + 0.02)
                         && check_shoulderKneeLeft)
                                 ||
-                                (abs(shoulderKneeRight) <= (abs(squatMetric_squat.distance_shoulderKneeRight) + 0.01)
+                        (abs(shoulderKneeRight) <= (abs(squatMetric_squat.distance_shoulderKneeRight) + 0.02)
                         && check_shoulderKneeRight)
                         )
 
-                var condition_foot =  (footLeft_y <= (abs(footRight_y+0.01))) && (footLeft_y >= (abs(footRight_y-0.01)))
+                var condition_foot =  (footLeft_y <= (abs(footRight_y+0.02))) && (footLeft_y >= (abs(footRight_y-0.02)))
 
                 return condition && condition_foot
             }
@@ -242,7 +238,7 @@ class MainActivity : AppCompatActivity() {
                         abs(shoulderKneeRight) >= (abs(squatMetric_base.distance_shoulderKneeRight) - 0.01) &&
                         check_shoulderKneeRight)
                         )
-                var condition_foot =  (footLeft_y <= (abs(footRight_y+0.01))) && (footLeft_y >= (abs(footRight_y-0.01)))
+                var condition_foot =  (footLeft_y <= (abs(footRight_y+0.02))) && (footLeft_y >= (abs(footRight_y-0.02)))
 
                 return condition && condition_foot
             }
@@ -288,10 +284,12 @@ class MainActivity : AppCompatActivity() {
             ) {
                 colorScreenBorders(Color.GREEN)
                 start_to_monitoring = true
-                showToast("Pose detected for $K consecutive frames!")
+                //showToast("Pose detected for $K consecutive frames!")
                 squatMetric_current = computeSquatMetric(outputFeature0)
                 squatMetric_base = computeSquatMetric(outputFeature0_base)
                 squatMetric_squat = computeSquatMetric(outputFeature0_squat)
+                scaleReferencePositionWithRespectCurrent()
+
             }
 
             private fun computeSquatMetric(outputFeature0: FloatArray): SquatMetric {
@@ -365,6 +363,18 @@ class MainActivity : AppCompatActivity() {
 
             }
 
+            private fun scaleReferencePositionWithRespectCurrent(){
+                var  scale_value = 1.0
+                scale_value = squatMetric_current.distance_shoulderKneeLeft.div(squatMetric_base.distance_shoulderKneeLeft)
+                squatMetric_base.distance_shoulderKneeLeft = squatMetric_base.distance_shoulderKneeLeft * scale_value
+                squatMetric_squat.distance_shoulderKneeLeft = squatMetric_squat.distance_shoulderKneeLeft * scale_value
+
+                scale_value = squatMetric_current.distance_shoulderKneeRight / squatMetric_base.distance_shoulderKneeRight
+                squatMetric_base.distance_shoulderKneeRight = squatMetric_base.distance_shoulderKneeRight * scale_value
+                squatMetric_squat.distance_shoulderKneeRight = squatMetric_squat.distance_shoulderKneeRight * scale_value
+
+            }
+
             private fun colorScreenBorders(color: Int) {
                 runOnUiThread {
                     findViewById<View>(R.id.topBorder).setBackgroundColor(color)
@@ -411,6 +421,18 @@ class MainActivity : AppCompatActivity() {
                         connectKeypoints(score, x, w, h, linePaint, canvas, outputFeature0)
                     }
                 }
+                // poi usi la condizione vera
+                if(step1Complete) {
+                    val emojiDrawable =
+                        ContextCompat.getDrawable(this@MainActivity, R.drawable.foot_left)
+
+                    emojiDrawable?.setBounds(
+                        ((squatMetric_base.footLeft.first * w) - 50).toInt(), ((squatMetric_base.footLeft.second * h) - 50).toInt(),
+                        ((squatMetric_base.footLeft.first * w) + 50).toInt(), ((squatMetric_base.footLeft.second * h) + 50).toInt()
+                    )
+                    emojiDrawable?.draw(canvas)
+                }
+
             }
 
             private fun createLinePaint(): Paint {
@@ -458,8 +480,8 @@ class MainActivity : AppCompatActivity() {
                     R.drawable.smile_emoji,
                     R.drawable.dot,
                     R.drawable.dot,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji
+                    R.drawable.dot_white,
+                    R.drawable.dot_white
                 )
             }
 
