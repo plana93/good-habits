@@ -140,11 +140,23 @@ class MainActivity : AppCompatActivity() {
         numberTextView = findViewById(R.id.numberTextView)
         count_repetition = 0
         
+        // *** IMPOSTA DIMENSIONE TESTO RIDOTTA (1/25 DELLO SCHERMO) ***
+        val displayMetrics = resources.displayMetrics
+        val screenHeight = displayMetrics.heightPixels
+        val textSizePx = screenHeight / 25f  // Ridotto da 15 a 25 per box più piccola
+        numberTextView.textSize = textSizePx / displayMetrics.density // Converti px in sp
+        
         // *** CARICA IL TOTALE DEGLI SQUAT SALVATI ***
         if (!recordSkeleton) {
             val totalSquats = squatCounter.getTotalSquats()
+            // Mostra inizialmente con etichette
             numberTextView.text = "Sessione: $count_repetition\nTotale: $totalSquats"
             Toast.makeText(this, "Totale squat caricati: $totalSquats", Toast.LENGTH_SHORT).show()
+            
+            // Dopo 3 secondi, passa a mostrare solo i numeri
+            Handler(mainLooper).postDelayed({
+                updateSquatDisplay(compact = true)
+            }, 3000)
         } else {
             numberTextView.text = count_repetition.toString()
         }
@@ -251,8 +263,9 @@ class MainActivity : AppCompatActivity() {
                     // *** INCREMENTA E SALVA IL TOTALE DEGLI SQUAT ***
                     if (!recordSkeleton) {
                         squatCounter.incrementSquat()
-                        val totalSquats = squatCounter.getTotalSquats()
-                        numberTextView.text = "Sessione: $count_repetition\nTotale: $totalSquats"
+                        updateSquatDisplay(compact = true)
+                        // Animazione zoom quando completi uno squat
+                        animateSquatCounter()
                     } else {
                         numberTextView.text = count_repetition.toString()
                     }
@@ -603,6 +616,43 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+        }
+    }
+    
+    /**
+     * Aggiorna il display del contatore squat
+     * @param compact Se true, mostra solo numeri. Se false, mostra etichette
+     */
+    private fun updateSquatDisplay(compact: Boolean = true) {
+        runOnUiThread {
+            val totalSquats = squatCounter.getTotalSquats()
+            numberTextView.text = if (compact) {
+                // Formato compatto: solo numeri separati da |
+                "$count_repetition | $totalSquats"
+            } else {
+                // Formato esteso: con etichette
+                "Sessione: $count_repetition\nTotale: $totalSquats"
+            }
+        }
+    }
+    
+    /**
+     * Animazione zoom quando si completa uno squat
+     */
+    private fun animateSquatCounter() {
+        runOnUiThread {
+            numberTextView.animate()
+                .scaleX(1.3f)
+                .scaleY(1.3f)
+                .setDuration(150)
+                .withEndAction {
+                    numberTextView.animate()
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(150)
+                        .start()
+                }
+                .start()
         }
     }
 

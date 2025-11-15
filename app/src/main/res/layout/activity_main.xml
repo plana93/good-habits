@@ -59,17 +59,19 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="2dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
         android:background="@drawable/rounded_corner_background"
         android:elevation="4dp"
-        android:fontFamily="sans-serif-light"
-        android:padding="16dp"
+        android:fontFamily="monospace"
+        android:padding="8dp"
         android:text=""
         android:textAlignment="center"
         android:textColor="@android:color/white"
-        android:textSize="70sp" />
-    <!-- android:gravity="center"-->
+        android:textSize="16sp"
+        android:lineSpacingExtra="1dp"
+        android:letterSpacing="0.05" />
+    <!-- Font monospace tipo terminale, dimensione ridotta -->
 
     <!-- Bottone EXIT per chiudere e copiare negli appunti (visibile solo in modalità recording) -->
     <Button
