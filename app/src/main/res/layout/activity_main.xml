@@ -71,5 +71,16 @@
         android:textSize="70sp" />
     <!-- android:gravity="center"-->
 
+    <!-- Bottone EXIT per chiudere e copiare negli appunti (visibile solo in modalità recording) -->
+    <Button
+        android:id="@+id/btn_exit_and_copy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="EXIT &amp; Copy"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone"
+        android:backgroundTint="#FF0000" />
 
 </RelativeLayout>

@@ -54,6 +54,7 @@ class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
     override fun onCameraSelected(cameraIndex: Int) {
         val intent = Intent(this, MainActivity::class.java)
         intent.putExtra("cameraIndex", cameraIndex)
+        intent.putExtra("isFrontCamera", cameraIndex == 1) // Front camera index is 1
         intent.putExtra("base_position", outputFeature0_base_position)
         intent.putExtra("squat_position", outputFeature0_squat_position)
         startActivity(intent)

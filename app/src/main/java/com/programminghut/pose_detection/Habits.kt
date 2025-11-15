@@ -39,21 +39,42 @@ class Habits : ComponentActivity() {
                 ) {
                     // Display a welcome message
                     Text(
-                        text = "Welcome to Habits Activity!",
+                        text = "Welcome to Pose Detection App!",
                         color = Color.Gray
-
                      )
-                    // Add some space between the text and the button
-                    Spacer(modifier = Modifier.height(16.dp))
-                    // Use a custom-styled button for better appearance
+                    
+                    // Add some space between the text and the buttons
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
+                    // Bottone SQUAT (flusso originale)
                     CustomButton(
-                        text = "SQUAT",
-
+                        text = "SQUAT COUNTER",
                         onClick = {
                             val intent = Intent(this@Habits, Squat::class.java)
                             startActivity(intent)
                         },
-
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Bottone RECORD SKELETON (nuovo flusso)
+                    CustomButton(
+                        text = "RECORD SKELETON",
+                        onClick = {
+                            val intent = Intent(this@Habits, RecordingCameraSelectionActivity::class.java)
+                            startActivity(intent)
+                        },
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Bottone URBAN CAMERA (flusso urban street art)
+                    CustomButton(
+                        text = "URBAN CAMERA",
+                        onClick = {
+                            val intent = Intent(this@Habits, UrbanCameraSelectionActivity::class.java)
+                            startActivity(intent)
+                        },
                     )
                 }
             }

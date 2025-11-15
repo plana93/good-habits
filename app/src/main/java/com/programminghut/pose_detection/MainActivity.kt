@@ -25,6 +25,8 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import androidx.core.content.ContextCompat
 import android.widget.TextView
 import android.view.View
+import android.widget.Button
+import android.content.Intent
 import android.widget.Toast
 import java.util.Collections.copy
 import kotlin.math.abs
@@ -78,12 +80,49 @@ class MainActivity : AppCompatActivity() {
     var start_to_monitoring = false
     var step1Complete = false
     var selectedCameraIndex = -1
+    private var isFrontCamera = false
+    
+    // *** NUOVE VARIABILI PER RECORDING ***
+    private var recordSkeleton = false
+    private var poseLogger: PoseLogger? = null
+    private lateinit var btnExitAndCopy: Button
+    
+    // *** SQUAT COUNTER PER PERSISTENZA ***
+    private lateinit var squatCounter: SquatCounter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         selectedCameraIndex = intent.getIntExtra("cameraIndex", -1)
+        isFrontCamera = intent.getBooleanExtra("isFrontCamera", false)
+        recordSkeleton = intent.getBooleanExtra("RECORD_SKELETON", false)
 
         setContentView(R.layout.activity_main)
         get_permissions()
+
+        // *** INIZIALIZZA SQUAT COUNTER PER PERSISTENZA ***
+        squatCounter = SquatCounter(this)
+        
+        // *** GESTIONE MODALITÀ RECORDING ***
+        btnExitAndCopy = findViewById(R.id.btn_exit_and_copy)
+        if (recordSkeleton) {
+            // Modalità registrazione: inizializza logger e mostra bottone exit
+            try {
+                poseLogger = PoseLogger(this)
+                btnExitAndCopy.visibility = View.VISIBLE
+                numberTextView.visibility = View.GONE  // Nascondi il contatore ripetizioni
+                Toast.makeText(this, "Modalità Recording Attiva", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this, "Errore inizializzazione logger", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            // Modalità normale: nascondi bottone exit
+            btnExitAndCopy.visibility = View.GONE
+        }
+        
+        // Collegamento bottone EXIT
+        btnExitAndCopy.setOnClickListener {
+            poseLogger?.copyFileToClipboardAndExit(this@MainActivity)
+        }
 
         imageProcessor =
             ImageProcessor.Builder().add(ResizeOp(192, 192, ResizeOp.ResizeMethod.BILINEAR)).build()
@@ -100,8 +139,15 @@ class MainActivity : AppCompatActivity() {
 
         numberTextView = findViewById(R.id.numberTextView)
         count_repetition = 0
-        numberTextView.text =
-            count_repetition.toString()
+        
+        // *** CARICA IL TOTALE DEGLI SQUAT SALVATI ***
+        if (!recordSkeleton) {
+            val totalSquats = squatCounter.getTotalSquats()
+            numberTextView.text = "Sessione: $count_repetition\nTotale: $totalSquats"
+            Toast.makeText(this, "Totale squat caricati: $totalSquats", Toast.LENGTH_SHORT).show()
+        } else {
+            numberTextView.text = count_repetition.toString()
+        }
         numberTextView.setTextColor(Color.WHITE)
 
         textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
@@ -109,10 +155,13 @@ class MainActivity : AppCompatActivity() {
 
             override fun onSurfaceTextureAvailable(p0: SurfaceTexture, p1: Int, p2: Int) {
                 open_camera()
+                // Configura aspect ratio corretto per evitare allungamento
+                CameraAspectRatioHelper.configureTextureView16x9(textureView, isFrontCamera)
             }
 
             override fun onSurfaceTextureSizeChanged(p0: SurfaceTexture, p1: Int, p2: Int) {
-
+                // Riconfigura quando cambia dimensione
+                CameraAspectRatioHelper.configureTextureView16x9(textureView, isFrontCamera)
             }
 
             override fun onSurfaceTextureDestroyed(p0: SurfaceTexture): Boolean {
@@ -123,6 +172,20 @@ class MainActivity : AppCompatActivity() {
                 bitmap = textureView.bitmap!!
                 val tensorImage = preprocessImage(bitmap)
                 val outputFeature0 = runPoseDetection(tensorImage)
+                
+                // *** LOGGING IN MODALITÀ RECORDING ***
+                if (recordSkeleton && poseLogger != null) {
+                    poseLogger?.logFrame(outputFeature0)
+                }
+                
+                // *** MODALITÀ RECORDING: salta la logica di squat e mostra solo lo scheletro ***
+                if (recordSkeleton) {
+                    val mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+                    drawPoseOnBitmap(mutableBitmap, outputFeature0, threshold_pose)
+                    imageView.setImageBitmap(mutableBitmap)
+                    return
+                }
+                
                 if (!step1Complete) {
                     outputFeature0_base_position = outputFeature0
                     outputFeature0_squat_position = outputFeature0
@@ -184,7 +247,15 @@ class MainActivity : AppCompatActivity() {
                 if (detectedSquat()) {
                     start_to_monitoring = false
                     count_repetition++
-                    numberTextView.text = count_repetition.toString()
+                    
+                    // *** INCREMENTA E SALVA IL TOTALE DEGLI SQUAT ***
+                    if (!recordSkeleton) {
+                        squatCounter.incrementSquat()
+                        val totalSquats = squatCounter.getTotalSquats()
+                        numberTextView.text = "Sessione: $count_repetition\nTotale: $totalSquats"
+                    } else {
+                        numberTextView.text = count_repetition.toString()
+                    }
                 }
 
             }
@@ -465,23 +536,23 @@ class MainActivity : AppCompatActivity() {
 
             private fun getEmojiResources(): Array<Int> {
                 return arrayOf(
-                    R.drawable.nose_emoji,
-                    R.drawable.eye_emoji,
-                    R.drawable.eye_emoji,
-                    R.drawable.ear_emoji,
-                    R.drawable.left_ear_emoji,
-                    R.drawable.dot,
-                    R.drawable.dot,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
-                    R.drawable.smile_emoji,
-                    R.drawable.dot,
-                    R.drawable.dot,
-                    R.drawable.dot_white,
-                    R.drawable.dot_white
+                    R.drawable.dot_small, //nose_emoji,
+                    R.drawable.dot_small,  //eye_emoji,
+                    R.drawable.dot_small, //eye_emoji,
+                    R.drawable.dot_small, //ear_emoji,
+                    R.drawable.dot_small, //left_ear_emoji,
+                    R.drawable.dot_small, //dot,
+                    R.drawable.dot_small, //dot,
+                    R.drawable.dot_small, //smile_emoji,
+                    R.drawable.dot_small, //smile_emoji,
+                    R.drawable.dot_small, //smile_emoji,
+                    R.drawable.dot_small, //smile_emoji,
+                    R.drawable.dot_small, //smile_emoji,
+                    R.drawable.dot_small, //smile_emoji,
+                    R.drawable.dot_small, //dot,
+                    R.drawable.dot_small, //dot,
+                    R.drawable.dot_small, //dot_white,
+                    R.drawable.dot_small, //dot_white
                 )
             }
 
@@ -537,7 +608,31 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        
+        // *** SALVA IL TOTALE DEGLI SQUAT PRIMA DELLA CHIUSURA ***
+        if (!recordSkeleton) {
+            squatCounter.onAppClosing()
+            Log.d("MainActivity", "Squat totali salvati: ${squatCounter.getTotalSquats()}")
+        }
+        
         model.close()
+        poseLogger?.close()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // Salva anche quando l'app va in background
+        if (!recordSkeleton) {
+            squatCounter.saveTotalSquats()
+        }
+    }
+    
+    override fun onStop() {
+        super.onStop()
+        // Salva anche quando l'app viene fermata
+        if (!recordSkeleton) {
+            squatCounter.saveTotalSquats()
+        }
     }
 
     @SuppressLint("MissingPermission")

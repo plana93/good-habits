@@ -35,6 +35,18 @@
         <activity
             android:name=".MainActivity"
             android:exported="true" />
+        <!-- *** ACTIVITY PER RECORDING *** -->
+        <activity
+            android:name=".RecordingCameraSelectionActivity"
+            android:exported="false" />
+        <!-- *** ACTIVITY PER URBAN CAMERA *** -->
+        <activity
+            android:name=".UrbanCameraSelectionActivity"
+            android:exported="false" />
+        <activity
+            android:name=".UrbanCameraActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
     </application>
 
 </manifest>
