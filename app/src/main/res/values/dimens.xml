@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="corner_round">28dp</dimen>
+    <dimen name="capture_outer">132dp</dimen>
+    <dimen name="capture_inner">86dp</dimen>
+</resources>

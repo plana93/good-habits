@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var textureView: TextureView
     lateinit var cameraManager: CameraManager
     lateinit var numberTextView: TextView
+    lateinit var activationProgressText: TextView
     val threshold_pose = 0.45
     var count_repetition = 0
     var consecutiveFramesWithPose = 0
@@ -79,6 +80,17 @@ class MainActivity : AppCompatActivity() {
 
     var start_to_monitoring = false
     var step1Complete = false
+    
+    // *** VARIABILI PER ANIMAZIONE FLUIDA DELLE CURVE ***
+    private var animationTime = 0L
+    private val animationStartTime = System.currentTimeMillis()
+    
+    // *** BUFFER PER SMOOTHING TEMPORALE - Riduce flickering ***
+    private val poseBuffer = mutableListOf<FloatArray>()
+    private val BUFFER_SIZE = 3  // Media sugli ultimi 3 frame per stabilità
+    private val ESSENTIAL_KEYPOINTS = listOf(5, 6, 11, 12, 13, 14, 15, 16)  // Spalle, anche, ginocchia, caviglie
+    private var stabilityCounter = 0
+    private val STABILITY_THRESHOLD = 8  // Richiedi 8 frame stabili invece di tutti i punti perfetti
     var selectedCameraIndex = -1
     private var isFrontCamera = false
     
@@ -138,7 +150,14 @@ class MainActivity : AppCompatActivity() {
 
 
         numberTextView = findViewById(R.id.numberTextView)
+        activationProgressText = findViewById(R.id.activationProgress)
         count_repetition = 0
+        
+        // Mostra l'indicatore di progresso inizialmente (solo in modalità squat, non recording)
+        if (!recordSkeleton) {
+            activationProgressText.visibility = View.VISIBLE
+            updateActivationProgress(0)
+        }
         
         // *** IMPOSTA DIMENSIONE TESTO RIDOTTA (1/25 DELLO SCHERMO) ***
         val displayMetrics = resources.displayMetrics
@@ -231,31 +250,65 @@ class MainActivity : AppCompatActivity() {
                 threshold_pose: Double,
                 textureView: TextureView,
             ) {
-                if (hasSkeletonDetected(outputFeature0, threshold_pose)) {
+                // Aggiungi al buffer per smoothing temporale
+                val smoothedPose = addToBufferAndSmooth(outputFeature0)
+                
+                // Usa la versione smoothed per detection più stabile
+                if (hasEssentialKeypointsDetected(smoothedPose, threshold_pose)) {
+                    stabilityCounter++
                     consecutiveFramesWithPose++
-                    if (consecutiveFramesWithPose >= K) {
+                    
+                    // Aggiorna indicatore di progresso
+                    updateActivationProgress(stabilityCounter)
+                    
+                    // Feedback visivo progressivo: da giallo a verde
+                    val progress = stabilityCounter.toFloat() / STABILITY_THRESHOLD
+                    val color = if (progress < 0.5f) {
+                        // Giallo -> Arancione
+                        interpolateColor(Color.YELLOW, Color.rgb(255, 165, 0), progress * 2)
+                    } else {
+                        // Arancione -> Verde
+                        interpolateColor(Color.rgb(255, 165, 0), Color.GREEN, (progress - 0.5f) * 2)
+                    }
+                    colorScreenBorders(color)
+                    
+                    if (stabilityCounter >= STABILITY_THRESHOLD) {
                         onPoseDetected(
-                            outputFeature0,
+                            smoothedPose,  // Usa la versione smoothed come riferimento
                             outputFeature0_base,
                             outputFeature0_squat
                         )
                         step1Complete = true
                         start_to_monitoring = true
+                        
+                        // Nascondi indicatore di progresso
+                        runOnUiThread {
+                            activationProgressText.visibility = View.GONE
+                            Toast.makeText(this@MainActivity, "✅ Posizione rilevata! Inizia squat", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 } else {
+                    // Reset con decay graduale per evitare reset troppo aggressivi
+                    if (stabilityCounter > 0) {
+                        stabilityCounter -= 1  // Decrementa di 1 invece di azzerare
+                    }
                     consecutiveFramesWithPose = 0
-                }
-
-                val canvas = textureView.lockCanvas()
-                canvas?.let {
-                    drawGreenBorder(it)
-                    textureView.unlockCanvasAndPost(it)
+                    updateActivationProgress(stabilityCounter)
+                    colorScreenBorders(Color.RED)
                 }
             }
 
             private fun startStep2(outputFeature0: FloatArray) {
-                squatMetric_current = computeSquatMetric(outputFeature0)
-                showToast("Start step 2")
+                // Usa smoothing anche durante il conteggio per maggiore stabilità
+                val smoothedPose = if (poseBuffer.size >= 2) {
+                    addToBufferAndSmooth(outputFeature0)
+                } else {
+                    addToBufferAndSmooth(outputFeature0)
+                    outputFeature0
+                }
+                
+                squatMetric_current = computeSquatMetric(smoothedPose)
+                
                 if (detectedSquat()) {
                     start_to_monitoring = false
                     count_repetition++
@@ -274,10 +327,17 @@ class MainActivity : AppCompatActivity() {
             }
 
             private fun startStep3(outputFeature0: FloatArray) {
-                squatMetric_current = computeSquatMetric(outputFeature0)
-                showToast("Start step 3")
+                // Usa smoothing anche qui per transizione più fluida
+                val smoothedPose = if (poseBuffer.size >= 2) {
+                    addToBufferAndSmooth(outputFeature0)
+                } else {
+                    addToBufferAndSmooth(outputFeature0)
+                    outputFeature0
+                }
+                
+                squatMetric_current = computeSquatMetric(smoothedPose)
 
-                if (detectedOriginalPosition()  ) {
+                if (detectedOriginalPosition()) {
                     start_to_monitoring = true
                 }
 
@@ -353,6 +413,79 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 return true  // Tutti i keypoints hanno uno score maggiore della soglia
+            }
+            
+            /**
+             * Versione rilassata: verifica solo i keypoints essenziali per squat
+             * Spalle (5,6), Anche (11,12), Ginocchia (13,14), Caviglie (15,16)
+             */
+            private fun hasEssentialKeypointsDetected(
+                outputFeature0: FloatArray,
+                threshold_pose: Double
+            ): Boolean {
+                var detectedCount = 0
+                val minRequired = (ESSENTIAL_KEYPOINTS.size * 0.75).toInt()  // Richiedi 75% dei punti essenziali
+                
+                for (keypointIdx in ESSENTIAL_KEYPOINTS) {
+                    val score = outputFeature0[keypointIdx * 3 + 2]
+                    if (score > threshold_pose) {
+                        detectedCount++
+                    }
+                }
+                
+                return detectedCount >= minRequired
+            }
+            
+            /**
+             * Aggiunge il frame corrente al buffer e restituisce la media smoothed
+             * per ridurre il flickering
+             */
+            private fun addToBufferAndSmooth(outputFeature0: FloatArray): FloatArray {
+                // Aggiungi copia del frame corrente al buffer
+                poseBuffer.add(outputFeature0.copyOf())
+                
+                // Mantieni solo gli ultimi BUFFER_SIZE frame
+                if (poseBuffer.size > BUFFER_SIZE) {
+                    poseBuffer.removeAt(0)
+                }
+                
+                // Se abbiamo meno di 2 frame, restituisci il frame corrente
+                if (poseBuffer.size < 2) {
+                    return outputFeature0
+                }
+                
+                // Calcola la media mobile dei keypoints
+                val smoothed = FloatArray(outputFeature0.size)
+                for (i in smoothed.indices) {
+                    var sum = 0f
+                    for (frame in poseBuffer) {
+                        sum += frame[i]
+                    }
+                    smoothed[i] = sum / poseBuffer.size
+                }
+                
+                return smoothed
+            }
+            
+            /**
+             * Interpola tra due colori per feedback visivo progressivo
+             */
+            private fun interpolateColor(startColor: Int, endColor: Int, fraction: Float): Int {
+                val clampedFraction = fraction.coerceIn(0f, 1f)
+                
+                val startR = Color.red(startColor)
+                val startG = Color.green(startColor)
+                val startB = Color.blue(startColor)
+                
+                val endR = Color.red(endColor)
+                val endG = Color.green(endColor)
+                val endB = Color.blue(endColor)
+                
+                val r = (startR + (endR - startR) * clampedFraction).toInt()
+                val g = (startG + (endG - startG) * clampedFraction).toInt()
+                val b = (startB + (endB - startB) * clampedFraction).toInt()
+                
+                return Color.rgb(r, g, b)
             }
 
             private fun showToast(message: String) {
@@ -461,10 +594,15 @@ class MainActivity : AppCompatActivity() {
 
             private fun colorScreenBorders(color: Int) {
                 runOnUiThread {
-                    findViewById<View>(R.id.topBorder).setBackgroundColor(color)
-                    findViewById<View>(R.id.bottomBorder).setBackgroundColor(color)
-                    findViewById<View>(R.id.leftBorder).setBackgroundColor(color)
-                    findViewById<View>(R.id.rightBorder).setBackgroundColor(color)
+                    // Usa drawable arrotondato per i bordi
+                    val borderDrawable = android.graphics.drawable.GradientDrawable()
+                    borderDrawable.setColor(color)
+                    borderDrawable.cornerRadius = 16f  // Bordi arrotondati
+                    
+                    findViewById<View>(R.id.topBorder).background = borderDrawable
+                    findViewById<View>(R.id.bottomBorder).background = borderDrawable
+                    findViewById<View>(R.id.leftBorder).background = borderDrawable
+                    findViewById<View>(R.id.rightBorder).background = borderDrawable
                 }
             }
 
@@ -493,7 +631,6 @@ class MainActivity : AppCompatActivity() {
                 val w = bitmap.width
 
                 val linePaint = createLinePaint()
-                val emojiResources = getEmojiResources()
 
                 for (x in 0 until 50 step 3) {
                     val score = outputFeature0[x + 2]
@@ -501,7 +638,7 @@ class MainActivity : AppCompatActivity() {
                     val keypointY = outputFeature0[x] * h
 
                     if (score > threshold_pose) {
-                        drawEmojiOnCanvas(keypointX, keypointY, x, w, h, emojiResources, canvas)
+                        drawEmojiOnCanvas(keypointX, keypointY, x, w, h, canvas)
                         connectKeypoints(score, x, w, h, linePaint, canvas, outputFeature0)
                     }
                 }
@@ -521,10 +658,12 @@ class MainActivity : AppCompatActivity() {
 
             private fun createLinePaint(): Paint {
                 val linePaint = Paint()
-                linePaint.color = Color.RED
-                linePaint.strokeWidth = 8f
+                linePaint.color = Color.rgb(57, 255, 20)  // Verde fluo come i pallini (#39FF14)
+                linePaint.strokeWidth = 2f  // Più sottili per eleganza
                 linePaint.style = Paint.Style.STROKE
                 linePaint.alpha = 255
+                linePaint.isAntiAlias = true  // Curve smooth
+                linePaint.strokeCap = Paint.Cap.ROUND  // Estremità arrotondate
                 return linePaint
             }
 
@@ -547,44 +686,38 @@ class MainActivity : AppCompatActivity() {
                 canvas.drawRect(rect, greenPaint)
             }
 
-            private fun getEmojiResources(): Array<Int> {
-                return arrayOf(
-                    R.drawable.dot_small, //nose_emoji,
-                    R.drawable.dot_small,  //eye_emoji,
-                    R.drawable.dot_small, //eye_emoji,
-                    R.drawable.dot_small, //ear_emoji,
-                    R.drawable.dot_small, //left_ear_emoji,
-                    R.drawable.dot_small, //dot,
-                    R.drawable.dot_small, //dot,
-                    R.drawable.dot_small, //smile_emoji,
-                    R.drawable.dot_small, //smile_emoji,
-                    R.drawable.dot_small, //smile_emoji,
-                    R.drawable.dot_small, //smile_emoji,
-                    R.drawable.dot_small, //smile_emoji,
-                    R.drawable.dot_small, //smile_emoji,
-                    R.drawable.dot_small, //dot,
-                    R.drawable.dot_small, //dot,
-                    R.drawable.dot_small, //dot_white,
-                    R.drawable.dot_small, //dot_white
-                )
-            }
-
             private fun drawEmojiOnCanvas(
                 keypointX: Float,
                 keypointY: Float,
                 x: Int,
                 w: Int,
                 h: Int,
-                emojiResources: Array<Int>, canvas: Canvas
+                canvas: Canvas
             ) {
-                val emojiDrawable =
-                    ContextCompat.getDrawable(this@MainActivity, emojiResources[x / 3])
-
-                emojiDrawable?.setBounds(
-                    (keypointX - 50).toInt(), (keypointY - 50).toInt(),
-                    (keypointX + 50).toInt(), (keypointY + 50).toInt()
-                )
-                emojiDrawable?.draw(canvas)
+                // *** CREA PALLINO VERDE FLUO PROGRAMMATICAMENTE ***
+                // Dimensione molto piccola e sottile
+                val dotRadius = 8f  // Raggio ridotto (era 50px di bounds = ~25px raggio)
+                
+                // Paint per il pallino verde fluo
+                val dotPaint = Paint().apply {
+                    color = Color.rgb(57, 255, 20)  // Verde fluo brillante (#39FF14)
+                    style = Paint.Style.FILL
+                    isAntiAlias = true  // Bordi smooth
+                }
+                
+                // Paint per il bordo sottile (opzionale, per dare più "punch")
+                val borderPaint = Paint().apply {
+                    color = Color.rgb(100, 255, 80)  // Verde più chiaro per il bordo
+                    style = Paint.Style.STROKE
+                    strokeWidth = 2f  // Bordo molto sottile
+                    isAntiAlias = true
+                }
+                
+                // Disegna il pallino pieno
+                canvas.drawCircle(keypointX, keypointY, dotRadius, dotPaint)
+                
+                // Disegna il bordo sottile
+                canvas.drawCircle(keypointX, keypointY, dotRadius, borderPaint)
             }
 
             private fun connectKeypoints(
@@ -596,26 +729,184 @@ class MainActivity : AppCompatActivity() {
                 canvas: Canvas,
                 outputFeature0: FloatArray
             ) {
-                val connections = arrayOf(
-                    Pair(0, 1), Pair(0, 2), Pair(1, 3), Pair(2, 4),
-                    Pair(0, 5), Pair(0, 6), Pair(5, 7), Pair(6, 8),
-                    Pair(7, 9), Pair(8, 10), Pair(5, 11), Pair(6, 12),
-                    Pair(11, 13), Pair(12, 14), Pair(13, 15), Pair(14, 16)
-                )
-
-                for (connection in connections) {
-                    val (startIdx, endIdx) = connection
-                    val startX = outputFeature0[startIdx * 3 + 1] * w
-                    val startY = outputFeature0[startIdx * 3] * h
-                    val endX = outputFeature0[endIdx * 3 + 1] * w
-                    val endY = outputFeature0[endIdx * 3] * h
-
-                    if (score > 0.45 && outputFeature0[startIdx * 3 + 2] > 0.45 && outputFeature0[endIdx * 3 + 2] > 0.45) {
-                        canvas.drawLine(startX, startY, endX, endY, linePaint)
+                // *** NUOVO DESIGN: COLLEGA TUTTI I PUNTI DALLA TESTA ***
+                // Il punto 0 è il naso (centro della testa)
+                val headIdx = 0
+                val headX = outputFeature0[headIdx * 3 + 1] * w
+                val headY = outputFeature0[headIdx * 3] * h
+                val headScore = outputFeature0[headIdx * 3 + 2]
+                
+                // Se la testa non è visibile, non disegnare nulla
+                if (headScore <= 0.45) return
+                
+                // *** COLLEGA LA TESTA A TUTTI GLI ALTRI 16 KEYPOINTS ***
+                for (keypointIdx in 1 until 17) {  // Da 1 a 16 (escludi testa stessa)
+                    val keypointX = outputFeature0[keypointIdx * 3 + 1] * w
+                    val keypointY = outputFeature0[keypointIdx * 3] * h
+                    val keypointScore = outputFeature0[keypointIdx * 3 + 2]
+                    
+                    // Disegna solo se il keypoint è visibile
+                    if (keypointScore > 0.45) {
+                        // *** DISEGNA LINEE MULTIPLE (3-5 LINEE) PER OGNI CONNESSIONE ***
+                        val numLines = (3..5).random()  // Randomizza numero di linee
+                        
+                        for (lineNum in 0 until numLines) {
+                            drawCurvedLine(headX, headY, keypointX, keypointY, canvas, linePaint, lineNum)
+                        }
                     }
                 }
             }
+            
+            /**
+             * Disegna una linea curva tra due punti con MASSIMA FLUIDITÀ E RANDOMICITÀ AZZARDATA.
+             * - Curve sempre bombate verso l'esterno
+             * - Ondulazione continua basata sul tempo
+             * - Movimento fluido e organico
+             * - Design dinamico con variazioni casuali esagerate
+             * - Linee multiple con offset casuali
+             */
+            private fun drawCurvedLine(
+                startX: Float,
+                startY: Float,
+                endX: Float,
+                endY: Float,
+                canvas: Canvas,
+                paint: Paint,
+                lineNum: Int = 0  // Numero della linea per offset multipli
+            ) {
+                // Aggiorna il tempo dell'animazione
+                animationTime = System.currentTimeMillis() - animationStartTime
+                
+                // Calcola la distanza tra i due punti
+                val distance = Math.sqrt(
+                    Math.pow((endX - startX).toDouble(), 2.0) +
+                    Math.pow((endY - startY).toDouble(), 2.0)
+                ).toFloat()
+                
+                // Calcola il punto medio
+                val midX = (startX + endX) / 2
+                val midY = (startY + endY) / 2
+                
+                // Calcola il vettore perpendicolare per la curvatura
+                val dx = endX - startX
+                val dy = endY - startY
+                
+                // Vettore perpendicolare normalizzato
+                val perpX = -dy / distance
+                val perpY = dx / distance
+                
+                // *** DETERMINA LA DIREZIONE "VERSO L'ESTERNO" ***
+                val centerX = canvas.width / 2f
+                val centerY = canvas.height / 2f
+                
+                val toCenterX = midX - centerX
+                val toCenterY = midY - centerY
+                
+                val dotProduct = perpX * toCenterX + perpY * toCenterY
+                
+                val outwardPerpX = if (dotProduct < 0) -perpX else perpX
+                val outwardPerpY = if (dotProduct < 0) -perpY else perpY
+                
+                // *** ONDULAZIONE FLUIDA CON FUNZIONI SINUSOIDALI ESTREME ***
+                val timeInSeconds = animationTime / 1000.0
+                
+                // *** RANDOMICITÀ MOLTO PIÙ AZZARDATA ***
+                // Offset casuale per ogni linea multipla
+                val lineOffset = lineNum * 0.8 + Math.random() * 0.5
+                
+                // Onda lenta di base (respiro) - PIÙ AMPIA
+                val slowWave = Math.sin(timeInSeconds * 1.5 + lineOffset) * 0.6
+                
+                // Onda veloce per dettagli (tremolo) - PIÙ CAOTICA
+                val fastWave = Math.sin(timeInSeconds * 5.0 + startX * 0.02 + lineOffset * 2) * 0.4
+                
+                // Onda media per varietà - PIÙ VARIABILE
+                val positionPhase = (startX + startY + lineNum * 50) * 0.01
+                val mediumWave = Math.sin(timeInSeconds * 3.0 + positionPhase) * 0.5
+                
+                // Onda casuale extra per caos controllato
+                val randomWave = Math.sin(timeInSeconds * 7.0 + Math.random() * Math.PI * 2) * 0.3
+                
+                // *** RANDOMICITÀ PURA AGGIUNTIVA ***
+                val pureRandom = (Math.random() - 0.5) * 0.4  // ±20% randomicità pura
+                
+                // Combina TUTTE le onde per movimento MOLTO complesso
+                val waveModulation = (slowWave + fastWave + mediumWave + randomWave + pureRandom).toFloat()
+                
+                // *** AMPIEZZA CURVATURA MOLTO PIÙ GRANDE E VARIABILE ***
+                // Base MOLTO più ampia (35-50% invece di 25%)
+                val baseAmplitude = 0.35f + (lineNum * 0.05f)  // Aumenta con ogni linea
+                val baseCurveFactor = distance * baseAmplitude
+                
+                // Modulazione dell'ampiezza nel tempo (pulsazione FORTE)
+                val amplitudePulse = 1.0f + Math.sin(timeInSeconds * 2.0 + lineOffset).toFloat() * 0.6f
+                
+                // Variazione casuale dell'ampiezza per ogni frame
+                val randomAmplitude = 0.7f + Math.random().toFloat() * 0.6f  // 70% - 130%
+                
+                // Fattore finale con TUTTE le modulazioni ESTREME
+                val curveFactor = baseCurveFactor * amplitudePulse * randomAmplitude * (1f + waveModulation)
+                
+                // *** PUNTO DI CONTROLLO PRINCIPALE CON OFFSET CASUALE ***
+                val randomOffsetX = (Math.random().toFloat() - 0.5f) * distance * 0.15f
+                val randomOffsetY = (Math.random().toFloat() - 0.5f) * distance * 0.15f
+                
+                val controlX = midX + outwardPerpX * curveFactor + randomOffsetX
+                val controlY = midY + outwardPerpY * curveFactor + randomOffsetY
+                
+                // *** PUNTI DI CONTROLLO PER CURVA CUBICA CON VARIAZIONI ESTREME ***
+                val offset1Factor = 0.25f + Math.sin(timeInSeconds * 3.0 + lineOffset).toFloat() * 0.2f + (Math.random().toFloat() - 0.5f) * 0.15f
+                val offset2Factor = 0.75f + Math.sin(timeInSeconds * 3.0 + Math.PI + lineOffset).toFloat() * 0.2f + (Math.random().toFloat() - 0.5f) * 0.15f
+                
+                val control1X = startX * (1 - offset1Factor) + controlX * offset1Factor
+                val control1Y = startY * (1 - offset1Factor) + controlY * offset1Factor
+                
+                val control2X = endX * (1 - offset2Factor) + controlX * offset2Factor
+                val control2Y = endY * (1 - offset2Factor) + controlY * offset2Factor
+                
+                // *** VARIAZIONE OPACITÀ PER LINEE MULTIPLE (effetto profondità) ***
+                val alphaPaint = Paint(paint)
+                val alphaVariation = 0.3f + (lineNum * 0.15f) + Math.random().toFloat() * 0.3f
+                alphaPaint.alpha = (255 * alphaVariation.coerceIn(0.2f, 1.0f)).toInt()
+                
+                // *** VARIAZIONE SPESSORE PER LINEE MULTIPLE ***
+                val strokeVariation = 0.6f + Math.random().toFloat() * 0.8f
+                alphaPaint.strokeWidth = paint.strokeWidth * strokeVariation
+                
+                // *** CREA CURVA CUBICA DI BÉZIER CAOTICA ***
+                val path = Path()
+                path.moveTo(startX, startY)
+                path.cubicTo(control1X, control1Y, control2X, control2Y, endX, endY)
+                
+                // Disegna la curva fluida e caotica
+                canvas.drawPath(path, alphaPaint)
+            }
 
+        }
+    }
+    
+    /**
+     * Aggiorna l'indicatore di progresso dell'attivazione
+     */
+    private fun updateActivationProgress(current: Int) {
+        runOnUiThread {
+            val filled = "⬤".repeat(current.coerceAtMost(STABILITY_THRESHOLD))
+            val empty = "⬤".repeat((STABILITY_THRESHOLD - current).coerceAtLeast(0))
+            val percentage = ((current.toFloat() / STABILITY_THRESHOLD) * 100).toInt()
+            
+            activationProgressText.text = """
+                Rilevamento posizione...
+                $percentage%
+                $filled$empty
+            """.trimIndent()
+            
+            // Cambia colore in base al progresso
+            val textColor = when {
+                current < STABILITY_THRESHOLD / 2 -> Color.YELLOW
+                current < STABILITY_THRESHOLD -> Color.rgb(255, 165, 0)  // Arancione
+                else -> Color.GREEN
+            }
+            activationProgressText.setTextColor(textColor)
         }
     }
     

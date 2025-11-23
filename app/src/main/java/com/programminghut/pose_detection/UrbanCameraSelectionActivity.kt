@@ -44,11 +44,31 @@ class UrbanCameraSelectionActivity : ComponentActivity() {
     }
     
     private fun onCameraSelected(cameraIndex: Int) {
-        val intent = Intent(this, UrbanCameraActivity::class.java)
-        intent.putExtra("cameraIndex", cameraIndex)
-        intent.putExtra("isFrontCamera", cameraIndex == 1) // Front camera index is 1
-        startActivity(intent)
-        finish()
+        try {
+            android.util.Log.d("UrbanCameraSelection", "Camera selected: $cameraIndex")
+            android.widget.Toast.makeText(this, "Avvio Urban Camera REFACTORED...", android.widget.Toast.LENGTH_SHORT).show()
+            
+            val intent = Intent(this, UrbanCameraActivityRefactored::class.java)
+            intent.putExtra("cameraIndex", cameraIndex)
+            intent.putExtra("isFrontCamera", cameraIndex == 1)
+            
+            android.util.Log.d("UrbanCameraSelection", "Intent created, starting activity...")
+            startActivity(intent)
+            
+            android.util.Log.d("UrbanCameraSelection", "Activity started successfully")
+            android.widget.Toast.makeText(this, "Activity avviata!", android.widget.Toast.LENGTH_SHORT).show()
+            
+            finish()
+        } catch (e: Exception) {
+            android.util.Log.e("UrbanCameraSelection", "ERRORE: ${e.message}", e)
+            System.err.println("ERRORE UrbanCamera: ${e.message}")
+            e.printStackTrace()
+            android.widget.Toast.makeText(
+                this, 
+                "ERRORE nell'avvio: ${e.javaClass.simpleName}: ${e.message}", 
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+        }
     }
 }
 

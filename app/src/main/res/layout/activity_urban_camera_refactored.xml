@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Camera fullscreen -->
+    <TextureView
+        android:id="@+id/textureView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter" />
+
+    <!-- Recording status -->
+    <TextView
+        android:id="@+id/recordingStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="20dp"
+        android:background="#AA000000"
+        android:padding="12dp"
+        android:text="● REC"
+        android:textColor="#FF0000"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <!-- LEFT MENU: AVAILABLE FILTERS -->
+    <FrameLayout
+        android:id="@+id/leftMenuContainer"
+        android:layout_width="120dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="#DD151733"
+        android:translationX="-1000dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            
+            <!-- Header (opzionale) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="FILTERS"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="8dp"
+                android:alpha="0.5" />
+
+            <!-- RecyclerView per filtri disponibili -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/availableFiltersRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="vertical"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:clipToPadding="false" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- RIGHT MENU: ACTIVE FILTERS -->
+    <FrameLayout
+        android:id="@+id/rightMenuContainer"
+        android:layout_width="120dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="#DD151733"
+        android:translationX="1000dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            
+            <!-- Header -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ACTIVE"
+                android:textColor="#39FF14"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="8dp" />
+
+            <!-- RecyclerView per filtri attivi -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/activeFiltersRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="vertical"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:clipToPadding="false" />
+            
+            <!-- Clear all button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/clearAllFiltersButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CLEAR ALL"
+                android:textSize="10sp"
+                android:textColor="#FF0000"
+                android:backgroundTint="#33FF0000"
+                android:layout_margin="8dp"
+                app:cornerRadius="8dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Toggle buttons for menus -->
+    <ImageButton
+        android:id="@+id/toggleLeftMenuButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/circular_button_background"
+        android:src="@drawable/ic_menu_arrow"
+        android:rotation="0"
+        android:contentDescription="Toggle filters menu"
+        android:scaleType="centerInside"
+        android:padding="8dp" />
+
+    <ImageButton
+        android:id="@+id/toggleRightMenuButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="end|center_vertical"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/circular_button_background"
+        android:src="@drawable/ic_menu_arrow"
+        android:rotation="180"
+        android:contentDescription="Toggle active filters menu"
+        android:scaleType="centerInside"
+        android:padding="8dp" />
+
+    <!-- BOTTOM CONTROLS -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="20dp"
+        android:background="@drawable/bottom_gradient">
+
+        <!-- Capture buttons -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <!-- Photo capture button -->
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="24dp">
+
+                <View
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:background="@drawable/capture_button_outer" />
+
+                <View
+                    android:id="@+id/captureButton"
+                    android:layout_width="65dp"
+                    android:layout_height="65dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/capture_button_inner"
+                    android:clickable="true"
+                    android:focusable="true" />
+                
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PHOTO"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="-20dp"
+                    android:alpha="0.7" />
+            </FrameLayout>
+
+            <!-- Video capture button -->
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp">
+
+                <View
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:background="@drawable/capture_button_outer_video" />
+
+                <View
+                    android:id="@+id/videoButton"
+                    android:layout_width="65dp"
+                    android:layout_height="65dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/video_button_inner"
+                    android:clickable="true"
+                    android:focusable="true" />
+                
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="VIDEO"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="-20dp"
+                    android:alpha="0.7" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>

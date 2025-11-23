@@ -7,4 +7,19 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Urban Camera Theme -->
+    <color name="deepNavy">#151733</color>
+    <color name="charcoal">#23243A</color>
+    <color name="neonBlue">#3DD0FF</color>
+    <color name="neonBlueDim">#2A98C8</color>
+    <color name="neonOrange">#FF8B4A</color>
+    <color name="peach">#EAAE9A</color>
+    <color name="peach_soft">#F1C7B9</color>
+    <color name="peach_dark">#D88A75</color>
+    <color name="viewfinderFill">#0B0D12</color>
+    <color name="outerShadow">#1F1120</color>
+    <color name="menuBg">#222432CC</color>
+    <color name="knob_bg">#2B2D3E</color>
+    <color name="knob_edge">#171724</color>
 </resources>

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import java.io.File
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -17,10 +18,17 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
 import android.view.TextureView
+import android.view.View
+import android.view.animation.RotateAnimation
+import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import com.programminghut.pose_detection.ml.LiteModelMovenetSingleposeLightningTfliteFloat164
+import com.programminghut.pose_detection.urban.UrbanConfig
 import com.programminghut.pose_detection.urban.UrbanEffectsManager
+import com.programminghut.pose_detection.filters.FilterManager
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
@@ -32,6 +40,10 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
  * Mostra effetti grafici urban street art basati sulla pose detection.
  */
 class UrbanCameraActivity : AppCompatActivity() {
+    // Directory dove salvare le foto
+    private val photoDir: File by lazy {
+        File(getExternalFilesDir(null), "urban_photos").apply { mkdirs() }
+    }
     
     // Camera e processing
     private lateinit var imageProcessor: ImageProcessor
@@ -49,19 +61,70 @@ class UrbanCameraActivity : AppCompatActivity() {
     private lateinit var urbanEffects: UrbanEffectsManager
     private val paint = Paint()
     
+    // UI Components
+    private lateinit var btnMenuTrigger: ImageButton
+    private lateinit var dropdownMenu: CardView
+    private lateinit var knobLeft: ImageView
+    private lateinit var knobRight: ImageView
+    private var menuVisible = false
+    private var currentKnobRotation = 0f
+    
+    // Bitmap processata più di recente, usata per il salvataggio foto
+    private var latestProcessedBitmap: Bitmap? = null
+    
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Toast PRIMA di tutto per vedere se arriviamo qui
+        try {
+            android.widget.Toast.makeText(this, "UrbanCamera: START!", android.widget.Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            // Ignora errori nel toast
+        }
+        
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_urban_camera)
         
-        selectedCameraIndex = intent.getIntExtra("cameraIndex", -1)
-        isFrontCamera = intent.getBooleanExtra("isFrontCamera", false)
-        
-        // Inizializza componenti
-        initializeComponents()
-        getPermissions()
-        
-        // Setup texture listener
-        setupTextureListener()
+        try {
+            android.util.Log.d("UrbanCamera", "onCreate started")
+            android.widget.Toast.makeText(this, "Urban Camera: onCreate", android.widget.Toast.LENGTH_SHORT).show()
+
+            // USA LAYOUT COMPLETO RIDISEGNATO
+            setContentView(R.layout.activity_urban_camera)
+            android.widget.Toast.makeText(this, "Layout set", android.widget.Toast.LENGTH_SHORT).show()
+
+            selectedCameraIndex = intent.getIntExtra("cameraIndex", -1)
+            isFrontCamera = intent.getBooleanExtra("isFrontCamera", false)
+
+            android.util.Log.d("UrbanCamera", "Camera index: $selectedCameraIndex, isFront: $isFrontCamera")
+
+            // Inizializza componenti
+            initializeComponents()
+            android.util.Log.d("UrbanCamera", "Components initialized")
+            android.widget.Toast.makeText(this, "Components OK", android.widget.Toast.LENGTH_SHORT).show()
+
+            // Inizializza filtri modulari (FilterManager)
+            com.programminghut.pose_detection.filters.FilterManager.registerDefaultFilters()
+            // Attiva di default lo SkeletonFilter (puoi cambiare qui quali filtri attivare)
+            val skeleton = com.programminghut.pose_detection.filters.FilterManager.getAvailableFilters().find { it.javaClass.simpleName == "SkeletonFilter" }
+            if (skeleton != null) com.programminghut.pose_detection.filters.FilterManager.activateFilter(skeleton)
+
+            // Inizializza UI con layout ridisegnato
+            initializeUI()
+            android.util.Log.d("UrbanCamera", "UI initialized")
+            android.widget.Toast.makeText(this, "UI OK", android.widget.Toast.LENGTH_SHORT).show()
+
+            getPermissions()
+            android.util.Log.d("UrbanCamera", "Permissions checked")
+
+            // Setup texture listener
+            setupTextureListener()
+            android.util.Log.d("UrbanCamera", "Texture listener set up")
+            android.widget.Toast.makeText(this, "Urban Camera Ready!", android.widget.Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            android.util.Log.e("UrbanCamera", "Error in onCreate: ${e.message}", e)
+            System.err.println("ERRORE UrbanCamera onCreate: ${e.message}")
+            e.printStackTrace()
+            android.widget.Toast.makeText(this, "ERRORE: ${e.javaClass.simpleName}: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            finish()
+        }
     }
     
     private fun initializeComponents() {
@@ -86,6 +149,118 @@ class UrbanCameraActivity : AppCompatActivity() {
         paint.color = Color.YELLOW
     }
     
+    private fun initializeUI() {
+        btnMenuTrigger = findViewById(R.id.btn_menu_trigger)
+        dropdownMenu = findViewById(R.id.dropdown_menu)
+        knobLeft = findViewById(R.id.knob_left)
+        knobRight = findViewById(R.id.knob_right)
+        
+        val captureButton = findViewById<View>(R.id.capture_button)
+        
+        // Menu trigger button
+        btnMenuTrigger.setOnClickListener {
+            toggleMenu()
+        }
+        
+        // ══════════════════════════════════════════════════════════
+        // CAPTURE BUTTON - Multifunzione (foto/video)
+        // ══════════════════════════════════════════════════════════
+        captureButton.setOnClickListener {
+            processCurrentFrameAndShowDialog()
+        }
+        
+        captureButton.setOnLongClickListener {
+            // Pressione prolungata → Registra video
+            android.widget.Toast.makeText(this, "🎥 Video recording...", android.widget.Toast.LENGTH_SHORT).show()
+            animateCaptureButton()
+            true
+        }
+        
+        // Menu items - Filter selection
+        findViewById<TextView>(R.id.menu_filter_bw).setOnClickListener {
+            UrbanConfig.CURRENT_FILTER = UrbanConfig.FilterType.BLACK_WHITE
+            toggleMenu()
+        }
+        
+        findViewById<TextView>(R.id.menu_filter_sobel).setOnClickListener {
+            UrbanConfig.CURRENT_FILTER = UrbanConfig.FilterType.SOBEL
+            toggleMenu()
+        }
+        
+        findViewById<TextView>(R.id.menu_filter_pixel).setOnClickListener {
+            UrbanConfig.CURRENT_FILTER = UrbanConfig.FilterType.PIXELATED
+            toggleMenu()
+        }
+        
+        findViewById<TextView>(R.id.menu_filter_none).setOnClickListener {
+            UrbanConfig.CURRENT_FILTER = UrbanConfig.FilterType.NONE
+            toggleMenu()
+        }
+        
+        findViewById<TextView>(R.id.menu_switch_camera).setOnClickListener {
+            // TODO: Implement camera switch
+            toggleMenu()
+        }
+        
+        // Knobs - make them interactive
+        knobLeft.setOnClickListener {
+            rotateKnob(knobLeft, true)
+            // Adjust box appearance probability
+            UrbanConfig.BOX_APPEAR_PROBABILITY = 
+                (UrbanConfig.BOX_APPEAR_PROBABILITY + 0.1f).coerceIn(0.1f, 1.0f)
+        }
+        
+        knobRight.setOnClickListener {
+            rotateKnob(knobRight, false)
+            // Adjust box size
+            UrbanConfig.BOX_SIZE = 
+                (UrbanConfig.BOX_SIZE + 10).coerceIn(30, 150)
+        }
+    }
+    
+    private fun animateCaptureButton() {
+        val captureButton = findViewById<View>(R.id.capture_button)
+        captureButton.animate()
+            .scaleX(0.85f)
+            .scaleY(0.85f)
+            .setDuration(100)
+            .withEndAction {
+                captureButton.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(100)
+                    .start()
+            }
+            .start()
+    }
+    
+    private fun toggleMenu() {
+        menuVisible = !menuVisible
+        dropdownMenu.visibility = if (menuVisible) View.VISIBLE else View.GONE
+        
+        // Animate menu button rotation
+        val rotation = if (menuVisible) 180f else 0f
+        btnMenuTrigger.animate()
+            .rotation(rotation)
+            .setDuration(200)
+            .start()
+    }
+    
+    private fun rotateKnob(knob: ImageView, clockwise: Boolean) {
+        val rotationDelta = if (clockwise) 45f else -45f
+        currentKnobRotation += rotationDelta
+        
+        val rotate = RotateAnimation(
+            currentKnobRotation - rotationDelta,
+            currentKnobRotation,
+            RotateAnimation.RELATIVE_TO_SELF, 0.5f,
+            RotateAnimation.RELATIVE_TO_SELF, 0.5f
+        )
+        rotate.duration = 200
+        rotate.fillAfter = true
+        knob.startAnimation(rotate)
+    }
+    
     private fun setupTextureListener() {
         textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
             
@@ -104,31 +279,38 @@ class UrbanCameraActivity : AppCompatActivity() {
             
             override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) {
                 bitmap = textureView.bitmap!!
-                
+
                 // Processa l'immagine e rileva la pose
                 val tensorImage = preprocessImage(bitmap)
                 val outputFeature0 = runPoseDetection(tensorImage)
-                
+
                 // Aggiorna gli effetti urban in base alla pose
                 urbanEffects.updateBoxes(outputFeature0, bitmap.width, bitmap.height)
-                
+
                 // Crea una bitmap mutabile per disegnare gli effetti
                 // Usa la stessa dimensione della bitmap originale per evitare distorsioni
                 val mutableBitmap = Bitmap.createBitmap(
-                    bitmap.width, 
-                    bitmap.height, 
+                    bitmap.width,
+                    bitmap.height,
                     Bitmap.Config.ARGB_8888
                 )
                 val canvas = Canvas(mutableBitmap)
-                
+
                 // Disegna prima l'immagine originale
                 canvas.drawBitmap(bitmap, 0f, 0f, null)
-                
+
+                // Applica i filtri modulari (es. Skeleton)
+                com.programminghut.pose_detection.filters.FilterManager.applyFilters(canvas, bitmap, outputFeature0)
+
                 // Poi disegna gli effetti urban sopra
                 urbanEffects.drawBoxes(canvas, bitmap)
-                
+
                 // Mostra il risultato (l'ImageView userà centerCrop per mantenere aspect ratio)
                 imageView.setImageBitmap(mutableBitmap)
+                latestProcessedBitmap = mutableBitmap
+
+                android.util.Log.d("UrbanCamera", "[PREVIEW] Frame processato e mostrato in imageView")
+                logActiveFilters("[PREVIEW]")
             }
         }
     }
@@ -202,5 +384,66 @@ class UrbanCameraActivity : AppCompatActivity() {
         super.onDestroy()
         model.close()
         urbanEffects.reset()
+    }
+    
+    private fun logActiveFilters(context: String) {
+        val active = com.programminghut.pose_detection.filters.FilterManager.getActiveFilters()
+        android.util.Log.d("UrbanCamera", "$context - Filtri attivi: ${active.joinToString { it.javaClass.simpleName }}")
+    }
+    
+    // 1. Aggiungi una funzione per mostrare la preview e chiedere conferma
+    private fun showSaveDialog(bitmap: Bitmap) {
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle("Salva foto?")
+            .setView(ImageView(this).apply { setImageBitmap(bitmap) })
+            .setPositiveButton("Salva") { _, _ ->
+                val photoFile = File(photoDir, "urban_${System.currentTimeMillis()}.png")
+                val saved = com.programminghut.pose_detection.util.BitmapUtils.saveBitmapToFile(bitmap, photoFile)
+                android.util.Log.d("UrbanCamera", "[SALVATAGGIO] Foto salvata: ${photoFile.absolutePath}, success: $saved")
+                if (saved) {
+                    android.widget.Toast.makeText(this, "📸 Foto salvata: ${photoFile.name}", android.widget.Toast.LENGTH_SHORT).show()
+                    showFinalPhoto(photoFile)
+                } else {
+                    android.widget.Toast.makeText(this, "Errore salvataggio foto", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Scarta") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+        dialog.show()
+    }
+    
+    private fun showFinalPhoto(photoFile: File) {
+        val imageView = ImageView(this)
+        imageView.setImageBitmap(android.graphics.BitmapFactory.decodeFile(photoFile.absolutePath))
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle("Foto salvata!")
+            .setView(imageView)
+            .setPositiveButton("OK") { d, _ -> d.dismiss() }
+            .create()
+        dialog.show()
+    }
+    
+    private fun processCurrentFrameAndShowDialog() {
+        android.util.Log.d("UrbanCamera", "[SCATTO] Inizio processing frame per salvataggio")
+        val cameraBitmap = textureView.bitmap ?: run {
+            android.util.Log.e("UrbanCamera", "[SCATTO] textureView.bitmap è null!")
+            return
+        }
+        val tensorImage = preprocessImage(cameraBitmap)
+        val outputFeature0 = runPoseDetection(tensorImage)
+        val overlayBitmap = Bitmap.createBitmap(
+            cameraBitmap.width,
+            cameraBitmap.height,
+            Bitmap.Config.ARGB_8888
+        )
+        val canvas = Canvas(overlayBitmap)
+        canvas.drawBitmap(cameraBitmap, 0f, 0f, null)
+        com.programminghut.pose_detection.filters.FilterManager.applyFilters(canvas, cameraBitmap, outputFeature0)
+        logActiveFilters("[SCATTO]")
+        urbanEffects.drawBoxes(canvas, cameraBitmap)
+        android.util.Log.d("UrbanCamera", "[SCATTO] Frame processato, mostro dialog di conferma")
+        showSaveDialog(overlayBitmap)
     }
 }

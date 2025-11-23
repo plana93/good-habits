@@ -13,6 +13,25 @@ import android.graphics.Color
 object UrbanConfig {
     
     // ═══════════════════════════════════════════════════════════
+    // 🎨 FILTRI DISPONIBILI
+    // ═══════════════════════════════════════════════════════════
+    
+    /**
+     * Tipi di filtro disponibili per l'immagine
+     */
+    enum class FilterType {
+        NONE,           // Nessun filtro
+        BLACK_WHITE,    // Bianco e nero
+        SOBEL,          // Edge detection
+        PIXELATED       // Effetto pixelato
+    }
+    
+    /**
+     * Filtro attualmente attivo
+     */
+    var CURRENT_FILTER = FilterType.NONE
+    
+    // ═══════════════════════════════════════════════════════════
     // 📦 BOX INTORNO AI GIUNTI
     // ═══════════════════════════════════════════════════════════
     
@@ -34,6 +53,11 @@ object UrbanConfig {
      */
     var BOX_SIZE_MIN = 80f
     var BOX_SIZE_MAX = 200f
+    
+    /**
+     * Dimensione box standard (usata dai controlli UI)
+     */
+    var BOX_SIZE = 100
     
     /**
      * Opacità delle box (0 = trasparente, 255 = opaco)

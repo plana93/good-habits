@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- outer glow ring -->
+    <item>
+        <shape android:shape="oval">
+            <size android:width="132dp" android:height="132dp"/>
+            <solid android:color="@android:color/transparent"/>
+            <stroke android:width="10dp" android:color="@color/neonBlueDim"/>
+        </shape>
+    </item>
+
+    <!-- shadow / depth -->
+    <item android:top="8dp" android:left="8dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/outerShadow"/>
+            <size android:width="120dp" android:height="120dp"/>
+        </shape>
+    </item>
+</layer-list>

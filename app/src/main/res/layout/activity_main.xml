@@ -73,6 +73,22 @@
         android:letterSpacing="0.05" />
     <!-- Font monospace tipo terminale, dimensione ridotta -->
 
+    <!-- Indicatore di progresso per attivazione -->
+    <TextView
+        android:id="@+id/activationProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:background="@drawable/rounded_corner_background"
+        android:elevation="4dp"
+        android:fontFamily="monospace"
+        android:padding="16dp"
+        android:text="Rilevamento posizione...\n⬤⬤⬤⬤⬤⬤⬤⬤"
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:visibility="gone" />
+
     <!-- Bottone EXIT per chiudere e copiare negli appunti (visibile solo in modalità recording) -->
     <Button
         android:id="@+id/btn_exit_and_copy"
