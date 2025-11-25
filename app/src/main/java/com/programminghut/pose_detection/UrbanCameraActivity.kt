@@ -40,6 +40,8 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
  * Mostra effetti grafici urban street art basati sulla pose detection.
  */
 class UrbanCameraActivity : AppCompatActivity() {
+    // Variabile per tenere traccia se la persona è rilevata (modalità conteggio squat)
+    private var isPersonDetected: Boolean = false
     // Directory dove salvare le foto
     private val photoDir: File by lazy {
         File(getExternalFilesDir(null), "urban_photos").apply { mkdirs() }
@@ -287,6 +289,19 @@ class UrbanCameraActivity : AppCompatActivity() {
                 // Aggiorna gli effetti urban in base alla pose
                 urbanEffects.updateBoxes(outputFeature0, bitmap.width, bitmap.height)
 
+                // --- LOGICA BLOCCO SCHERMO ---
+                // Consideriamo "persona rilevata" se almeno una box attiva è presente
+                val personaRilevata = urbanEffectsHasActiveBoxes()
+                if (personaRilevata && !isPersonDetected) {
+                    // Mantieni schermo acceso
+                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    isPersonDetected = true
+                } else if (!personaRilevata && isPersonDetected) {
+                    // Ripristina blocco schermo
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    isPersonDetected = false
+                }
+
                 // Crea una bitmap mutabile per disegnare gli effetti
                 // Usa la stessa dimensione della bitmap originale per evitare distorsioni
                 val mutableBitmap = Bitmap.createBitmap(
@@ -319,6 +334,19 @@ class UrbanCameraActivity : AppCompatActivity() {
         val tensorImage = TensorImage(DataType.UINT8)
         tensorImage.load(bitmap)
         return imageProcessor.process(tensorImage)
+    }
+
+    // Funzione di supporto: verifica se ci sono box attive (presenza persona)
+    private fun urbanEffectsHasActiveBoxes(): Boolean {
+        // Usa reflection per accedere a activeBoxes (private)
+        return try {
+            val field = urbanEffects.javaClass.getDeclaredField("activeBoxes")
+            field.isAccessible = true
+            val map = field.get(urbanEffects) as? Map<*, *>
+            map != null && map.isNotEmpty()
+        } catch (e: Exception) {
+            false
+        }
     }
     
     private fun runPoseDetection(tensorImage: TensorImage): FloatArray {
