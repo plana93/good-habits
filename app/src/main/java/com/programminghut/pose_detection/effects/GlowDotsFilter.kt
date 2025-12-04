@@ -1,7 +1,8 @@
-package com.programminghut.pose_detection.filters
+package com.programminghut.pose_detection.effects
 
 import android.graphics.*
 import com.programminghut.pose_detection.R
+import com.programminghut.pose_detection.effects.FrameClock
 
 /**
  * Filtro che disegna punti luminosi sui keypoint del corpo
@@ -12,13 +13,14 @@ class GlowDotsFilter : AdaptiveFilter(
     iconResId = R.drawable.ic_glow_dots,
     description = "Disegna punti luminosi sui keypoint principali del corpo. I punti possono pulsare e brillare creando un effetto visivo accattivante."
 ) {
+    override val requiresPose: Boolean = true
     
     private val paint = Paint().apply {
         style = Paint.Style.FILL
         isAntiAlias = true
     }
     
-    private var pulsePhase = 0f
+    // pulsePhase computed from FrameClock.timeMs per-frame to allow deterministic animation
     
     init {
         parameters["dotSize"] = FilterParameter.Slider(
@@ -94,15 +96,12 @@ class GlowDotsFilter : AdaptiveFilter(
         val showAll = (parameters["showAllKeypoints"] as FilterParameter.Toggle).enabled
         val outerRing = (parameters["outerRing"] as FilterParameter.Toggle).enabled
         
-        // Aggiorna fase pulsazione
-        if (pulseEnabled) {
-            pulsePhase += pulseSpeed
-            if (pulsePhase > Math.PI * 2) pulsePhase = 0f
-        }
-        
-        // Calcola fattore pulsazione
+        // Calculate pulse factor based on global FrameClock so animation advances per-frame
         val pulseFactor = if (pulseEnabled) {
-            0.8f + 0.2f * Math.sin(pulsePhase.toDouble()).toFloat()
+            val t = FrameClock.timeMs / 1000.0 // seconds
+            // Map pulseSpeed (0.01..0.3) to angular velocity: multiply by 2PI
+            val phase = (t * pulseSpeed * 2.0 * Math.PI)
+            0.8f + 0.2f * Math.sin(phase).toFloat()
         } else {
             1f
         }

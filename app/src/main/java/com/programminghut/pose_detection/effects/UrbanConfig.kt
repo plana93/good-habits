@@ -45,19 +45,19 @@ object UrbanConfig {
      * Durata minima/massima di una box in frame
      * 1 frame ≈ 30-60 FPS → 30 frame ≈ 0.5-1 secondo
      */
-    var BOX_MIN_DURATION = 8   // Ridotto da 10
-    var BOX_MAX_DURATION = 35  // Ridotto da 40
+    var BOX_MIN_DURATION = 15   // Ridotto da 10
+    var BOX_MAX_DURATION = 55  // Ridotto da 40
     
     /**
      * Dimensioni delle box in pixel
      */
-    var BOX_SIZE_MIN = 80f
-    var BOX_SIZE_MAX = 200f
+    var BOX_SIZE_MIN = 100f
+    var BOX_SIZE_MAX = 600f
     
     /**
      * Dimensione box standard (usata dai controlli UI)
      */
-    var BOX_SIZE = 100
+    var BOX_SIZE = 350
     
     /**
      * Opacità delle box (0 = trasparente, 255 = opaco)
@@ -67,7 +67,7 @@ object UrbanConfig {
     /**
      * Spessore del bordo delle box in pixel
      */
-    var BORDER_WIDTH = 2f  // Molto sottile (ridotto da 8f)
+    var BORDER_WIDTH = 1f  // Molto sottile (ridotto da 8f)
     
     // ═══════════════════════════════════════════════════════════
     // 🎨 COLORI E STILE
@@ -125,7 +125,7 @@ object UrbanConfig {
      * Dimensione del pixel per l'effetto pixelato
      * Valori più alti = pixel più grandi
      */
-    var PIXEL_SIZE = 12
+    var PIXEL_SIZE = 32
     
     /**
      * Intensità dell'effetto Sobel (edge detection)
@@ -156,7 +156,7 @@ object UrbanConfig {
     /**
      * Score minimo per considerare un giunto valido (0.0 - 1.0)
      */
-    var MIN_JOINT_SCORE = 0.3f
+    var MIN_JOINT_SCORE = 0.2f
     
     /**
      * Limita FPS per risparmiare batteria
@@ -177,11 +177,11 @@ object UrbanPresets {
      */
     fun applyGlitchPreset() {
         UrbanConfig.BOX_APPEAR_PROBABILITY = 0.6f
-        UrbanConfig.BOX_MIN_DURATION = 3
-        UrbanConfig.BOX_MAX_DURATION = 10
+        UrbanConfig.BOX_MIN_DURATION = 8
+        UrbanConfig.BOX_MAX_DURATION = 15
         UrbanConfig.BOX_SIZE_MIN = 50f
-        UrbanConfig.BOX_SIZE_MAX = 150f
-        UrbanConfig.BORDER_WIDTH = 4f
+        UrbanConfig.BOX_SIZE_MAX = 350f
+        UrbanConfig.BORDER_WIDTH = 2f
     }
     
     /**

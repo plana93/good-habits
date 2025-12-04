@@ -7,9 +7,11 @@ import android.view.View
 import android.widget.*
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
+import android.os.Handler
+import android.os.Looper
 import com.programminghut.pose_detection.R
-import com.programminghut.pose_detection.filters.AdaptiveFilter
-import com.programminghut.pose_detection.filters.FilterParameter
+import com.programminghut.pose_detection.effects.AdaptiveFilter
+import com.programminghut.pose_detection.effects.FilterParameter
 
 /**
  * BottomSheet per modificare i parametri di un filtro
@@ -30,6 +32,8 @@ class FilterParamsBottomSheet(
     private val parametersContainer: LinearLayout = view.findViewById(R.id.parametersContainer)
     private val resetButton: MaterialButton = view.findViewById(R.id.resetButton)
     private val closeButton: MaterialButton = view.findViewById(R.id.closeButton)
+    // Handler per postare callback sul thread UI in modo sicuro
+    private val uiHandler: Handler = Handler(Looper.getMainLooper())
     
     init {
         setupBottomSheet()
@@ -118,9 +122,9 @@ class FilterParamsBottomSheet(
                             param.setProgress(progress)
                             valueText.text = String.format("%.1f", param.value)
                             
-                            // Cancella il callback precedente
-                            updateRunnable?.let { valueText.handler?.removeCallbacks(it) }
-                            
+                            // Cancella il callback precedente (usiamo uiHandler centrale)
+                            updateRunnable?.let { uiHandler.removeCallbacks(it) }
+
                             // Crea nuovo callback con debouncing più aggressivo
                             updateRunnable = Runnable {
                                 try {
@@ -129,9 +133,9 @@ class FilterParamsBottomSheet(
                                     android.util.Log.e("FilterParams", "Error in callback: ${e.message}", e)
                                 }
                             }
-                            
-                            // Posta con delay di 150ms invece di 50ms per ridurre le chiamate
-                            valueText.handler?.postDelayed(updateRunnable!!, 150)
+
+                            // Posta con delay di 150ms per ridurre le chiamate
+                            uiHandler.postDelayed(updateRunnable!!, 150)
                         } catch (e: Exception) {
                             android.util.Log.e("FilterParams", "Error updating slider: ${e.message}", e)
                         }
@@ -184,7 +188,7 @@ class FilterParamsBottomSheet(
                     param.enabled = isChecked
                     param.currentValue = isChecked
                     // Posta sul thread UI con un piccolo delay per evitare conflitti
-                    handler?.postDelayed({
+                        uiHandler.postDelayed({
                         try {
                             onParametersChanged()
                         } catch (e: Exception) {
@@ -258,7 +262,7 @@ class FilterParamsBottomSheet(
                 param.red = value
                 param.currentValue = Triple(param.red, param.green, param.blue)
                 colorPreview.setBackgroundColor(param.getColor())
-                colorPreview.handler?.postDelayed({
+                uiHandler.postDelayed({
                     try {
                         onParametersChanged()
                     } catch (e: Exception) {
@@ -276,7 +280,7 @@ class FilterParamsBottomSheet(
                 param.green = value
                 param.currentValue = Triple(param.red, param.green, param.blue)
                 colorPreview.setBackgroundColor(param.getColor())
-                colorPreview.handler?.postDelayed({
+                uiHandler.postDelayed({
                     try {
                         onParametersChanged()
                     } catch (e: Exception) {
@@ -294,7 +298,7 @@ class FilterParamsBottomSheet(
                 param.blue = value
                 param.currentValue = Triple(param.red, param.green, param.blue)
                 colorPreview.setBackgroundColor(param.getColor())
-                colorPreview.handler?.postDelayed({
+                uiHandler.postDelayed({
                     try {
                         onParametersChanged()
                     } catch (e: Exception) {
@@ -360,8 +364,8 @@ class FilterParamsBottomSheet(
                             valueText.text = progress.toString()
                             
                             // Cancella il callback precedente
-                            updateRunnable?.let { valueText.handler?.removeCallbacks(it) }
-                            
+                            updateRunnable?.let { uiHandler.removeCallbacks(it) }
+
                             // Crea nuovo callback con debouncing
                             updateRunnable = Runnable {
                                 try {
@@ -370,9 +374,9 @@ class FilterParamsBottomSheet(
                                     android.util.Log.e("FilterParams", "Error in color callback: ${e.message}", e)
                                 }
                             }
-                            
+
                             // Delay di 150ms per ridurre le chiamate durante lo slide
-                            valueText.handler?.postDelayed(updateRunnable!!, 150)
+                            uiHandler.postDelayed(updateRunnable!!, 150)
                         } catch (e: Exception) {
                             android.util.Log.e("FilterParams", "Error in color slider: ${e.message}", e)
                         }
@@ -463,7 +467,7 @@ class FilterParamsBottomSheet(
                             android.util.Log.d("FilterParams", "Updated ${param.displayName} to index $position (${param.options[position]})")
                             
                             // Delay per evitare conflitti
-                            handler?.postDelayed({
+                            uiHandler.postDelayed({
                                 try {
                                     onParametersChanged()
                                 } catch (e: Exception) {

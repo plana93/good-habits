@@ -8,7 +8,7 @@ import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.Rect
 import kotlin.math.abs
-import kotlin.random.Random
+import com.programminghut.pose_detection.effects.RandomProvider
 
 /**
  * Enum per i diversi tipi di filtri applicabili alle box
@@ -53,7 +53,7 @@ class UrbanEffectsManager {
         val toRemove = mutableListOf<Int>()
         activeBoxes.forEach { (jointIndex, box) ->
             val duration = frameCounter - box.frameCreated
-            val maxDuration = Random.nextInt(UrbanConfig.BOX_MIN_DURATION, UrbanConfig.BOX_MAX_DURATION)
+            val maxDuration = (RandomProvider.nextInt(UrbanConfig.BOX_MAX_DURATION - UrbanConfig.BOX_MIN_DURATION) + UrbanConfig.BOX_MIN_DURATION)
             if (duration > maxDuration) {
                 toRemove.add(jointIndex)
             }
@@ -62,7 +62,7 @@ class UrbanEffectsManager {
         
         // Crea nuove box casuali
         UrbanConfig.ACTIVE_JOINTS.forEach { jointIndex ->
-            if (!activeBoxes.containsKey(jointIndex) && Random.nextFloat() < UrbanConfig.BOX_APPEAR_PROBABILITY) {
+            if (!activeBoxes.containsKey(jointIndex) && RandomProvider.nextFloat() < UrbanConfig.BOX_APPEAR_PROBABILITY) {
                 val y = outputFeature0[jointIndex * 3 + 0]
                 val x = outputFeature0[jointIndex * 3 + 1]
                 val score = outputFeature0[jointIndex * 3 + 2]
@@ -73,8 +73,8 @@ class UrbanEffectsManager {
                         x = x * imageWidth,
                         y = y * imageHeight,
                         score = score,
-                        size = Random.nextFloat() * (UrbanConfig.BOX_SIZE_MAX - UrbanConfig.BOX_SIZE_MIN) + UrbanConfig.BOX_SIZE_MIN,
-                        filter = FilterType.values()[Random.nextInt(FilterType.values().size)],
+                        size = RandomProvider.nextFloat() * (UrbanConfig.BOX_SIZE_MAX - UrbanConfig.BOX_SIZE_MIN) + UrbanConfig.BOX_SIZE_MIN,
+                        filter = FilterType.values()[RandomProvider.nextInt(FilterType.values().size)],
                         visible = true,
                         frameCreated = frameCounter
                     )

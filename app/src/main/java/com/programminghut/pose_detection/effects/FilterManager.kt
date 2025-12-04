@@ -1,7 +1,12 @@
-package com.programminghut.pose_detection.filters
+package com.programminghut.pose_detection.effects
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import com.programminghut.pose_detection.effects.SkeletonFilter
+import com.programminghut.pose_detection.effects.GlowDotsFilter
+import com.programminghut.pose_detection.effects.UrbanBoxesFilter
+import com.programminghut.pose_detection.effects.ColorAdjustmentFilter
+import com.programminghut.pose_detection.effects.BlurFilter
 
 /**
  * Gestisce tutti i filtri adattivi disponibili e quelli attualmente attivi
@@ -33,6 +38,7 @@ object FilterManager {
         val defaultFilters = listOf(
             SkeletonFilter(),
             GlowDotsFilter(),
+            ConnectedLineCenterSobel(),
             UrbanBoxesFilter(),
             ColorAdjustmentFilter(),
             BlurFilter()
@@ -52,6 +58,14 @@ object FilterManager {
      */
     fun getActiveFilters(): List<AdaptiveFilter> {
         return activeFilters.toList()
+    }
+
+    /**
+     * Returns true if any active filter requires pose keypoints. Used to skip
+     * expensive pose detection when no active filter needs it.
+     */
+    fun activeFiltersRequirePose(): Boolean {
+        return activeFilters.any { it.isActive && it.requiresPose }
     }
     
     /**

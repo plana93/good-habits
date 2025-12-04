@@ -1,4 +1,4 @@
-package com.programminghut.pose_detection.filters
+package com.programminghut.pose_detection.effects
 
 import android.graphics.*
 import com.programminghut.pose_detection.R

@@ -1,7 +1,10 @@
-package com.programminghut.pose_detection.filters
+package com.programminghut.pose_detection.effects
 
 import android.graphics.*
+import com.programminghut.pose_detection.effects.RandomProvider
 import com.programminghut.pose_detection.R
+
+// Assicurati che il package sia aggiornato dopo lo spostamento in effects/
 
 /**
  * Filtro che disegna box/rettangoli urbani intorno al corpo
@@ -12,6 +15,7 @@ class UrbanBoxesFilter : AdaptiveFilter(
     iconResId = R.drawable.ic_urban_boxes,
     description = "Disegna box e forme geometriche urbane intorno ai keypoint del corpo. Stile futuristico/cyberpunk con linee nette e angoli precisi."
 ) {
+    override val requiresPose: Boolean = true
     
     private val paint = Paint().apply {
         style = Paint.Style.STROKE
@@ -25,17 +29,37 @@ class UrbanBoxesFilter : AdaptiveFilter(
             paramKey = "boxSize",
             paramDisplayName = "Dimensione Box",
             paramDescription = "Regola la dimensione dei box intorno ai keypoint",
-            value = 30f,
-            min = 10f,
-            max = 80f,
+            value = 180f,
+            min = 20f,
+            max = 500f,
             step = 5f
+        )
+
+        // Parametri per il numero minimo e massimo di box
+        parameters["boxCountMin"] = FilterParameter.Slider(
+            paramKey = "boxCountMin",
+            paramDisplayName = "Numero Minimo Box",
+            paramDescription = "Numero minimo di box generati",
+            value = 3f,
+            min = 1f,
+            max = 20f,
+            step = 1f
+        )
+        parameters["boxCountMax"] = FilterParameter.Slider(
+            paramKey = "boxCountMax",
+            paramDisplayName = "Numero Massimo Box",
+            paramDescription = "Numero massimo di box generati",
+            value = 8f,
+            min = 1f,
+            max = 20f,
+            step = 1f
         )
         
         parameters["customSizeMode"] = FilterParameter.Choice(
             paramKey = "customSizeMode",
             paramDisplayName = "Modalità Dimensione",
             paramDescription = "Scegli come vengono calcolate le dimensioni dei box",
-            selectedIndex = 0,
+            selectedIndex = 2,
             options = listOf("Fissa", "Animata", "Random")
         )
         
@@ -43,9 +67,9 @@ class UrbanBoxesFilter : AdaptiveFilter(
             paramKey = "sizeVariation",
             paramDisplayName = "Variazione Dimensione",
             paramDescription = "Quanto variano le dimensioni dei box (0 = nessuna variazione)",
-            value = 20f,
+            value = 50f,
             min = 0f,
-            max = 50f,
+            max = 100f,
             step = 5f
         )
         
@@ -53,7 +77,7 @@ class UrbanBoxesFilter : AdaptiveFilter(
             paramKey = "lineWidth",
             paramDisplayName = "Spessore Linea",
             paramDescription = "Spessore dei bordi dei box",
-            value = 3f,
+            value = 1f,
             min = 1f,
             max = 10f,
             step = 1f
@@ -90,7 +114,7 @@ class UrbanBoxesFilter : AdaptiveFilter(
             paramKey = "innerEffect",
             paramDisplayName = "Effetto Interno",
             paramDescription = "Applica un effetto all'interno dei box",
-            selectedIndex = 0,
+            selectedIndex = 5,
             options = listOf("Nessuno", "Pixelato", "Sobel Edge", "Bianco/Nero", "Blur", "Random")
         )
         
@@ -98,9 +122,9 @@ class UrbanBoxesFilter : AdaptiveFilter(
             paramKey = "pixelSize",
             paramDisplayName = "Dimensione Pixel",
             paramDescription = "Dimensione dei pixel per l'effetto pixelato",
-            value = 8f,
+            value = 20f,
             min = 2f,
-            max = 20f,
+            max = 50f,
             step = 2f
         )
         
@@ -108,7 +132,7 @@ class UrbanBoxesFilter : AdaptiveFilter(
             paramKey = "edgeThreshold",
             paramDisplayName = "Soglia Edge",
             paramDescription = "Sensibilità dell'effetto Sobel per rilevare i bordi",
-            value = 50f,
+            value = 100f,
             min = 10f,
             max = 200f,
             step = 10f
@@ -168,12 +192,12 @@ class UrbanBoxesFilter : AdaptiveFilter(
                 val boxSize = when (customSizeMode) {
                     1 -> {
                         // Modalità Animata: varia in base alla posizione e al confidence
-                        val variation = (Math.sin(index * 0.5 + System.currentTimeMillis() / 1000.0) * sizeVariation).toFloat()
+                        val variation = (Math.sin(index * 0.5 + com.programminghut.pose_detection.effects.FrameClock.timeMs / 1000.0) * sizeVariation).toFloat()
                         baseBoxSize + variation * confidence
                     }
                     2 -> {
                         // Modalità Random: dimensione casuale per ogni box
-                        val randomVariation = (Math.random() * sizeVariation * 2 - sizeVariation).toFloat()
+                        val randomVariation = ((RandomProvider.nextDouble() * sizeVariation * 2) - sizeVariation).toFloat()
                         (baseBoxSize + randomVariation).coerceAtLeast(10f)
                     }
                     else -> {
@@ -224,12 +248,12 @@ class UrbanBoxesFilter : AdaptiveFilter(
             canvas.clipPath(clipPath)
             
             // Determina l'effetto da applicare (random se innerEffect == 5)
-            val effectToApply = if (innerEffect == 5) {
-                // Random: scegli tra 1-4
-                (1..4).random()
-            } else {
-                innerEffect
-            }
+                val effectToApply = if (innerEffect == 5) {
+                    // Random: scegli tra 1-4 using RandomProvider
+                    1 + RandomProvider.nextInt(4)
+                } else {
+                    innerEffect
+                }
             
             applyInnerEffect(canvas, bitmap, x, y, size, effectToApply, pixelSize, edgeThreshold)
             canvas.restore()

@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.programminghut.pose_detection.R
-import com.programminghut.pose_detection.filters.AdaptiveFilter
+import com.programminghut.pose_detection.effects.AdaptiveFilter
 
 /**
  * Adapter per mostrare i filtri disponibili (menu sinistro)

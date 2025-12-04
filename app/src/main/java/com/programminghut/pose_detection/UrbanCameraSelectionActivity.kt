@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,24 +27,49 @@ import com.programminghut.pose_detection.ui.theme.Pose_detectionTheme
  * Avvia UrbanCameraActivity con effetti grafici urbani.
  */
 class UrbanCameraSelectionActivity : ComponentActivity() {
-    
+    private lateinit var pickImageLauncher: ActivityResultLauncher<String>
+    private lateinit var pickVideoLauncher: ActivityResultLauncher<String>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
+        // Registriamo i launcher per la selezione di file
+        pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let {
+                val intent = Intent(this, MediaUploadPreviewActivity::class.java)
+                intent.putExtra("mediaUri", it.toString())
+                intent.putExtra("mediaType", "image")
+                // K secondi per la simulazione video del foto (default 5s)
+                intent.putExtra("kSeconds", 5)
+                startActivity(intent)
+            }
+        }
+
+        pickVideoLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let {
+                val intent = Intent(this, MediaUploadPreviewActivity::class.java)
+                intent.putExtra("mediaUri", it.toString())
+                intent.putExtra("mediaType", "video")
+                startActivity(intent)
+            }
+        }
+
         setContent {
             Pose_detectionTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    UrbanCameraSelectionButtons { cameraIndex ->
-                        onCameraSelected(cameraIndex)
-                    }
+                    UrbanCameraSelectionButtons(
+                        onCameraSelected = { cameraIndex -> onCameraSelected(cameraIndex) },
+                        onUploadPhoto = { pickImageLauncher.launch("image/*") },
+                        onUploadVideo = { pickVideoLauncher.launch("video/*") }
+                    )
                 }
             }
         }
     }
-    
+
     private fun onCameraSelected(cameraIndex: Int) {
         try {
             android.util.Log.d("UrbanCameraSelection", "Camera selected: $cameraIndex")
@@ -73,7 +100,11 @@ class UrbanCameraSelectionActivity : ComponentActivity() {
 }
 
 @Composable
-fun UrbanCameraSelectionButtons(onCameraSelected: (Int) -> Unit) {
+fun UrbanCameraSelectionButtons(
+    onCameraSelected: (Int) -> Unit,
+    onUploadPhoto: () -> Unit,
+    onUploadVideo: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -106,6 +137,24 @@ fun UrbanCameraSelectionButtons(onCameraSelected: (Int) -> Unit) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(text = "Back Camera")
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = { onUploadPhoto() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Upload Photo")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = { onUploadVideo() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Upload Video")
         }
     }
 }

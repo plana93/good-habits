@@ -28,7 +28,7 @@ import androidx.cardview.widget.CardView
 import com.programminghut.pose_detection.ml.LiteModelMovenetSingleposeLightningTfliteFloat164
 import com.programminghut.pose_detection.urban.UrbanConfig
 import com.programminghut.pose_detection.urban.UrbanEffectsManager
-import com.programminghut.pose_detection.filters.FilterManager
+import com.programminghut.pose_detection.effects.FilterManager
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
@@ -103,10 +103,10 @@ class UrbanCameraActivity : AppCompatActivity() {
             android.widget.Toast.makeText(this, "Components OK", android.widget.Toast.LENGTH_SHORT).show()
 
             // Inizializza filtri modulari (FilterManager)
-            com.programminghut.pose_detection.filters.FilterManager.registerDefaultFilters()
+            com.programminghut.pose_detection.effects.FilterManager.registerDefaultFilters()
             // Attiva di default lo SkeletonFilter (puoi cambiare qui quali filtri attivare)
-            val skeleton = com.programminghut.pose_detection.filters.FilterManager.getAvailableFilters().find { it.javaClass.simpleName == "SkeletonFilter" }
-            if (skeleton != null) com.programminghut.pose_detection.filters.FilterManager.activateFilter(skeleton)
+            val skeleton = com.programminghut.pose_detection.effects.FilterManager.getAvailableFilters().find { it.javaClass.simpleName == "SkeletonFilter" }
+            if (skeleton != null) com.programminghut.pose_detection.effects.FilterManager.activateFilter(skeleton)
 
             // Inizializza UI con layout ridisegnato
             initializeUI()
@@ -315,7 +315,7 @@ class UrbanCameraActivity : AppCompatActivity() {
                 canvas.drawBitmap(bitmap, 0f, 0f, null)
 
                 // Applica i filtri modulari (es. Skeleton)
-                com.programminghut.pose_detection.filters.FilterManager.applyFilters(canvas, bitmap, outputFeature0)
+                com.programminghut.pose_detection.effects.FilterManager.applyFilters(canvas, bitmap, outputFeature0)
 
                 // Poi disegna gli effetti urban sopra
                 urbanEffects.drawBoxes(canvas, bitmap)
@@ -415,7 +415,7 @@ class UrbanCameraActivity : AppCompatActivity() {
     }
     
     private fun logActiveFilters(context: String) {
-        val active = com.programminghut.pose_detection.filters.FilterManager.getActiveFilters()
+    val active = com.programminghut.pose_detection.effects.FilterManager.getActiveFilters()
         android.util.Log.d("UrbanCamera", "$context - Filtri attivi: ${active.joinToString { it.javaClass.simpleName }}")
     }
     
@@ -468,7 +468,7 @@ class UrbanCameraActivity : AppCompatActivity() {
         )
         val canvas = Canvas(overlayBitmap)
         canvas.drawBitmap(cameraBitmap, 0f, 0f, null)
-        com.programminghut.pose_detection.filters.FilterManager.applyFilters(canvas, cameraBitmap, outputFeature0)
+    com.programminghut.pose_detection.effects.FilterManager.applyFilters(canvas, cameraBitmap, outputFeature0)
         logActiveFilters("[SCATTO]")
         urbanEffects.drawBoxes(canvas, cameraBitmap)
         android.util.Log.d("UrbanCamera", "[SCATTO] Frame processato, mostro dialog di conferma")

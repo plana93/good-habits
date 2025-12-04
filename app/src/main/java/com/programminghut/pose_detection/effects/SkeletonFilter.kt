@@ -1,6 +1,7 @@
-package com.programminghut.pose_detection.filters
+package com.programminghut.pose_detection.effects
 
 import android.graphics.*
+import com.programminghut.pose_detection.effects.RandomProvider
 import com.programminghut.pose_detection.R
 
 /**
@@ -12,6 +13,7 @@ class SkeletonFilter : AdaptiveFilter(
     iconResId = R.drawable.ic_animated_lines,
     description = "Disegna lo scheletro della posa con linee animate che seguono i movimenti del corpo. Le linee utilizzano curve di Bezier per un effetto fluido e naturale."
 ) {
+    override val requiresPose: Boolean = true
     
     private val paint = Paint().apply {
         style = Paint.Style.STROKE
@@ -309,7 +311,7 @@ class SkeletonFilter : AdaptiveFilter(
         }
 
         // *** CURVA VARIABILE BASATA SU CURVATURE E TEMPO ***
-        val timeInSeconds = System.currentTimeMillis() / 1000.0
+    val timeInSeconds = com.programminghut.pose_detection.effects.FrameClock.timeMs / 1000.0
         val lineOffset = lineNum * 0.8
         val curveFactor = distance * (0.35f + curvatureVariation * 0.25f) *
             (1.0f + Math.sin(timeInSeconds * 2.0 + lineOffset).toFloat() * 0.3f)
@@ -318,17 +320,17 @@ class SkeletonFilter : AdaptiveFilter(
         val outwardPerpY = perpY * curveFactor
 
         // *** PUNTO DI CONTROLLO PRINCIPALE CON OFFSET CASUALE ***
-        val randomOffsetX = (Math.random().toFloat() - 0.5f) * distance * 0.15f
-        val randomOffsetY = (Math.random().toFloat() - 0.5f) * distance * 0.15f
+    val randomOffsetX = (RandomProvider.nextFloat() - 0.5f) * distance * 0.15f
+    val randomOffsetY = (RandomProvider.nextFloat() - 0.5f) * distance * 0.15f
 
         val controlX = midX + outwardPerpX + randomOffsetX
         val controlY = midY + outwardPerpY + randomOffsetY
 
         // *** PUNTI DI CONTROLLO PER CURVA CUBICA CON VARIAZIONI ESTREME ***
         val offset1Factor = 0.25f + Math.sin(timeInSeconds * 3.0 + lineOffset).toFloat() * 0.2f +
-            (Math.random().toFloat() - 0.5f) * 0.15f
+            (RandomProvider.nextFloat() - 0.5f) * 0.15f
         val offset2Factor = 0.75f + Math.sin(timeInSeconds * 3.0 + Math.PI + lineOffset).toFloat() * 0.2f +
-            (Math.random().toFloat() - 0.5f) * 0.15f
+            (RandomProvider.nextFloat() - 0.5f) * 0.15f
 
         val control1X = startX * (1 - offset1Factor) + controlX * offset1Factor
         val control1Y = startY * (1 - offset1Factor) + controlY * offset1Factor
@@ -338,11 +340,11 @@ class SkeletonFilter : AdaptiveFilter(
 
         // *** VARIAZIONE OPACITÀ PER LINEE MULTIPLE (effetto profondità) ***
         val alphaPaint = Paint(paint)
-        val alphaVariation = 0.3f + (lineNum * 0.15f) + Math.random().toFloat() * 0.3f
+    val alphaVariation = 0.3f + (lineNum * 0.15f) + RandomProvider.nextFloat() * 0.3f
         alphaPaint.alpha = (255 * alphaVariation.coerceIn(0.2f, 1.0f)).toInt()
 
         // *** VARIAZIONE SPESSORE PER LINEE MULTIPLE ***
-        val strokeVariation = 0.6f + Math.random().toFloat() * 0.8f
+    val strokeVariation = 0.6f + RandomProvider.nextFloat() * 0.8f
         alphaPaint.strokeWidth = paint.strokeWidth * strokeVariation
 
         // *** CREA CURVA CUBICA DI BÉZIER CAOTICA ***

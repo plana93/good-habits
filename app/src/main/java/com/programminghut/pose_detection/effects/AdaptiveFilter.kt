@@ -1,4 +1,4 @@
-package com.programminghut.pose_detection.filters
+package com.programminghut.pose_detection.effects
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -13,6 +13,11 @@ abstract class AdaptiveFilter(
     val iconResId: Int,
     val description: String
 ) {
+    /**
+     * Indicates whether this filter requires pose keypoints to operate.
+     * Default is false; filters that rely on pose should override to true.
+     */
+    open val requiresPose: Boolean = false
     // Parametri del filtro (possono essere modificati dall'utente)
     val parameters = mutableMapOf<String, FilterParameter>()
     
