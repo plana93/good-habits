@@ -65,17 +65,6 @@ class Habits : ComponentActivity() {
                             startActivity(intent)
                         },
                     )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Bottone URBAN CAMERA (flusso urban street art)
-                    CustomButton(
-                        text = "URBAN CAMERA",
-                        onClick = {
-                            val intent = Intent(this@Habits, UrbanCameraSelectionActivity::class.java)
-                            startActivity(intent)
-                        },
-                    )
                 }
             }
         }

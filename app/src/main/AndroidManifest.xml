@@ -45,26 +45,6 @@
         <activity
             android:name=".RecordingCameraSelectionActivity"
             android:exported="false" />
-        <!-- *** ACTIVITY PER URBAN CAMERA *** -->
-        <activity
-            android:name=".UrbanCameraSelectionActivity"
-            android:exported="false" />
-        <activity
-            android:name=".UrbanCameraActivity"
-            android:exported="false" />
-        <!-- *** NEW URBAN CAMERA WITH ANIMATED EFFECTS *** -->
-        <activity
-            android:name=".UrbanCameraActivityNew"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <!-- *** REFACTORED URBAN CAMERA WITH ADAPTIVE FILTERS *** -->
-        <activity
-            android:name=".UrbanCameraActivityRefactored"
-            android:exported="false"
-            android:screenOrientation="portrait" />
-        <activity
-            android:name=".MediaUploadPreviewActivity"
-            android:exported="false" />
     </application>
 
 </manifest>
