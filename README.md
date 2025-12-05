@@ -256,15 +256,29 @@ See [Project Split Overview](update_docs/00_PROJECT_SPLIT_OVERVIEW.md) for detai
 
 ---
 
+## 🚀 Roadmap & Future Features
+
+We have an exciting roadmap ahead! See our detailed [Feature Roadmap](update_docs/ROADMAP_FEATURES.md) for:
+
+### Coming Soon (Q1-Q2 2026)
+- 📊 **Session Management** - Track and save workout sessions
+- 📈 **Rich Dashboard** - Visual analytics with charts and insights
+- 🤖 **AI Coaching** - Personalized recommendations and insights
+- 🏆 **Gamification** - Achievements, badges, and challenges
+- 📤 **Easy Sharing** - One-tap export and social sharing
+
+### Future Possibilities
+- 🎯 Multi-exercise support (lunges, push-ups)
+- 👕 Wear OS integration
+- 🔊 Voice feedback
+- ☁️ Cloud sync (opt-in)
+- 🌐 Web dashboard
+
+See [ROADMAP_FEATURES.md](update_docs/ROADMAP_FEATURES.md) for complete details, timelines, and technical specs.
+
 ## 🤝 Contributing
 
-Contributions welcome! Areas for improvement:
-- [ ] Multi-exercise support (lunges, push-ups)
-- [ ] Form analysis (posture feedback)
-- [ ] Workout history & charts
-- [ ] Social features
-- [ ] Voice feedback
-- [ ] Wear OS integration
+Contributions welcome! Check our [roadmap](update_docs/ROADMAP_FEATURES.md) for planned features.
 
 ---
 
