@@ -31,6 +31,9 @@ import android.widget.Toast
 import java.util.Collections.copy
 import kotlin.math.abs
 import kotlin.Pair
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 data class SquatMetric(
     var distance_shoulderKneeLeft: Double,
@@ -53,6 +56,18 @@ data class SquatMetric(
         other.check_foots,
     )
 }
+
+/**
+ * Data class per tracciare ogni singola ripetizione durante la sessione
+ */
+data class RepTrackingData(
+    val repNumber: Int,
+    val timestamp: Long,
+    val depthScore: Float,      // Calcol based on metrics
+    val formScore: Float,        // Based on symmetry and posture
+    val speed: Float,            // Time taken for this rep
+    val confidence: Float = 1.0f // Pose detection confidence
+)
 
 class MainActivity : AppCompatActivity() {
 
@@ -101,6 +116,15 @@ class MainActivity : AppCompatActivity() {
     
     // *** SQUAT COUNTER PER PERSISTENZA ***
     private lateinit var squatCounter: SquatCounter
+    
+    // *** SESSION TRACKING PER DATABASE (PHASE 1) ***
+    private val sessionReps = mutableListOf<RepTrackingData>()
+    private var sessionStartTime: Long = 0
+    private var lastRepTime: Long = 0
+    
+    // Database components
+    private lateinit var sessionRepository: com.programminghut.pose_detection.data.repository.SessionRepository
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         selectedCameraIndex = intent.getIntExtra("cameraIndex", -1)
@@ -112,6 +136,17 @@ class MainActivity : AppCompatActivity() {
 
         // *** INIZIALIZZA SQUAT COUNTER PER PERSISTENZA ***
         squatCounter = SquatCounter(this)
+        
+        // *** INIZIALIZZA DATABASE E REPOSITORY (PHASE 1) ***
+        val database = com.programminghut.pose_detection.data.database.AppDatabase.getDatabase(applicationContext)
+        sessionRepository = com.programminghut.pose_detection.data.repository.SessionRepository(
+            database.sessionDao(),
+            database.repDao()
+        )
+        
+        // Inizia tracking della sessione
+        sessionStartTime = System.currentTimeMillis()
+        sessionReps.clear()
         
         // *** GESTIONE MODALITÀ RECORDING ***
         btnExitAndCopy = findViewById(R.id.btn_exit_and_copy)
@@ -312,6 +347,33 @@ class MainActivity : AppCompatActivity() {
                 if (detectedSquat()) {
                     start_to_monitoring = false
                     count_repetition++
+                    
+                    // *** TRACCIA I DATI DEL REP (PHASE 1) ***
+                    val currentTime = System.currentTimeMillis()
+                    val repSpeed = if (lastRepTime > 0) {
+                        (currentTime - lastRepTime) / 1000f // seconds
+                    } else {
+                        0f
+                    }
+                    
+                    // Calcola scores basati sulle metriche
+                    val depthScore = calculateDepthScore(squatMetric_current, squatMetric_squat)
+                    val formScore = calculateFormScore(squatMetric_current)
+                    
+                    // Aggiungi rep alla lista della sessione
+                    sessionReps.add(
+                        RepTrackingData(
+                            repNumber = count_repetition,
+                            timestamp = currentTime,
+                            depthScore = depthScore,
+                            formScore = formScore,
+                            speed = repSpeed,
+                            confidence = 1.0f
+                        )
+                    )
+                    
+                    lastRepTime = currentTime
+                    Log.d("MainActivity", "Rep $count_repetition tracked: depth=$depthScore, form=$formScore, speed=$repSpeed")
                     
                     // *** INCREMENTA E SALVA IL TOTALE DEGLI SQUAT ***
                     if (!recordSkeleton) {
@@ -946,9 +1008,117 @@ class MainActivity : AppCompatActivity() {
                 .start()
         }
     }
+    
+    // ===============================================================
+    // PHASE 1: SESSION TRACKING HELPER FUNCTIONS
+    // ===============================================================
+    
+    /**
+     * Calcola il depth score basato su quanto profondo è lo squat
+     * Confronta la posizione corrente con la posizione squat di riferimento
+     */
+    private fun calculateDepthScore(current: SquatMetric, reference: SquatMetric): Float {
+        val leftDepthRatio = current.distance_shoulderKneeLeft / reference.distance_shoulderKneeLeft
+        val rightDepthRatio = current.distance_shoulderKneeRight / reference.distance_shoulderKneeRight
+        
+        // Media delle due gambe, normalizzata tra 0 e 1
+        val avgDepth = ((leftDepthRatio + rightDepthRatio) / 2.0).toFloat()
+        
+        // Clamp tra 0 e 1
+        return avgDepth.coerceIn(0f, 1f)
+    }
+    
+    /**
+     * Calcola il form score basato sulla simmetria e postura
+     * Controlla se entrambe le gambe lavorano in modo simmetrico
+     */
+    private fun calculateFormScore(current: SquatMetric): Float {
+        var score = 1.0f
+        
+        // Penalizza se una gamba è molto diversa dall'altra (asimmetria)
+        val asymmetry = abs(current.distance_shoulderKneeLeft - current.distance_shoulderKneeRight)
+        val asymmetryPenalty = (asymmetry / 100.0).toFloat().coerceIn(0f, 0.3f)
+        score -= asymmetryPenalty
+        
+        // Penalizza se i check falliscono
+        if (!current.check_shoulderKneeLeft) score -= 0.2f
+        if (!current.check_shoulderKneeRight) score -= 0.2f
+        
+        // Clamp tra 0 e 1
+        return score.coerceIn(0f, 1f)
+    }
+    
+    /**
+     * Salva la sessione di allenamento nel database
+     * Chiamato in onDestroy se ci sono rep registrati
+     */
+    private fun saveWorkoutSession() {
+        // Esegui in background per non bloccare la chiusura
+        Thread {
+            try {
+                val endTime = System.currentTimeMillis()
+                val durationSeconds = ((endTime - sessionStartTime) / 1000).toInt()
+                
+                // Calcola statistiche aggregate
+                val avgDepth = sessionReps.map { it.depthScore }.average().toFloat()
+                val avgForm = sessionReps.map { it.formScore }.average().toFloat()
+                val avgSpeed = sessionReps.filter { it.speed > 0 }.map { it.speed }.average().toFloat()
+                
+                // Crea oggetto WorkoutSession
+                val session = com.programminghut.pose_detection.data.model.WorkoutSession(
+                    startTime = sessionStartTime,
+                    endTime = endTime,
+                    durationSeconds = durationSeconds,
+                    exerciseType = "SQUAT",
+                    totalReps = sessionReps.size,
+                    avgDepthScore = avgDepth,
+                    avgFormScore = avgForm,
+                    avgSpeed = avgSpeed,
+                    appVersion = packageManager.getPackageInfo(packageName, 0).versionName,
+                    deviceModel = android.os.Build.MODEL
+                )
+                
+                // Converti tracking data in RepData
+                val reps = sessionReps.map { tracking ->
+                    com.programminghut.pose_detection.data.model.RepData(
+                        sessionId = 0, // Sarà assegnato dal database
+                        repNumber = tracking.repNumber,
+                        timestamp = tracking.timestamp,
+                        depthScore = tracking.depthScore,
+                        formScore = tracking.formScore,
+                        speed = tracking.speed,
+                        confidence = tracking.confidence
+                    )
+                }
+                
+                // Salva nel database usando coroutine
+                kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    val sessionId = sessionRepository.insertCompleteWorkout(session, reps)
+                    Log.d("MainActivity", "Sessione salvata con successo! ID=$sessionId, Reps=${reps.size}")
+                    
+                    // Mostra Toast di conferma
+                    runOnUiThread {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Sessione salvata: ${reps.size} squat!",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+                
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Errore nel salvataggio sessione: ${e.message}", e)
+            }
+        }.start()
+    }
 
     override fun onDestroy() {
         super.onDestroy()
+        
+        // *** SALVA SESSIONE NEL DATABASE (PHASE 1) ***
+        if (!recordSkeleton && sessionReps.isNotEmpty()) {
+            saveWorkoutSession()
+        }
         
         // *** SALVA IL TOTALE DEGLI SQUAT PRIMA DELLA CHIUSURA ***
         if (!recordSkeleton) {

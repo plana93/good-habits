@@ -65,6 +65,28 @@ class Habits : ComponentActivity() {
                             startActivity(intent)
                         },
                     )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Bottone STORICO ALLENAMENTI (Phase 1 feature)
+                    CustomButton(
+                        text = "STORICO ALLENAMENTI",
+                        onClick = {
+                            val intent = Intent(this@Habits, SessionsHistoryActivity::class.java)
+                            startActivity(intent)
+                        },
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Bottone DASHBOARD (Phase 2 feature)
+                    CustomButton(
+                        text = "DASHBOARD",
+                        onClick = {
+                            val intent = Intent(this@Habits, DashboardActivity::class.java)
+                            startActivity(intent)
+                        },
+                    )
                 }
             }
         }

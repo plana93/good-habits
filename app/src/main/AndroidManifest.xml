@@ -45,6 +45,22 @@
         <activity
             android:name=".RecordingCameraSelectionActivity"
             android:exported="false" />
+        
+        <!-- *** PHASE 1: SESSION MANAGEMENT ACTIVITIES *** -->
+        <activity
+            android:name=".SessionsHistoryActivity"
+            android:exported="false"
+            android:label="Storico Allenamenti" />
+        <activity
+            android:name=".SessionDetailActivity"
+            android:exported="false"
+            android:label="Dettagli Sessione" />
+        
+        <!-- *** PHASE 2: DASHBOARD ACTIVITY *** -->
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="false"
+            android:label="Dashboard" />
     </application>
 
 </manifest>

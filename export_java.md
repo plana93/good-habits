@@ -1,0 +1,1 @@
+export JAVA_HOME=$(/usr/libexec/java_home -v 1.8) && echo "JAVA_HOME impostato a: $JAVA_HOME" && cd /Users/mirco/AndroidStudioProjects/realtime_pose_detection_android-main && ./gradlew clean
