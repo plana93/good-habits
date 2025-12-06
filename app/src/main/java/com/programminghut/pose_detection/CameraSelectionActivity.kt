@@ -31,12 +31,28 @@ interface OnCameraSelectedListener {
 }
 
 class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
-    lateinit  var outputFeature0_base_position: FloatArray
-    lateinit var outputFeature0_squat_position: FloatArray
+    var outputFeature0_base_position: FloatArray? = null
+    var outputFeature0_squat_position: FloatArray? = null
+    
+    // Phase 4: Recovery mode parameters
+    private var isRecoveryMode = false
+    private var recoveredDate: Long = 0
+    private var minRepsRequired = 50
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        outputFeature0_base_position = intent.getFloatArrayExtra("base_position")!!
-        outputFeature0_squat_position = intent.getFloatArrayExtra("squat_position")!!
+        
+        // Phase 4: Check for recovery mode
+        isRecoveryMode = intent.getStringExtra("MODE") == "RECOVERY"
+        if (isRecoveryMode) {
+            recoveredDate = intent.getLongExtra("RECOVERED_DATE", 0)
+            minRepsRequired = intent.getIntExtra("MIN_REPS_REQUIRED", 50)
+            // In recovery mode, calibration positions are optional
+        } else {
+            // Normal mode: require calibration positions
+            outputFeature0_base_position = intent.getFloatArrayExtra("base_position")
+            outputFeature0_squat_position = intent.getFloatArrayExtra("squat_position")
+        }
 
         setContent {
             Pose_detectionTheme {
@@ -55,8 +71,22 @@ class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
         val intent = Intent(this, MainActivity::class.java)
         intent.putExtra("cameraIndex", cameraIndex)
         intent.putExtra("isFrontCamera", cameraIndex == 1) // Front camera index is 1
-        intent.putExtra("base_position", outputFeature0_base_position)
-        intent.putExtra("squat_position", outputFeature0_squat_position)
+        
+        // Add calibration positions if available (normal mode)
+        outputFeature0_base_position?.let {
+            intent.putExtra("base_position", it)
+        }
+        outputFeature0_squat_position?.let {
+            intent.putExtra("squat_position", it)
+        }
+        
+        // Phase 4: Propagate recovery mode parameters
+        if (isRecoveryMode) {
+            intent.putExtra("MODE", "RECOVERY")
+            intent.putExtra("RECOVERED_DATE", recoveredDate)
+            intent.putExtra("MIN_REPS_REQUIRED", minRepsRequired)
+        }
+        
         startActivity(intent)
     }
 }

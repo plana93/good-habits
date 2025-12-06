@@ -1,5 +1,6 @@
 package com.programminghut.pose_detection
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +19,7 @@ import com.programminghut.pose_detection.ui.theme.Pose_detectionTheme
  * 
  * Shows session metadata, statistics, and rep-by-rep breakdown.
  * Part of Phase 1 MVP implementation.
+ * Phase 3: Added share functionality
  */
 class SessionDetailActivity : ComponentActivity() {
     
@@ -42,10 +44,27 @@ class SessionDetailActivity : ComponentActivity() {
                         viewModel = viewModel,
                         onBackClick = {
                             finish()
+                        },
+                        onShareClick = { summary ->
+                            shareText(summary)
                         }
                     )
                 }
             }
         }
+    }
+    
+    /**
+     * Share text content using Android Share Sheet
+     * Phase 3: Export & Share feature
+     */
+    private fun shareText(text: String) {
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+            putExtra(Intent.EXTRA_SUBJECT, "Good Habits - Riepilogo Allenamento")
+        }
+        startActivity(Intent.createChooser(shareIntent, "Condividi Allenamento"))
     }
 }

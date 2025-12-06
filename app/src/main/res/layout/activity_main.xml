@@ -89,6 +89,25 @@
         android:textSize="18sp"
         android:visibility="gone" />
 
+    <!-- Recovery Mode Banner (Phase 4) -->
+    <TextView
+        android:id="@+id/recoveryBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="60dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="#FF2196F3"
+        android:elevation="8dp"
+        android:fontFamily="sans-serif-medium"
+        android:padding="16dp"
+        android:text="🔄 MODALITÀ RECUPERO\nData: --\nRipetizioni richieste: 50"
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:visibility="gone" />
+
     <!-- Bottone EXIT per chiudere e copiare negli appunti (visibile solo in modalità recording) -->
     <Button
         android:id="@+id/btn_exit_and_copy"

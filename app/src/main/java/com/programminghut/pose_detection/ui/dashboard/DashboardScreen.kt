@@ -27,9 +27,14 @@ import java.util.*
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onShareClick: (String) -> Unit = {},
+    onExportDataClick: (String, String) -> Unit = { _, _ -> }, // (content, mimeType)
+    onCalendarClick: () -> Unit = {}, // Phase 4: Calendar navigation
+    onAddManualSessionClick: () -> Unit = {} // Phase 4: Manual session
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showExportMenu by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -38,6 +43,71 @@ fun DashboardScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Indietro")
+                    }
+                },
+                actions = {
+                    // Export/Share menu - Phase 3 feature
+                    if (uiState is DashboardUiState.Success) {
+                        IconButton(onClick = { showExportMenu = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "Esporta")
+                        }
+                        
+                        DropdownMenu(
+                            expanded = showExportMenu,
+                            onDismissRequest = { showExportMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Condividi Riepilogo") },
+                                onClick = {
+                                    val state = uiState as DashboardUiState.Success
+                                    val summary = com.programminghut.pose_detection.utils.ShareHelper
+                                        .generateDashboardSummary(
+                                            totalSessions = state.kpiData.totalSessions,
+                                            totalReps = state.kpiData.totalReps,
+                                            avgFormScore = state.kpiData.avgFormScore,
+                                            currentStreak = state.kpiData.currentStreak,
+                                            bestSession = state.kpiData.bestSession,
+                                            dateRange = "Ultimi 30 giorni",
+                                            template = com.programminghut.pose_detection.utils.ShareHelper.TemplateType.DETAILED
+                                        )
+                                    onShareClick(summary)
+                                    showExportMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Share, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Esporta Dati CSV/JSON") },
+                                onClick = {
+                                    onExportDataClick("", "application/json")
+                                    showExportMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Send, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Calendario Costanza") },
+                                onClick = {
+                                    onCalendarClick()
+                                    showExportMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.DateRange, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Aggiungi Sessione Manuale") },
+                                onClick = {
+                                    onAddManualSessionClick()
+                                    showExportMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.Add, contentDescription = null)
+                                }
+                            )
+                        }
                     }
                 }
             )

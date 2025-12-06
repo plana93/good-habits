@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.programminghut.pose_detection.data.dao.RepDao
 import com.programminghut.pose_detection.data.dao.SessionDao
 import com.programminghut.pose_detection.data.model.RepData
@@ -16,13 +18,14 @@ import com.programminghut.pose_detection.data.model.WorkoutSession
  * as the main access point for the underlying connection to the app's data.
  * 
  * Version 1: Initial database with WorkoutSession and RepData tables
+ * Version 2: Phase 4 - Added sessionType, recoveredDate, affectsStreak fields
  */
 @Database(
     entities = [
         WorkoutSession::class,
         RepData::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -63,8 +66,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    // Add migrations here when database schema changes
-                    // .addMigrations(MIGRATION_1_2)
+                    // Add migrations
+                    .addMigrations(MIGRATION_1_2)
                     
                     // For development only - destroys and rebuilds database on version changes
                     // Remove this in production and use proper migrations
@@ -87,13 +90,28 @@ abstract class AppDatabase : RoomDatabase() {
             INSTANCE = null
         }
         
-        // Future migrations will be added here as the database schema evolves
-        // Example:
-        // private val MIGRATION_1_2 = object : Migration(1, 2) {
-        //     override fun migrate(database: SupportSQLiteDatabase) {
-        //         // Migration logic here
-        //         // e.g., database.execSQL("ALTER TABLE workout_sessions ADD COLUMN newColumn TEXT")
-        //     }
-        // }
+        /**
+         * Migration from version 1 to 2
+         * Phase 4: Session Recovery & Calendar
+         * 
+         * Adds new columns for session type tracking and recovery functionality:
+         * - sessionType: Type of session (REAL_TIME, MANUAL, RECOVERY)
+         * - recoveredDate: Date being recovered (for RECOVERY sessions)
+         * - affectsStreak: Whether session counts for streak
+         */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add new columns to workout_sessions table
+                database.execSQL(
+                    "ALTER TABLE workout_sessions ADD COLUMN sessionType TEXT NOT NULL DEFAULT 'REAL_TIME'"
+                )
+                database.execSQL(
+                    "ALTER TABLE workout_sessions ADD COLUMN recoveredDate INTEGER"
+                )
+                database.execSQL(
+                    "ALTER TABLE workout_sessions ADD COLUMN affectsStreak INTEGER NOT NULL DEFAULT 1"
+                )
+            }
+        }
     }
 }

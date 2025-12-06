@@ -522,9 +522,7 @@ class DashboardViewModel : ViewModel() {
 | Phase 4: AI Insights | 5 weeks | Q2 W6 | Q2 W10 | 📋 Planned |
 | Phase 5: Gamification | 4 weeks | Q2 W11 | Q3 W2 | 📋 Planned |
 | Phase 6: Advanced Features | 8 weeks | Q3 W3 | Q4 W2 | 🔵 Future |
-| Phase 7: Cloud & Sync | 6 weeks | Q4 W3 | Q4 W8 | 🔵 Optional |
 
-**Total MVP (Phases 1-5)**: ~26 settimane (6 mesi)
 
 ---
 

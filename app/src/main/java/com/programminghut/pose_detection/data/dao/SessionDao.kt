@@ -233,4 +233,91 @@ interface SessionDao {
      */
     @Query("DELETE FROM workout_sessions WHERE startTime < :timestamp")
     suspend fun deleteSessionsOlderThan(timestamp: Long)
+    
+    
+    // ============================================================
+    // PHASE 4: Session Recovery & Calendar Queries
+    // ============================================================
+    
+    /**
+     * Get sessions filtered by type
+     */
+    @Query("SELECT * FROM workout_sessions WHERE sessionType = :sessionType ORDER BY startTime DESC")
+    fun getSessionsByType(sessionType: String): Flow<List<WorkoutSession>>
+    
+    /**
+     * Get sessions that affect streak
+     */
+    @Query("SELECT * FROM workout_sessions WHERE affectsStreak = 1 ORDER BY startTime DESC")
+    fun getStreakAffectingSessions(): Flow<List<WorkoutSession>>
+    
+    /**
+     * Get sessions for a specific date (day)
+     * @param dayStartTimestamp Start of day (00:00) in milliseconds
+     * @param dayEndTimestamp End of day (23:59) in milliseconds
+     */
+    @Query("""
+        SELECT * FROM workout_sessions 
+        WHERE startTime >= :dayStartTimestamp 
+        AND startTime < :dayEndTimestamp
+        AND affectsStreak = 1
+        ORDER BY startTime DESC
+    """)
+    suspend fun getSessionsForDay(dayStartTimestamp: Long, dayEndTimestamp: Long): List<WorkoutSession>
+    
+    /**
+     * Check if a specific day has any sessions
+     * @param dayStartTimestamp Start of day (00:00) in milliseconds
+     * @param dayEndTimestamp End of day (23:59) in milliseconds
+     * @return True if day has at least one streak-affecting session
+     */
+    @Query("""
+        SELECT COUNT(*) > 0 FROM workout_sessions 
+        WHERE startTime >= :dayStartTimestamp 
+        AND startTime < :dayEndTimestamp
+        AND affectsStreak = 1
+    """)
+    suspend fun hasSessionsForDay(dayStartTimestamp: Long, dayEndTimestamp: Long): Boolean
+    
+    /**
+     * Get recovery sessions
+     */
+    @Query("SELECT * FROM workout_sessions WHERE sessionType = 'RECOVERY' ORDER BY startTime DESC")
+    fun getRecoverySessions(): Flow<List<WorkoutSession>>
+    
+    /**
+     * Get manual sessions
+     */
+    @Query("SELECT * FROM workout_sessions WHERE sessionType = 'MANUAL' ORDER BY startTime DESC")
+    fun getManualSessions(): Flow<List<WorkoutSession>>
+    
+    /**
+     * Check if a date has already been recovered
+     * @param recoveredDate The date (start of day timestamp) that was recovered
+     * @return True if a recovery session exists for that date
+     */
+    @Query("""
+        SELECT COUNT(*) > 0 FROM workout_sessions 
+        WHERE sessionType = 'RECOVERY' 
+        AND recoveredDate = :recoveredDate
+    """)
+    suspend fun isDateAlreadyRecovered(recoveredDate: Long): Boolean
+    
+    /**
+     * Get all sessions for calendar display (with recovery info)
+     * Returns sessions from a date range for calendar visualization
+     */
+    @Query("""
+        SELECT * FROM workout_sessions 
+        WHERE startTime >= :startTime 
+        AND startTime <= :endTime
+        ORDER BY startTime ASC
+    """)
+    suspend fun getSessionsForCalendar(startTime: Long, endTime: Long): List<WorkoutSession>
+    
+    /**
+     * Count sessions by type
+     */
+    @Query("SELECT COUNT(*) FROM workout_sessions WHERE sessionType = :sessionType")
+    fun getCountBySessionType(sessionType: String): Flow<Int>
 }

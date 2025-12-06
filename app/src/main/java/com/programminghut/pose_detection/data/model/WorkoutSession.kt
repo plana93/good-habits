@@ -46,7 +46,12 @@ data class WorkoutSession(
     
     // Sync and export status
     val isSynced: Boolean = false,    // Cloud sync status
-    val exportedAt: Long? = null      // Last export timestamp
+    val exportedAt: Long? = null,     // Last export timestamp
+    
+    // Phase 4: Session type and recovery tracking
+    val sessionType: String = "REAL_TIME", // Session type: REAL_TIME, MANUAL, RECOVERY
+    val recoveredDate: Long? = null,  // Date being recovered (for RECOVERY sessions)
+    val affectsStreak: Boolean = true // Whether session counts for streak calculation
 )
 
 /**

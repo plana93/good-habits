@@ -34,7 +34,8 @@ import java.util.*
 @Composable
 fun SessionDetailScreen(
     viewModel: SessionDetailViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onShareClick: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
@@ -45,6 +46,27 @@ fun SessionDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Indietro")
+                    }
+                },
+                actions = {
+                    // Share button - Phase 3 feature
+                    if (uiState is SessionDetailUiState.Success) {
+                        IconButton(
+                            onClick = {
+                                val state = uiState as SessionDetailUiState.Success
+                                val summary = com.programminghut.pose_detection.utils.ShareHelper
+                                    .generateSessionSummary(
+                                        session = state.session,
+                                        template = com.programminghut.pose_detection.utils.ShareHelper.TemplateType.DETAILED
+                                    )
+                                onShareClick(summary)
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Share,
+                                contentDescription = "Condividi"
+                            )
+                        }
                     }
                 }
             )

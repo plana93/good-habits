@@ -1,5 +1,6 @@
 package com.programminghut.pose_detection
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,6 +20,8 @@ import com.programminghut.pose_detection.ui.dashboard.DashboardViewModelFactory
  * 
  * Displays analytics dashboard with KPIs, charts, and workout statistics.
  * Part of Phase 2: Dashboard Core implementation.
+ * Phase 3: Added export and share functionality
+ * Phase 4: Added calendar navigation
  */
 class DashboardActivity : ComponentActivity() {
     
@@ -46,10 +49,55 @@ class DashboardActivity : ComponentActivity() {
                 ) {
                     DashboardScreen(
                         viewModel = viewModel,
-                        onBackClick = { finish() }
+                        onBackClick = { finish() },
+                        onShareClick = { summary ->
+                            shareText(summary)
+                        },
+                        onExportDataClick = { _, _ ->
+                            // Launch Export Activity
+                            val intent = Intent(this@DashboardActivity, ExportActivity::class.java)
+                            startActivity(intent)
+                        },
+                        onCalendarClick = {
+                            // Phase 4: Launch Calendar Activity
+                            val intent = Intent(this@DashboardActivity, StreakCalendarActivity::class.java)
+                            startActivity(intent)
+                        },
+                        onAddManualSessionClick = {
+                            // Phase 4: Launch Manual Session Activity
+                            val intent = Intent(this@DashboardActivity, ManualSessionActivity::class.java)
+                            startActivity(intent)
+                        }
                     )
                 }
             }
         }
+    }
+    
+    /**
+     * Share text content using Android Share Sheet
+     * Phase 3: Export & Share feature
+     */
+    private fun shareText(text: String) {
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+            putExtra(Intent.EXTRA_SUBJECT, "Good Habits - Statistiche Dashboard")
+        }
+        startActivity(Intent.createChooser(shareIntent, "Condividi Dashboard"))
+    }
+    
+    /**
+     * Export data as file (CSV/JSON)
+     * Phase 3: Data export feature
+     */
+    private fun exportData(content: String, mimeType: String) {
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            type = mimeType
+            putExtra(Intent.EXTRA_TEXT, content)
+        }
+        startActivity(Intent.createChooser(shareIntent, "Esporta Dati"))
     }
 }

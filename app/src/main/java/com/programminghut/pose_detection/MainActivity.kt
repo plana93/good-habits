@@ -125,11 +125,24 @@ class MainActivity : AppCompatActivity() {
     // Database components
     private lateinit var sessionRepository: com.programminghut.pose_detection.data.repository.SessionRepository
     
+    // *** RECOVERY MODE (PHASE 4) ***
+    private var isRecoveryMode = false
+    private var recoveredDate: Long = 0
+    private var minRepsRequired = 50
+    private lateinit var recoveryBanner: TextView
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         selectedCameraIndex = intent.getIntExtra("cameraIndex", -1)
         isFrontCamera = intent.getBooleanExtra("isFrontCamera", false)
         recordSkeleton = intent.getBooleanExtra("RECORD_SKELETON", false)
+        
+        // *** RECOVERY MODE DETECTION (PHASE 4) ***
+        isRecoveryMode = intent.getStringExtra("MODE") == "RECOVERY"
+        if (isRecoveryMode) {
+            recoveredDate = intent.getLongExtra("RECOVERED_DATE", 0)
+            minRepsRequired = intent.getIntExtra("MIN_REPS_REQUIRED", 50)
+        }
 
         setContentView(R.layout.activity_main)
         get_permissions()
@@ -186,12 +199,27 @@ class MainActivity : AppCompatActivity() {
 
         numberTextView = findViewById(R.id.numberTextView)
         activationProgressText = findViewById(R.id.activationProgress)
+        recoveryBanner = findViewById(R.id.recoveryBanner)
         count_repetition = 0
         
-        // Mostra l'indicatore di progresso inizialmente (solo in modalità squat, non recording)
-        if (!recordSkeleton) {
-            activationProgressText.visibility = View.VISIBLE
-            updateActivationProgress(0)
+        // *** SETUP RECOVERY MODE UI (PHASE 4) ***
+        if (isRecoveryMode) {
+            // Format date
+            val dateFormat = java.text.SimpleDateFormat("dd MMMM yyyy", java.util.Locale.ITALIAN)
+            val dateStr = dateFormat.format(java.util.Date(recoveredDate))
+            
+            // Show recovery banner
+            recoveryBanner.text = "🔄 MODALITÀ RECUPERO\nData: $dateStr\nRipetizioni richieste: $minRepsRequired"
+            recoveryBanner.visibility = View.VISIBLE
+            
+            // Don't show activation progress in recovery mode
+            activationProgressText.visibility = View.GONE
+        } else {
+            // Mostra l'indicatore di progresso inizialmente (solo in modalità squat, non recording)
+            if (!recordSkeleton) {
+                activationProgressText.visibility = View.VISIBLE
+                updateActivationProgress(0)
+            }
         }
         
         // *** IMPOSTA DIMENSIONE TESTO RIDOTTA (1/25 DELLO SCHERMO) ***
@@ -253,10 +281,17 @@ class MainActivity : AppCompatActivity() {
                 }
                 
                 if (!step1Complete) {
-                    outputFeature0_base_position = outputFeature0
-                    outputFeature0_squat_position = outputFeature0
-                    outputFeature0_base_position = intent.getFloatArrayExtra("base_position")!!
-                    outputFeature0_squat_position = intent.getFloatArrayExtra("squat_position")!!
+                    // Phase 4: In recovery mode, skip calibration if positions not provided
+                    if (isRecoveryMode) {
+                        // Use current pose as calibration (no need for precise calibration in recovery)
+                        outputFeature0_base_position = outputFeature0.clone()
+                        outputFeature0_squat_position = outputFeature0.clone()
+                    } else {
+                        // Normal mode: get calibration from intent
+                        outputFeature0_base_position = intent.getFloatArrayExtra("base_position")!!
+                        outputFeature0_squat_position = intent.getFloatArrayExtra("squat_position")!!
+                    }
+                    
                     startStep1(
                         outputFeature0,
                         outputFeature0_base_position,
@@ -978,13 +1013,34 @@ class MainActivity : AppCompatActivity() {
      */
     private fun updateSquatDisplay(compact: Boolean = true) {
         runOnUiThread {
-            val totalSquats = squatCounter.getTotalSquats()
-            numberTextView.text = if (compact) {
-                // Formato compatto: solo numeri separati da |
-                "$count_repetition | $totalSquats"
+            if (isRecoveryMode) {
+                // Recovery mode: mostra progresso verso obiettivo
+                val progress = count_repetition
+                val remaining = maxOf(0, minRepsRequired - progress)
+                numberTextView.text = if (progress >= minRepsRequired) {
+                    "✅ $progress / $minRepsRequired\nObiettivo raggiunto!"
+                } else {
+                    "$progress / $minRepsRequired\nMancano: $remaining"
+                }
+                
+                // Update recovery banner color based on progress
+                val percentage = (progress.toFloat() / minRepsRequired * 100).toInt()
+                val color = when {
+                    percentage >= 100 -> 0xFF4CAF50.toInt() // Green
+                    percentage >= 50 -> 0xFFFF9800.toInt()  // Orange
+                    else -> 0xFF2196F3.toInt()               // Blue
+                }
+                recoveryBanner.setBackgroundColor(color)
             } else {
-                // Formato esteso: con etichette
-                "Sessione: $count_repetition\nTotale: $totalSquats"
+                // Normal mode: show session and total squats
+                val totalSquats = squatCounter.getTotalSquats()
+                numberTextView.text = if (compact) {
+                    // Formato compatto: solo numeri separati da |
+                    "$count_repetition | $totalSquats"
+                } else {
+                    // Formato esteso: con etichette
+                    "Sessione: $count_repetition\nTotale: $totalSquats"
+                }
             }
         }
     }
@@ -1075,7 +1131,11 @@ class MainActivity : AppCompatActivity() {
                     avgFormScore = avgForm,
                     avgSpeed = avgSpeed,
                     appVersion = packageManager.getPackageInfo(packageName, 0).versionName,
-                    deviceModel = android.os.Build.MODEL
+                    deviceModel = android.os.Build.MODEL,
+                    // Phase 4: Recovery Mode fields
+                    sessionType = if (isRecoveryMode) "RECOVERY" else "REAL_TIME",
+                    recoveredDate = if (isRecoveryMode) recoveredDate else null,
+                    affectsStreak = true
                 )
                 
                 // Converti tracking data in RepData
@@ -1098,9 +1158,14 @@ class MainActivity : AppCompatActivity() {
                     
                     // Mostra Toast di conferma
                     runOnUiThread {
+                        val message = if (isRecoveryMode) {
+                            "🎉 Giorno recuperato! ${reps.size} squat completati!"
+                        } else {
+                            "Sessione salvata: ${reps.size} squat!"
+                        }
                         Toast.makeText(
                             this@MainActivity,
-                            "Sessione salvata: ${reps.size} squat!",
+                            message,
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -1110,6 +1175,30 @@ class MainActivity : AppCompatActivity() {
                 Log.e("MainActivity", "Errore nel salvataggio sessione: ${e.message}", e)
             }
         }.start()
+    }
+    
+    /**
+     * Override back button per recovery mode validation
+     */
+    override fun onBackPressed() {
+        if (isRecoveryMode && count_repetition < minRepsRequired) {
+            // Show warning dialog if recovery goal not met
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("⚠️ Obiettivo non raggiunto")
+                .setMessage("Hai completato solo $count_repetition ripetizioni su $minRepsRequired richieste.\n\nSe esci ora, il giorno non verrà recuperato.\n\nVuoi davvero uscire?")
+                .setPositiveButton("Continua allenamento") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Esci senza salvare") { _, _ ->
+                    // Clear session data so it won't be saved
+                    sessionReps.clear()
+                    super.onBackPressed()
+                }
+                .setCancelable(false)
+                .show()
+        } else {
+            super.onBackPressed()
+        }
     }
 
     override fun onDestroy() {

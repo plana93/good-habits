@@ -61,6 +61,22 @@
             android:name=".DashboardActivity"
             android:exported="false"
             android:label="Dashboard" />
+        
+        <!-- *** PHASE 3: EXPORT ACTIVITY *** -->
+        <activity
+            android:name=".ExportActivity"
+            android:exported="false"
+            android:label="Esporta Dati" />
+        
+        <!-- *** PHASE 4: CALENDAR & RECOVERY ACTIVITIES *** -->
+        <activity
+            android:name=".StreakCalendarActivity"
+            android:exported="false"
+            android:label="Calendario Costanza" />
+        <activity
+            android:name=".ManualSessionActivity"
+            android:exported="false"
+            android:label="Aggiungi Sessione Manuale" />
     </application>
 
 </manifest>
