@@ -130,6 +130,7 @@ class MainActivity : AppCompatActivity() {
     private var recoveredDate: Long = 0
     private var minRepsRequired = 50
     private lateinit var recoveryBanner: TextView
+    private var recoveryAutoCalibrated = false  // Track if auto-calibration is done
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -145,6 +146,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(R.layout.activity_main)
+        
+        // *** MANTIENI SCHERMO ACCESO DURANTE ESERCIZI ***
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        
         get_permissions()
 
         // *** INIZIALIZZA SQUAT COUNTER PER PERSISTENZA ***
@@ -281,11 +286,41 @@ class MainActivity : AppCompatActivity() {
                 }
                 
                 if (!step1Complete) {
-                    // Phase 4: In recovery mode, skip calibration if positions not provided
-                    if (isRecoveryMode) {
-                        // Use current pose as calibration (no need for precise calibration in recovery)
+                    // Phase 4: In recovery mode, do automatic calibration
+                    if (isRecoveryMode && !recoveryAutoCalibrated) {
+                        // First frame: save as base position (standing)
                         outputFeature0_base_position = outputFeature0.clone()
                         outputFeature0_squat_position = outputFeature0.clone()
+                        recoveryAutoCalibrated = true
+                        
+                        // Show message
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Recovery Mode: fai uno squat completo per iniziare",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else if (isRecoveryMode && recoveryAutoCalibrated) {
+                        // Monitor for first deep squat to set squat position
+                        val currentMetric = computeSquatMetric(outputFeature0)
+                        val baseMetric = computeSquatMetric(outputFeature0_base_position)
+                        
+                        // Check if significantly lower than base (deep squat detected)
+                        val shoulderKneeDiff = abs(currentMetric.distance_shoulderKneeLeft - baseMetric.distance_shoulderKneeLeft)
+                        
+                        if (shoulderKneeDiff > 0.15) {  // Significant squat depth
+                            // Save this as squat position
+                            outputFeature0_squat_position = outputFeature0.clone()
+                            
+                            runOnUiThread {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "✅ Calibrazione completata! Inizia a contare",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
                     } else {
                         // Normal mode: get calibration from intent
                         outputFeature0_base_position = intent.getFloatArrayExtra("base_position")!!
@@ -379,9 +414,10 @@ class MainActivity : AppCompatActivity() {
                 
                 squatMetric_current = computeSquatMetric(smoothedPose)
                 
+                // Step2: Rileva quando VAI GIÙ (squat position) - QUI conta +1!
                 if (detectedSquat()) {
-                    start_to_monitoring = false
-                    count_repetition++
+                    start_to_monitoring = false  // Switch to Step3 to wait for return to standing
+                    count_repetition++  // Incrementa quando raggiungi la posizione di squat
                     
                     // *** TRACCIA I DATI DEL REP (PHASE 1) ***
                     val currentTime = System.currentTimeMillis()
@@ -408,7 +444,7 @@ class MainActivity : AppCompatActivity() {
                     )
                     
                     lastRepTime = currentTime
-                    Log.d("MainActivity", "Rep $count_repetition tracked: depth=$depthScore, form=$formScore, speed=$repSpeed")
+                    Log.d("MainActivity", "Rep $count_repetition completed at squat position! depth=$depthScore, form=$formScore, speed=$repSpeed")
                     
                     // *** INCREMENTA E SALVA IL TOTALE DEGLI SQUAT ***
                     if (!recordSkeleton) {
@@ -420,7 +456,6 @@ class MainActivity : AppCompatActivity() {
                         numberTextView.text = count_repetition.toString()
                     }
                 }
-
             }
 
             private fun startStep3(outputFeature0: FloatArray) {
@@ -434,10 +469,11 @@ class MainActivity : AppCompatActivity() {
                 
                 squatMetric_current = computeSquatMetric(smoothedPose)
 
+                // Step3: Rileva quando TORNI SU (original position) - prepara per prossimo squat
                 if (detectedOriginalPosition()) {
-                    start_to_monitoring = true
+                    start_to_monitoring = true  // Switch back to Step2 for next squat
+                    Log.d("MainActivity", "Returned to standing position - ready for next rep")
                 }
-
             }
 
             private fun detectedSquat(): Boolean {
@@ -1112,8 +1148,21 @@ class MainActivity : AppCompatActivity() {
         // Esegui in background per non bloccare la chiusura
         Thread {
             try {
-                val endTime = System.currentTimeMillis()
-                val durationSeconds = ((endTime - sessionStartTime) / 1000).toInt()
+                // Phase 4: In recovery mode, use recoveredDate as startTime
+                val actualStartTime = if (isRecoveryMode) {
+                    recoveredDate  // Use the date being recovered
+                } else {
+                    sessionStartTime  // Use current session start
+                }
+                
+                val endTime = if (isRecoveryMode) {
+                    // In recovery mode, set endTime to same day as recoveredDate
+                    recoveredDate + (24 * 60 * 60 * 1000L) - 1  // End of that day
+                } else {
+                    System.currentTimeMillis()
+                }
+                
+                val durationSeconds = ((endTime - actualStartTime) / 1000).toInt()
                 
                 // Calcola statistiche aggregate
                 val avgDepth = sessionReps.map { it.depthScore }.average().toFloat()
@@ -1122,7 +1171,7 @@ class MainActivity : AppCompatActivity() {
                 
                 // Crea oggetto WorkoutSession
                 val session = com.programminghut.pose_detection.data.model.WorkoutSession(
-                    startTime = sessionStartTime,
+                    startTime = actualStartTime,  // Use recoveredDate in recovery mode
                     endTime = endTime,
                     durationSeconds = durationSeconds,
                     exerciseType = "SQUAT",

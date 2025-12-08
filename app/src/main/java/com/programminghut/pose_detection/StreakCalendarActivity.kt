@@ -72,11 +72,17 @@ class StreakCalendarActivity : ComponentActivity() {
                                 putExtra("MIN_REPS_REQUIRED", 50)
                             }
                             startActivity(intent)
-                            finish() // Close calendar after launching recovery
+                            // Don't call finish() - stay open so calendar refreshes when user returns
                         }
                     )
                 }
             }
         }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Reload calendar data when returning from recovery session
+        viewModel.loadCalendarData(0)
     }
 }
