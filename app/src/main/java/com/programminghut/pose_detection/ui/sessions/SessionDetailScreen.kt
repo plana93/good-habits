@@ -18,6 +18,9 @@ import androidx.compose.ui.unit.dp
 import com.programminghut.pose_detection.data.model.RepData
 import com.programminghut.pose_detection.data.model.WorkoutSession
 import com.programminghut.pose_detection.data.repository.SessionStatistics
+import com.programminghut.pose_detection.ui.charts.RepScatterChart
+import com.programminghut.pose_detection.ui.charts.RepHeatlineChart
+import com.programminghut.pose_detection.ui.charts.RepDetailDialog
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -130,6 +133,12 @@ fun SessionDetailContent(
     onFlagRep: (Long, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // State per il dialog dei dettagli
+    var selectedRep by remember { mutableStateOf<RepData?>(null) }
+    
+    // State per tab selection (Phase 5: Advanced Visualization)
+    var selectedTab by remember { mutableStateOf(0) }
+    
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(16.dp),
@@ -147,23 +156,93 @@ fun SessionDetailContent(
             }
         }
         
-        // Reps breakdown header
+        // *** PHASE 5: ADVANCED VISUALIZATION - Tab Selector ***
         item {
-            Text(
-                text = "Ripetizioni (${reps.size})",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            TabRow(selectedTabIndex = selectedTab) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Lista") }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Grafici") }
+                )
+            }
         }
         
-        // Individual reps
-        itemsIndexed(reps) { index, rep ->
-            RepCard(
-                rep = rep,
-                onFlagToggle = { onFlagRep(rep.repId, !rep.isFlaggedForReview) }
-            )
+        // Content based on selected tab
+        when (selectedTab) {
+            0 -> {
+                // Tab 1: Lista ripetizioni (originale)
+                item {
+                    Text(
+                        text = "Ripetizioni (${reps.size})",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+                
+                itemsIndexed(reps) { index, rep ->
+                    RepCard(
+                        rep = rep,
+                        onFlagToggle = { onFlagRep(rep.repId, !rep.isFlaggedForReview) }
+                    )
+                }
+            }
+            1 -> {
+                // Tab 2: Visualizzazioni avanzate (Phase 5)
+                
+                // Scatter Chart
+                item {
+                    RepScatterChart(
+                        reps = reps,
+                        onRepClick = { rep -> selectedRep = rep },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                
+                // Heatline Chart
+                item {
+                    RepHeatlineChart(
+                        reps = reps,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                
+                // Spacer
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                
+                // Lista compatta sotto i grafici
+                item {
+                    Text(
+                        text = "Tutte le Ripetizioni",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+                
+                itemsIndexed(reps) { index, rep ->
+                    RepCard(
+                        rep = rep,
+                        onFlagToggle = { onFlagRep(rep.repId, !rep.isFlaggedForReview) }
+                    )
+                }
+            }
         }
+    }
+    
+    // *** PHASE 5: DIALOG PER DETTAGLI RIPETIZIONE ***
+    selectedRep?.let { rep ->
+        RepDetailDialog(
+            rep = rep,
+            onDismiss = { selectedRep = null }
+        )
     }
 }
 
