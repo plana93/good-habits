@@ -14,129 +14,79 @@ import com.google.gson.reflect.TypeToken
  */
 
 /**
- * Definizione completa di un esercizio
+ * Definizione semplificata di un esercizio per tracking manuale
+ * 
+ * L'esercizio è un'entità statica che contiene solo:
+ * - Metadati (nome, descrizione, immagine, mode)
+ * - I valori target (reps/time) sono memorizzati in WorkoutExercise
+ * - I valori effettivi eseguiti sono memorizzati in WorkoutSession
+ * NON contiene logiche di riconoscimento camera (tranne SQUAT che usa camera separatamente).
  */
 @Entity(tableName = "exercises")
 data class Exercise(
     @PrimaryKey(autoGenerate = true)
     val exerciseId: Long = 0,
     
-    val name: String,                    // Nome esercizio (es. "Squat", "Push-up")
-    val type: ExerciseType,              // Tipo (predefinito o custom)
-    val description: String = "",        // Descrizione dell'esercizio
+    val name: String,                    // Nome esercizio (es. "Push-up", "Plank")
+    val type: ExerciseType,              // Tipo esercizio (SQUAT usa camera, altri manuali)
+    val description: String = "",        // Descrizione per export e storico
     
-    // Posizioni di riferimento
-    val startPositionKeypoints: FloatArray,  // Keypoints posizione iniziale
-    val endPositionKeypoints: FloatArray,    // Keypoints posizione finale
+    // Modalità esercizio
+    val mode: ExerciseMode,              // REPS (ripetizioni) o TIME (isometrico)
     
-    // Regole di validazione
-    val rules: List<ExerciseRule>,       // Regole per validare la rep
-    
-    // Metriche e tolleranze
-    val depthTolerance: Float = 0.05f,   // Tolleranza per profondità movimento
-    val symmetryTolerance: Float = 0.1f, // Tolleranza per simmetria
+    // Immagine di riferimento
+    val imagePath: String? = null,       // Path foto esercizio (preview/miniatura)
     
     // Metadata
     val createdAt: Long = System.currentTimeMillis(),
     val modifiedAt: Long = System.currentTimeMillis(),
     val isCustom: Boolean = false,       // Se è un esercizio custom
-    val imageUri: String? = null,        // Immagine di riferimento (opzionale)
-    val tags: List<String> = emptyList() // Tag per categorizzazione
-) {
-    // Override equals per FloatArray
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        
-        other as Exercise
-        
-        if (exerciseId != other.exerciseId) return false
-        if (name != other.name) return false
-        if (!startPositionKeypoints.contentEquals(other.startPositionKeypoints)) return false
-        if (!endPositionKeypoints.contentEquals(other.endPositionKeypoints)) return false
-        
-        return true
-    }
-    
-    override fun hashCode(): Int {
-        var result = exerciseId.hashCode()
-        result = 31 * result + name.hashCode()
-        result = 31 * result + startPositionKeypoints.contentHashCode()
-        result = 31 * result + endPositionKeypoints.contentHashCode()
-        return result
-    }
+    val tags: List<String> = emptyList() // Tag per categorizzazione (es. "upper_body")
+)
+
+/**
+ * Modalità di esecuzione esercizio
+ */
+enum class ExerciseMode {
+    REPS,       // A ripetizioni (es. push-up, pull-up)
+    TIME        // Isometrico/a tempo (es. plank, wall sit)
 }
 
 /**
  * Tipo di esercizio
  */
 enum class ExerciseType {
-    SQUAT,          // Squat classico
-    PUSH_UP,        // Flessioni
-    PULL_UP,        // Trazioni
-    LUNGE,          // Affondi
-    PLANK,          // Plank (statico)
-    CUSTOM;         // Esercizio personalizzato
+    SQUAT,          // Squat classico (USA CAMERA per tracking automatico)
+    PUSH_UP,        // Flessioni (tracking manuale)
+    PULL_UP,        // Trazioni (tracking manuale)
+    LUNGE,          // Affondi (tracking manuale)
+    PLANK,          // Plank statico (tracking manuale)
+    CUSTOM;         // Esercizio personalizzato (tracking manuale)
     
     companion object {
         fun fromString(value: String): ExerciseType {
             return values().find { it.name == value.uppercase() } ?: CUSTOM
         }
+        
+        /**
+         * Solo SQUAT usa il riconoscimento camera.
+         * Tutti gli altri sono manuali.
+         */
+        fun usesCameraTracking(type: ExerciseType): Boolean {
+            return type == SQUAT
+        }
     }
 }
 
 /**
- * Regola per validare una ripetizione dell'esercizio
- */
-data class ExerciseRule(
-    val ruleType: RuleType,              // Tipo di regola
-    val keypoints: List<Int>,            // Keypoint coinvolti (indici)
-    val targetValue: Float,              // Valore target (angolo, distanza, ecc.)
-    val tolerance: Float = 0.1f,         // Tolleranza accettabile
-    val weight: Float = 1.0f,            // Peso della regola nel calcolo score
-    val description: String = ""         // Descrizione umana della regola
-)
-
-/**
- * Tipi di regole disponibili
- */
-enum class RuleType {
-    // Regole di distanza
-    DISTANCE_MIN,           // Distanza minima tra due keypoint
-    DISTANCE_MAX,           // Distanza massima tra due keypoint
-    DISTANCE_EQUALS,        // Distanza deve essere uguale a valore
-    
-    // Regole di angolo
-    ANGLE_MIN,              // Angolo minimo tra tre keypoint
-    ANGLE_MAX,              // Angolo massimo
-    ANGLE_EQUALS,           // Angolo deve essere uguale
-    
-    // Regole di simmetria
-    SYMMETRY_LEFT_RIGHT,    // Simmetria sinistra-destra
-    SYMMETRY_UP_DOWN,       // Simmetria alto-basso
-    
-    // Regole di posizione
-    POSITION_ABOVE,         // Keypoint A deve essere sopra B
-    POSITION_BELOW,         // Keypoint A deve essere sotto B
-    POSITION_LEFT,          // Keypoint A deve essere a sinistra di B
-    POSITION_RIGHT,         // Keypoint A deve essere a destra di B
-    
-    // Regole di visibilità
-    VISIBILITY_REQUIRED,    // Keypoint deve essere visibile (confidence > threshold)
-    
-    // Regole temporali
-    TIME_MIN,               // Tempo minimo per completare movimento
-    TIME_MAX;               // Tempo massimo per completare movimento
-}
-
-/**
  * Preset predefinito per un esercizio
- * Contiene configurazione completa pronta all'uso
+ * Contiene configurazione base pronta all'uso
  */
 data class ExercisePreset(
     val name: String,
     val type: ExerciseType,
     val description: String,
+    val mode: ExerciseMode,
     val difficulty: ExerciseDifficulty,
     val muscleGroups: List<MuscleGroup>,
     
@@ -168,53 +118,10 @@ enum class MuscleGroup {
 }
 
 /**
- * Risultato della validazione di una rep secondo le regole
- */
-data class RepValidationResult(
-    val isValid: Boolean,               // Se la rep è valida
-    val totalScore: Float,              // Score complessivo (0-1)
-    val ruleResults: List<RuleResult>,  // Risultati per ogni regola
-    val warnings: List<String> = emptyList() // Warning sulla postura
-)
-
-/**
- * Risultato di una singola regola
- */
-data class RuleResult(
-    val rule: ExerciseRule,
-    val actualValue: Float,            // Valore misurato
-    val expectedValue: Float,          // Valore atteso
-    val passed: Boolean,               // Se la regola è passata
-    val score: Float                   // Score per questa regola (0-1)
-)
-
-/**
  * Type converters per Room Database
  */
 class ExerciseTypeConverters {
     private val gson = Gson()
-    
-    @TypeConverter
-    fun fromFloatArray(value: FloatArray): String {
-        return gson.toJson(value)
-    }
-    
-    @TypeConverter
-    fun toFloatArray(value: String): FloatArray {
-        val type = object : TypeToken<FloatArray>() {}.type
-        return gson.fromJson(value, type)
-    }
-    
-    @TypeConverter
-    fun fromRuleList(value: List<ExerciseRule>): String {
-        return gson.toJson(value)
-    }
-    
-    @TypeConverter
-    fun toRuleList(value: String): List<ExerciseRule> {
-        val type = object : TypeToken<List<ExerciseRule>>() {}.type
-        return gson.fromJson(value, type)
-    }
     
     @TypeConverter
     fun fromStringList(value: List<String>): String {
@@ -235,5 +142,19 @@ class ExerciseTypeConverters {
     @TypeConverter
     fun toExerciseType(value: String): ExerciseType {
         return ExerciseType.fromString(value)
+    }
+    
+    @TypeConverter
+    fun fromExerciseMode(value: ExerciseMode): String {
+        return value.name
+    }
+    
+    @TypeConverter
+    fun toExerciseMode(value: String): ExerciseMode {
+        return try {
+            ExerciseMode.valueOf(value)
+        } catch (e: Exception) {
+            ExerciseMode.REPS // Default fallback
+        }
     }
 }

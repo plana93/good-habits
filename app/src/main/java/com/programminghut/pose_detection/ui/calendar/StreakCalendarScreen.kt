@@ -80,7 +80,8 @@ fun StreakCalendarScreen(
                         viewModel.loadCalendarData(offset)
                     },
                     onDayClick = { timestamp, status ->
-                        viewModel.selectDate(timestamp)
+                        // ✅ NON chiamiamo selectDate automaticamente per evitare navigazioni indesiderate
+                        // viewModel.selectDate(timestamp)  // RIMOSSA - causava navigazione automatica
                         onDayClick(timestamp, status)
                     },
                     onRecoveryClick = onRecoveryClick,

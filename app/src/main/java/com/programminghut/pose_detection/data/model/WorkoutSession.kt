@@ -28,6 +28,7 @@ data class WorkoutSession(
     
     // Session metadata
     val exerciseType: String,         // e.g., "SQUAT", "PUSH_UP", etc.
+    val exerciseName: String = exerciseType, // Display name (e.g., "Squat Profondo", "Push-up Base")
     val totalReps: Int,               // Total number of reps completed
     
     // Quality metrics (aggregated from reps)

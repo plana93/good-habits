@@ -73,6 +73,23 @@
         android:letterSpacing="0.05" />
     <!-- Font monospace tipo terminale, dimensione ridotta -->
 
+    <!-- Pulsante FINE per terminare sessione AI -->
+    <Button
+        android:id="@+id/btn_finish_ai_session"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="8dp"
+        android:text="✕ FINE"
+        android:textColor="@android:color/white"
+        android:backgroundTint="#FF4444"
+        android:textSize="14sp"
+        android:fontFamily="sans-serif-medium"
+        android:elevation="4dp"
+        android:visibility="gone" />
+
     <!-- Indicatore di progresso per attivazione -->
     <TextView
         android:id="@+id/activationProgress"

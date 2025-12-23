@@ -1,0 +1,113 @@
+🔧 CATTURA OUTPUT ANDROID STUDIO
+Timestamp: Ven 19 Dic 2025 11:36:03 CET
+=========================================
+📱 Android Studio Log Directory: /Users/mirco/Library/Logs/Google/AndroidStudio2022.2
+2025-12-19 11:30:46,952 [813333678]   INFO - #c.a.t.i.g.p.b.i.GradleBuildInvoker - About to execute Gradle tasks: [:app:assembleDebug]
+2025-12-19 11:30:46,957 [813333683]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:30:46,973 [813333699]   INFO - #c.a.t.i.g.p.b.i.GradleBuildInvoker - Build command line options: [--continue, -Pandroid.injected.invoked.from.ide=true, -Pandroid.injected.studio.version=2022.2.1 Patch 2, -Pandroid.injected.attribution.file.location=/Users/mirco/AndroidStudioProjects/realtime_pose_detection_android-main/.gradle, -Pandroid.injected.enableStableIds=true, -Pandroid.injected.build.api=35, -Pandroid.injected.build.abi=arm64-v8a,armeabi-v7a,armeabi, --stacktrace]
+2025-12-19 11:30:46,977 [813333703]   INFO - #o.j.p.g.s.e.GradleExecutionHelper - Passing command-line args to Gradle Tooling API: --continue -Pandroid.injected.invoked.from.ide=true -Pandroid.injected.studio.version=2022.2.1 Patch 2 -Pandroid.injected.attribution.file.location=/Users/mirco/AndroidStudioProjects/realtime_pose_detection_android-main/.gradle -Pandroid.injected.enableStableIds=true -Pandroid.injected.build.api=35 -Pandroid.injected.build.abi=arm64-v8a,armeabi-v7a,armeabi --stacktrace
+2025-12-19 11:30:47,152 [813333878]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:30:59,385 [813346111]   INFO - STDOUT - kotlin.text.MatcherMatchResult@87a49f3
+2025-12-19 11:30:59,386 [813346112]   INFO - STDOUT - kotlin.text.MatcherMatchResult@6bda68c
+2025-12-19 11:30:59,386 [813346112]   INFO - STDOUT - kotlin.text.MatcherMatchResult@2822283
+2025-12-19 11:30:59,386 [813346112]   INFO - STDOUT - kotlin.text.MatcherMatchResult@4780acb7
+2025-12-19 11:30:59,386 [813346112]   INFO - STDOUT - kotlin.text.MatcherMatchResult@1def4065
+2025-12-19 11:30:59,983 [813346709]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:31:01,106 [813347832]   WARN - #c.a.t.i.p.CodeOutOfDateTrackerImpl - pendingBuildsCount was 0 when buildFailed
+2025-12-19 11:31:01,108 [813347834]   INFO - #c.a.t.i.g.r.MakeBeforeRunTask - Couldn't get post build models.
+2025-12-19 11:31:01,108 [813347834]   INFO - #c.a.t.i.g.r.MakeBeforeRunTask - Gradle invocation complete, build result = com.android.tools.idea.gradle.project.build.invoker.AssembleInvocationResult@4f25fa5
+2025-12-19 11:31:01,112 [813347838]   INFO - #c.a.t.i.g.p.b.i.GradleBuildInvoker - Gradle build failed in 14 s 138 ms
+2025-12-19 11:31:04,694 [813351420]   INFO - #c.i.c.ComponentStoreImpl - Saving appAndroidFirstRunPersistentData took 14 ms, DontShowAgainFeedbackService took 38 ms, FileTypeManager took 24 ms, FindSettings took 20 ms, GithubAccounts took 23 ms, LafManager took 14 ms, NotificationConfiguration took 21 ms, ProjectCreationInfoState took 18 ms, whatsNew took 11 ms
+2025-12-19 11:31:29,273 [813375999]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:31:29,274 [813376000]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:31:29,965 [813376691]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:31:29,965 [813376691]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:31:30,121 [813376847]   INFO - #c.a.t.i.r.AndroidDeviceSpec - Creating spec for Nothing A142 with ABIs: [arm64-v8a, armeabi-v7a, armeabi]
+2025-12-19 11:31:30,123 [813376849]   INFO - #c.a.t.i.g.p.b.i.GradleBuildInvoker - About to execute Gradle tasks: [:app:assembleDebug]
+2025-12-19 11:31:30,127 [813376853]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:31:30,127 [813376853]   INFO - #c.a.t.i.g.p.b.i.GradleBuildInvoker - Build command line options: [--continue, -Pandroid.injected.invoked.from.ide=true, -Pandroid.injected.studio.version=2022.2.1 Patch 2, -Pandroid.injected.attribution.file.location=/Users/mirco/AndroidStudioProjects/realtime_pose_detection_android-main/.gradle, -Pandroid.injected.enableStableIds=true, -Pandroid.injected.build.api=35, -Pandroid.injected.build.abi=arm64-v8a,armeabi-v7a,armeabi, --stacktrace]
+2025-12-19 11:31:30,133 [813376859]   INFO - #o.j.p.g.s.e.GradleExecutionHelper - Passing command-line args to Gradle Tooling API: --continue -Pandroid.injected.invoked.from.ide=true -Pandroid.injected.studio.version=2022.2.1 Patch 2 -Pandroid.injected.attribution.file.location=/Users/mirco/AndroidStudioProjects/realtime_pose_detection_android-main/.gradle -Pandroid.injected.enableStableIds=true -Pandroid.injected.build.api=35 -Pandroid.injected.build.abi=arm64-v8a,armeabi-v7a,armeabi --stacktrace
+2025-12-19 11:31:38,040 [813384766]   INFO - STDOUT - kotlin.text.MatcherMatchResult@33c8d76f
+2025-12-19 11:31:38,040 [813384766]   INFO - STDOUT - kotlin.text.MatcherMatchResult@3d0f2f66
+2025-12-19 11:31:38,041 [813384767]   INFO - STDOUT - kotlin.text.MatcherMatchResult@3930bc1f
+2025-12-19 11:31:38,041 [813384767]   INFO - STDOUT - kotlin.text.MatcherMatchResult@7c32255d
+2025-12-19 11:31:38,041 [813384767]   INFO - STDOUT - kotlin.text.MatcherMatchResult@934e61b
+2025-12-19 11:31:38,847 [813385573]   INFO - #c.a.t.i.g.r.MakeBeforeRunTask - Couldn't get post build models.
+2025-12-19 11:31:38,847 [813385573]   INFO - #c.a.t.i.g.r.MakeBeforeRunTask - Gradle invocation complete, build result = com.android.tools.idea.gradle.project.build.invoker.AssembleInvocationResult@4f351a82
+2025-12-19 11:31:38,851 [813385577]   INFO - #c.a.t.i.g.p.b.i.GradleBuildInvoker - Gradle build failed in 8 s 723 ms
+2025-12-19 11:31:41,319 [813388045]   INFO - #c.i.c.ComponentStoreImpl - Saving appAndroidFirstRunPersistentData took 92 ms
+2025-12-19 11:35:21,367 [813608093]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,368 [813608094]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,372 [813608098]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,372 [813608098]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,373 [813608099]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,396 [813608122]   INFO - #c.i.u.i.FileBasedIndexProjectHandler - Reindexing refreshed files of pose_detection : 1208 to update, calculated in 0ms
+2025-12-19 11:35:21,397 [813608123]   INFO - #c.i.u.i.FileBasedIndexProjectHandler - Using 4 threads for indexing
+2025-12-19 11:35:21,398 [813608124]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,398 [813608124]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,399 [813608125]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,443 [813608169]   INFO - #c.i.d.PerformanceWatcherImpl - Reindexing refreshed files of pose_detection took 46ms; general responsiveness: ok; EDT responsiveness: ok
+2025-12-19 11:35:21,512 [813608238]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,560 [813608286]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,561 [813608287]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,563 [813608289]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,563 [813608289]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,903 [813608629]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,903 [813608629]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,972 [813608698]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:21,972 [813608698]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:22,077 [813608803]   INFO - #c.a.t.i.r.AndroidDeviceSpec - Creating spec for Nothing A142 with ABIs: [arm64-v8a, armeabi-v7a, armeabi]
+2025-12-19 11:35:22,077 [813608803]   INFO - #c.a.t.i.g.p.b.i.GradleBuildInvoker - About to execute Gradle tasks: [:app:assembleDebug]
+2025-12-19 11:35:22,080 [813608806]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:22,081 [813608807]   INFO - #c.a.t.i.g.p.b.i.GradleBuildInvoker - Build command line options: [--continue, -Pandroid.injected.invoked.from.ide=true, -Pandroid.injected.studio.version=2022.2.1 Patch 2, -Pandroid.injected.attribution.file.location=/Users/mirco/AndroidStudioProjects/realtime_pose_detection_android-main/.gradle, -Pandroid.injected.enableStableIds=true, -Pandroid.injected.build.api=35, -Pandroid.injected.build.abi=arm64-v8a,armeabi-v7a,armeabi, --stacktrace]
+2025-12-19 11:35:22,083 [813608809]   INFO - #o.j.p.g.s.e.GradleExecutionHelper - Passing command-line args to Gradle Tooling API: --continue -Pandroid.injected.invoked.from.ide=true -Pandroid.injected.studio.version=2022.2.1 Patch 2 -Pandroid.injected.attribution.file.location=/Users/mirco/AndroidStudioProjects/realtime_pose_detection_android-main/.gradle -Pandroid.injected.enableStableIds=true -Pandroid.injected.build.api=35 -Pandroid.injected.build.abi=arm64-v8a,armeabi-v7a,armeabi --stacktrace
+2025-12-19 11:35:26,754 [813613480]   INFO - #c.i.u.i.FileBasedIndexProjectHandler - Reindexing refreshed files of pose_detection : 256 to update, calculated in 0ms
+2025-12-19 11:35:26,754 [813613480]   INFO - #c.i.u.i.FileBasedIndexProjectHandler - Using 4 threads for indexing
+2025-12-19 11:35:26,757 [813613483]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:26,757 [813613483]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:26,759 [813613485]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:26,760 [813613486]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:26,763 [813613489]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:26,764 [813613490]   INFO - #c.i.d.PerformanceWatcherImpl - Reindexing refreshed files of pose_detection took 10ms; general responsiveness: ok; EDT responsiveness: ok
+2025-12-19 11:35:26,943 [813613669]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:26,943 [813613669]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:26,944 [813613670]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:26,945 [813613671]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:26,947 [813613673]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:27,394 [813614120]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:27,394 [813614120]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:35:33,088 [813619814]   INFO - STDOUT - kotlin.text.MatcherMatchResult@78732dd8
+2025-12-19 11:35:33,089 [813619815]   INFO - STDOUT - kotlin.text.MatcherMatchResult@76b4dca6
+2025-12-19 11:35:33,089 [813619815]   INFO - STDOUT - kotlin.text.MatcherMatchResult@728b46a8
+2025-12-19 11:35:33,089 [813619815]   INFO - STDOUT - kotlin.text.MatcherMatchResult@3789d69d
+2025-12-19 11:35:33,089 [813619815]   INFO - STDOUT - kotlin.text.MatcherMatchResult@56753059
+2025-12-19 11:35:33,984 [813620710]   INFO - #c.a.t.i.g.r.MakeBeforeRunTask - Couldn't get post build models.
+2025-12-19 11:35:33,984 [813620710]   INFO - #c.a.t.i.g.r.MakeBeforeRunTask - Gradle invocation complete, build result = com.android.tools.idea.gradle.project.build.invoker.AssembleInvocationResult@61737386
+2025-12-19 11:35:33,989 [813620715]   INFO - #c.a.t.i.g.p.b.i.GradleBuildInvoker - Gradle build failed in 11 s 907 ms
+2025-12-19 11:35:36,508 [813623234]   INFO - #c.i.c.ComponentStoreImpl - Saving appAndroidFirstRunPersistentData took 12 ms
+2025-12-19 11:36:03,030 [813649756]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,030 [813649756]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,032 [813649758]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,032 [813649758]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,041 [813649767]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,057 [813649783]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,058 [813649784]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,074 [813649800]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,075 [813649801]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,125 [813649851]   INFO - #c.i.u.i.FileBasedIndexProjectHandler - Reindexing refreshed files of pose_detection : 1206 to update, calculated in 0ms
+2025-12-19 11:36:03,125 [813649851]   INFO - #c.i.u.i.FileBasedIndexProjectHandler - Using 4 threads for indexing
+2025-12-19 11:36:03,171 [813649897]   INFO - #c.i.d.PerformanceWatcherImpl - Reindexing refreshed files of pose_detection took 46ms; general responsiveness: ok; EDT responsiveness: ok
+2025-12-19 11:36:03,331 [813650057]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,331 [813650057]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,332 [813650058]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,333 [813650059]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+2025-12-19 11:36:03,337 [813650063]   INFO - #o.j.p.g.GradleManager - Instructing gradle to use java from /Applications/Android Studio.app/Contents/jbr/Contents/Home
+
+🔨 GRADLE BUILD LOGS:
+=========================================
+
+ERROR: JAVA_HOME is set to an invalid directory: /usr/bin/java
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation.
+

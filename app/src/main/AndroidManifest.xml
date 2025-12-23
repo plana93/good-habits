@@ -23,8 +23,9 @@
         <activity
             android:name=".squat"
             android:exported="false" />
+        <!-- NEW MAIN ACTIVITY - Bottom Navigation -->
         <activity
-            android:name=".Habits"
+            android:name=".ui.activity.NewMainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -32,6 +33,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- EXERCISE LIBRARY - Template Management Only -->
+        <activity
+            android:name=".ui.activity.ExerciseLibraryActivity"
+            android:exported="false"
+            android:label="Libreria Esercizi" />
+        <!-- WORKOUT LIBRARY - Circuit Template Management -->
+        <activity
+            android:name=".ui.activity.WorkoutLibraryActivity"
+            android:exported="false"
+            android:label="Libreria Allenamenti" />
+        
+        <!-- OLD MAIN - Declassato -->
+        <activity
+            android:name=".Habits"
+            android:exported="false"
+            android:label="Menu Vecchio (Backup)" />
         <activity
             android:name=".Squat"
             android:exported="true" />
@@ -77,6 +94,51 @@
             android:name=".ManualSessionActivity"
             android:exported="false"
             android:label="Aggiungi Sessione Manuale" />
+        
+        <!-- *** PHASE 6: EXERCISE MANAGEMENT ACTIVITIES *** -->
+        <activity
+            android:name=".ExerciseSelectorActivity"
+            android:exported="false"
+            android:label="Scegli Esercizio" />
+        
+        <activity
+            android:name=".ExerciseCreationActivity"
+            android:exported="false"
+            android:label="Crea Esercizio" />
+        
+        <activity
+            android:name=".PhotoCaptureActivity"
+            android:exported="false"
+            android:label="Cattura Posizione"
+            android:screenOrientation="portrait" />
+        
+        <!-- *** WORKOUT SYSTEM ACTIVITIES *** -->
+        <activity
+            android:name=".WorkoutCreationActivity"
+            android:exported="false"
+            android:label="Crea Workout" />
+        
+        <activity
+            android:name=".WorkoutCreationActivitySimple"
+            android:exported="false"
+            android:label="Nuovo Workout" />
+        
+        <activity
+            android:name=".WorkoutTrackingMenuActivity"
+            android:exported="false"
+            android:label="Inizia Allenamento" />
+        
+        <activity
+            android:name=".WorkoutTrackingActivity"
+            android:exported="false"
+            android:label="Esegui Workout" />
+        
+        <activity
+            android:name=".ManualExerciseActivity"
+            android:exported="false"
+            android:label="Esercizio Manuale" />
+        
+        <!-- *** NUOVO SISTEMA MODULARE - CLEAN ARCHITECTURE *** -->
     </application>
 
 </manifest>

@@ -1,6 +1,7 @@
 package com.programminghut.pose_detection
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
@@ -113,6 +114,7 @@ class MainActivity : AppCompatActivity() {
     private var recordSkeleton = false
     private var poseLogger: PoseLogger? = null
     private lateinit var btnExitAndCopy: Button
+    private lateinit var btnFinishAiSession: Button
     
     // *** SQUAT COUNTER PER PERSISTENZA ***
     private lateinit var squatCounter: SquatCounter
@@ -121,16 +123,25 @@ class MainActivity : AppCompatActivity() {
     private val sessionReps = mutableListOf<RepTrackingData>()
     private var sessionStartTime: Long = 0
     private var lastRepTime: Long = 0
+    private var sessionAlreadySaved = false // ✅ Flag per evitare salvataggi doppi
     
     // Database components
+    private lateinit var database: com.programminghut.pose_detection.data.database.AppDatabase
     private lateinit var sessionRepository: com.programminghut.pose_detection.data.repository.SessionRepository
+    private lateinit var dailySessionRepository: com.programminghut.pose_detection.data.repository.DailySessionRepository
     
     // *** RECOVERY MODE (PHASE 4) ***
     private var isRecoveryMode = false
+    private var isAISquatMode = false
     private var recoveredDate: Long = 0
     private var minRepsRequired = 50
     private lateinit var recoveryBanner: TextView
     private var recoveryAutoCalibrated = false  // Track if auto-calibration is done
+    
+    // *** EXERCISE INFO (PHASE 6) ***
+    private var exerciseId: Long = 0
+    private var exerciseName: String = "Squat"
+    private var exerciseType: String = "SQUAT"
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -138,9 +149,15 @@ class MainActivity : AppCompatActivity() {
         isFrontCamera = intent.getBooleanExtra("isFrontCamera", false)
         recordSkeleton = intent.getBooleanExtra("RECORD_SKELETON", false)
         
+        // *** EXERCISE INFO (PHASE 6) ***
+        exerciseId = intent.getLongExtra("EXERCISE_ID", 0)
+        exerciseName = intent.getStringExtra("EXERCISE_NAME") ?: "Squat"
+        exerciseType = intent.getStringExtra("EXERCISE_TYPE") ?: "SQUAT"
+        
         // *** RECOVERY MODE DETECTION (PHASE 4) ***
         isRecoveryMode = intent.getStringExtra("MODE") == "RECOVERY"
-        if (isRecoveryMode) {
+        isAISquatMode = intent.getStringExtra("MODE") == "AI_SQUAT"
+        if (isRecoveryMode || isAISquatMode) {
             recoveredDate = intent.getLongExtra("RECOVERED_DATE", 0)
             minRepsRequired = intent.getIntExtra("MIN_REPS_REQUIRED", 50)
         }
@@ -156,10 +173,16 @@ class MainActivity : AppCompatActivity() {
         squatCounter = SquatCounter(this)
         
         // *** INIZIALIZZA DATABASE E REPOSITORY (PHASE 1) ***
-        val database = com.programminghut.pose_detection.data.database.AppDatabase.getDatabase(applicationContext)
+        database = com.programminghut.pose_detection.data.database.AppDatabase.getDatabase(applicationContext)
         sessionRepository = com.programminghut.pose_detection.data.repository.SessionRepository(
             database.sessionDao(),
             database.repDao()
+        )
+        dailySessionRepository = com.programminghut.pose_detection.data.repository.DailySessionRepository(
+            database.dailySessionDao(),
+            database.dailySessionRelationDao(),
+            database.exerciseDao(),
+            database.workoutDao()
         )
         
         // Inizia tracking della sessione
@@ -168,11 +191,14 @@ class MainActivity : AppCompatActivity() {
         
         // *** GESTIONE MODALITÀ RECORDING ***
         btnExitAndCopy = findViewById(R.id.btn_exit_and_copy)
+        btnFinishAiSession = findViewById(R.id.btn_finish_ai_session)
+        
         if (recordSkeleton) {
             // Modalità registrazione: inizializza logger e mostra bottone exit
             try {
                 poseLogger = PoseLogger(this)
                 btnExitAndCopy.visibility = View.VISIBLE
+                btnFinishAiSession.visibility = View.GONE  // Nascondi pulsante AI
                 numberTextView.visibility = View.GONE  // Nascondi il contatore ripetizioni
                 Toast.makeText(this, "Modalità Recording Attiva", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
@@ -180,13 +206,31 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Errore inizializzazione logger", Toast.LENGTH_SHORT).show()
             }
         } else {
-            // Modalità normale: nascondi bottone exit
+            // Modalità normale: nascondi bottone exit, mostra pulsante AI se è AI mode
             btnExitAndCopy.visibility = View.GONE
+            btnFinishAiSession.visibility = if (isAISquatMode) View.VISIBLE else View.GONE
+            
+            // ✅ Debug log per verificare visibilità pulsante
+            Log.d("MainActivity", "🎯 btnFinishAiSession visibility: ${if (isAISquatMode) "VISIBLE" else "GONE"}, isAISquatMode=$isAISquatMode")
         }
         
         // Collegamento bottone EXIT
         btnExitAndCopy.setOnClickListener {
             poseLogger?.copyFileToClipboardAndExit(this@MainActivity)
+        }
+        
+        // ✅ Collegamento pulsante FINE sessione AI
+        btnFinishAiSession.setOnClickListener {
+            Log.d("MainActivity", "🎯🎯🎯 Pulsante FINE AI premuto - terminando sessione manualmente")
+            android.util.Log.d("BRIDGE_DEBUG", "🎯🎯🎯 FINE button clicked - saving AI session")
+            if (sessionReps.isNotEmpty()) {
+                android.util.Log.d("BRIDGE_DEBUG", "🎯 sessionReps non vuoto: ${sessionReps.size} reps")
+                saveWorkoutSessionAndFinish()
+            } else {
+                android.util.Log.d("BRIDGE_DEBUG", "❌ sessionReps vuoto!")
+                Toast.makeText(this, "Nessun squat completato", Toast.LENGTH_SHORT).show()
+                finish()
+            }
         }
 
         imageProcessor =
@@ -268,7 +312,14 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) {
-                bitmap = textureView.bitmap!!
+                // ✅ Null safety check per evitare crash
+                val textureBitmap = textureView.bitmap
+                if (textureBitmap == null) {
+                    Log.w("MainActivity", "textureView.bitmap è null, salto frame")
+                    return
+                }
+                
+                bitmap = textureBitmap
                 val tensorImage = preprocessImage(bitmap)
                 val outputFeature0 = runPoseDetection(tensorImage)
                 
@@ -286,8 +337,8 @@ class MainActivity : AppCompatActivity() {
                 }
                 
                 if (!step1Complete) {
-                    // Phase 4: In recovery mode, do automatic calibration
-                    if (isRecoveryMode && !recoveryAutoCalibrated) {
+                    // Phase 4: In recovery mode or AI squat, do automatic calibration
+                    if ((isRecoveryMode || isAISquatMode) && !recoveryAutoCalibrated) {
                         // First frame: save as base position (standing)
                         outputFeature0_base_position = outputFeature0.clone()
                         outputFeature0_squat_position = outputFeature0.clone()
@@ -295,13 +346,18 @@ class MainActivity : AppCompatActivity() {
                         
                         // Show message
                         runOnUiThread {
+                            val message = if (isRecoveryMode) {
+                                "Recovery Mode: fai uno squat completo per iniziare"
+                            } else {
+                                "🤖 AI Squat: fai uno squat completo per iniziare"
+                            }
                             Toast.makeText(
                                 this@MainActivity,
-                                "Recovery Mode: fai uno squat completo per iniziare",
+                                message,
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
-                    } else if (isRecoveryMode && recoveryAutoCalibrated) {
+                    } else if ((isRecoveryMode || isAISquatMode) && recoveryAutoCalibrated) {
                         // Monitor for first deep squat to set squat position
                         val currentMetric = computeSquatMetric(outputFeature0)
                         val baseMetric = computeSquatMetric(outputFeature0_base_position)
@@ -314,17 +370,33 @@ class MainActivity : AppCompatActivity() {
                             outputFeature0_squat_position = outputFeature0.clone()
                             
                             runOnUiThread {
+                                val message = if (isRecoveryMode) {
+                                    "✅ Calibrazione completata! Inizia a contare"
+                                } else {
+                                    "🤖 ✅ AI Squat pronto! Inizia a contare"
+                                }
                                 Toast.makeText(
                                     this@MainActivity,
-                                    "✅ Calibrazione completata! Inizia a contare",
+                                    message,
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
                         }
                     } else {
                         // Normal mode: get calibration from intent
-                        outputFeature0_base_position = intent.getFloatArrayExtra("base_position")!!
-                        outputFeature0_squat_position = intent.getFloatArrayExtra("squat_position")!!
+                        // ✅ Null safety check per evitare crash
+                        val basePosition = intent.getFloatArrayExtra("base_position")
+                        val squatPosition = intent.getFloatArrayExtra("squat_position")
+                        
+                        if (basePosition != null && squatPosition != null) {
+                            outputFeature0_base_position = basePosition
+                            outputFeature0_squat_position = squatPosition
+                        } else {
+                            // Se non ci sono posizioni di calibrazione, usa auto-calibrazione
+                            Log.w("MainActivity", "Calibration positions missing, switching to auto-calibration mode")
+                            outputFeature0_base_position = outputFeature0.clone()
+                            outputFeature0_squat_position = outputFeature0.clone()
+                        }
                     }
                     
                     startStep1(
@@ -443,10 +515,13 @@ class MainActivity : AppCompatActivity() {
                         )
                     )
                     
+                    android.util.Log.d("BRIDGE_DEBUG", "🏃‍♀️ REP AGGIUNTO! count_repetition=$count_repetition, sessionReps.size=${sessionReps.size}")
+                    
                     lastRepTime = currentTime
                     Log.d("MainActivity", "Rep $count_repetition completed at squat position! depth=$depthScore, form=$formScore, speed=$repSpeed")
                     
                     // *** INCREMENTA E SALVA IL TOTALE DEGLI SQUAT ***
+                    // ✅ Conta gli squat sia in modalità normale che AI (ma non in recording)
                     if (!recordSkeleton) {
                         squatCounter.incrementSquat()
                         updateSquatDisplay(compact = true)
@@ -1174,7 +1249,8 @@ class MainActivity : AppCompatActivity() {
                     startTime = actualStartTime,  // Use recoveredDate in recovery mode
                     endTime = endTime,
                     durationSeconds = durationSeconds,
-                    exerciseType = "SQUAT",
+                    exerciseType = exerciseType,
+                    exerciseName = exerciseName,
                     totalReps = sessionReps.size,
                     avgDepthScore = avgDepth,
                     avgFormScore = avgForm,
@@ -1202,8 +1278,15 @@ class MainActivity : AppCompatActivity() {
                 
                 // Salva nel database usando coroutine
                 kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                    val sessionId = sessionRepository.insertCompleteWorkout(session, reps)
-                    Log.d("MainActivity", "Sessione salvata con successo! ID=$sessionId, Reps=${reps.size}")
+                    val sessionId = if (isRecoveryMode && recoveredDate > 0) {
+                        // Use recovery session creation
+                        sessionRepository.createRecoverySession(session, reps, recoveredDate)
+                    } else {
+                        // Normal session
+                        sessionRepository.insertCompleteWorkout(session, reps)
+                    }
+                    
+                    Log.d("MainActivity", "Sessione salvata con successo! ID=$sessionId, Reps=${reps.size}, Recovery=${isRecoveryMode}")
                     
                     // Mostra Toast di conferma
                     runOnUiThread {
@@ -1217,6 +1300,36 @@ class MainActivity : AppCompatActivity() {
                             message,
                             Toast.LENGTH_LONG
                         ).show()
+                        
+                        // ✅ Se è recovery mode, torna al calendario dopo 2 secondi
+                        if (isRecoveryMode) {
+                            kotlinx.coroutines.GlobalScope.launch {
+                                kotlinx.coroutines.delay(2000) // Aspetta 2 secondi
+                                runOnUiThread {
+                                    // ✅ Imposta il risultato prima di finire
+                                    val resultIntent = android.content.Intent().apply {
+                                        putExtra("REPS_COMPLETED", reps.size)
+                                        putExtra("SESSION_DURATION", endTime - actualStartTime)
+                                    }
+                                    setResult(Activity.RESULT_OK, resultIntent)
+                                    finish() // Chiude MainActivity e torna al calendario
+                                }
+                            }
+                        } else {
+                            // ✅ Per sessioni normali, imposta il risultato e chiudi dopo un breve delay
+                            kotlinx.coroutines.GlobalScope.launch {
+                                kotlinx.coroutines.delay(1000) // Breve delay per mostrare il toast
+                                runOnUiThread {
+                                    val resultIntent = android.content.Intent().apply {
+                                        putExtra("REPS_COMPLETED", reps.size)
+                                        putExtra("SESSION_DURATION", endTime - actualStartTime)
+                                    }
+                                    setResult(Activity.RESULT_OK, resultIntent)
+                                    Log.d("MainActivity", "🎯 Risultato impostato e activity in chiusura: ${reps.size} reps")
+                                    finish() // Chiude MainActivity e torna alla NewMainActivity
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -1246,15 +1359,169 @@ class MainActivity : AppCompatActivity() {
                 .setCancelable(false)
                 .show()
         } else {
-            super.onBackPressed()
+            // ✅ Prima di uscire, salva la sessione e imposta il risultato se ci sono ripetizioni
+            if (!recordSkeleton && sessionReps.isNotEmpty()) {
+                Log.d("MainActivity", "🎯 onBackPressed: salvando sessione e impostando risultato prima dell'uscita")
+                saveWorkoutSessionAndFinish()
+            } else {
+                super.onBackPressed()
+            }
         }
+    }
+    
+    /**
+     * ✅ Salva la sessione di workout e imposta il risultato per il launcher
+     * Utilizzata quando l'utente esce dall'activity
+     */
+    private fun saveWorkoutSessionAndFinish() {
+        // ✅ Evita salvataggi doppi
+        if (sessionAlreadySaved) {
+            Log.d("MainActivity", "🎯 Sessione già salvata, termino l'activity")
+            finish()
+            return
+        }
+        sessionAlreadySaved = true
+        
+        // Esegui in background per non bloccare la chiusura
+        Thread {
+            try {
+                // Phase 4: In recovery mode, use recoveredDate as startTime
+                val actualStartTime = if (isRecoveryMode) {
+                    recoveredDate  // Use the date being recovered
+                } else {
+                    sessionStartTime  // Use current session start
+                }
+                
+                val endTime = if (isRecoveryMode) {
+                    // In recovery mode, set endTime to same day as recoveredDate
+                    recoveredDate + (24 * 60 * 60 * 1000L) - 1  // End of that day
+                } else {
+                    System.currentTimeMillis()
+                }
+                
+                val durationSeconds = ((endTime - actualStartTime) / 1000).toInt()
+                
+                // Calcola statistiche aggregate
+                val avgDepth = sessionReps.map { it.depthScore }.average().toFloat()
+                val avgForm = sessionReps.map { it.formScore }.average().toFloat()
+                val avgSpeed = sessionReps.filter { it.speed > 0 }.map { it.speed }.average().toFloat()
+                
+                // Crea oggetto WorkoutSession
+                val session = com.programminghut.pose_detection.data.model.WorkoutSession(
+                    startTime = actualStartTime,  // Use recoveredDate in recovery mode
+                    endTime = endTime,
+                    durationSeconds = durationSeconds,
+                    exerciseType = exerciseType,
+                    exerciseName = exerciseName,
+                    totalReps = sessionReps.size,
+                    avgDepthScore = avgDepth,
+                    avgFormScore = avgForm,
+                    avgSpeed = avgSpeed,
+                    appVersion = packageManager.getPackageInfo(packageName, 0).versionName,
+                    deviceModel = android.os.Build.MODEL,
+                    // Phase 4: Recovery Mode fields
+                    sessionType = if (isRecoveryMode) "RECOVERY" else "REAL_TIME",
+                    recoveredDate = if (isRecoveryMode) recoveredDate else null,
+                    affectsStreak = true
+                )
+                
+                // Converti tracking data in RepData
+                val reps = sessionReps.map { tracking ->
+                    com.programminghut.pose_detection.data.model.RepData(
+                        sessionId = 0, // Sarà assegnato dal database
+                        repNumber = tracking.repNumber,
+                        timestamp = tracking.timestamp,
+                        depthScore = tracking.depthScore,
+                        formScore = tracking.formScore,
+                        speed = tracking.speed,
+                        confidence = tracking.confidence
+                    )
+                }
+                
+                // Salva nel database usando coroutine
+                kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    val sessionId = if (isRecoveryMode && recoveredDate > 0) {
+                        // Use recovery session creation
+                        sessionRepository.createRecoverySession(session, reps, recoveredDate)
+                    } else {
+                        // Normal session
+                        sessionRepository.insertCompleteWorkout(session, reps)
+                    }
+                    
+                    Log.d("MainActivity", "🎯 Sessione salvata con successo! ID=$sessionId, Reps=${reps.size}")
+                    
+                    // ✅ Bridge: Aggiungi l'AI Squat alla sessione giornaliera Today
+                    if (!isRecoveryMode) {  // Solo per sessioni normali, non recovery
+                        try {
+                            android.util.Log.d("BRIDGE_DEBUG", "🎯🎯🎯 AVVIO BRIDGE LOGIC per aggiungere AI squat alla Today session")
+                            android.util.Log.d("BRIDGE_DEBUG", "🔧 Reps totali: ${reps.size}")
+                            
+                            // ✅ Step 1: Crea AI Squat item con default 0 reps
+                            val aiSquatAdded = dailySessionRepository.addAISquatToTodaySession(0)
+                            
+                            if (aiSquatAdded != null) {
+                                android.util.Log.d("BRIDGE_DEBUG", "✅ AI Squat item creato con ID: ${aiSquatAdded.itemId}")
+                                
+                                // ✅ Step 2: Aggiorna con reps reali dal conteggio AI
+                                val updateSuccess = dailySessionRepository.updateAISquatWithRealCount(
+                                    aiSquatAdded.itemId, 
+                                    reps.size
+                                )
+                                
+                                if (updateSuccess) {
+                                    android.util.Log.d("BRIDGE_DEBUG", "✅✅✅ AI Squat completato! ItemID: ${aiSquatAdded.itemId}, Reps: ${reps.size}")
+                                } else {
+                                    android.util.Log.e("BRIDGE_DEBUG", "❌ Errore aggiornamento AI Squat con reps reali")
+                                }
+                            } else {
+                                android.util.Log.e("BRIDGE_DEBUG", "❌❌❌ Fallimento addAISquatToTodaySession - risultato null")
+                            }
+                            
+                        } catch (e: Exception) {
+                            android.util.Log.e("BRIDGE_DEBUG", "❌❌❌ ERRORE CRITICO nel bridge logic AI->Today: ${e.message}")
+                            e.printStackTrace()
+                        }
+                    } else {
+                        android.util.Log.d("BRIDGE_DEBUG", "⏭️ Modalità recovery - bridge logic skippato")
+                    }
+                    
+                    // ✅ Imposta il risultato e termina l'activity nella UI thread
+                    runOnUiThread {
+                        val resultIntent = android.content.Intent().apply {
+                            putExtra("REPS_COMPLETED", reps.size)
+                            putExtra("SESSION_DURATION", endTime - actualStartTime)
+                        }
+                        setResult(Activity.RESULT_OK, resultIntent)
+                        Log.d("MainActivity", "🎯 Risultato impostato: RESULT_OK=${Activity.RESULT_OK}, reps: ${reps.size}, durata: ${endTime - actualStartTime}ms")
+                        
+                        // Mostra Toast di conferma
+                        val message = if (isRecoveryMode) {
+                            "🎉 Giorno recuperato! ${reps.size} squat completati!"
+                        } else {
+                            "Sessione salvata: ${reps.size} squat!"
+                        }
+                        Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                        
+                        // Termina l'activity
+                        finish()
+                    }
+                }
+                
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Errore nel salvataggio sessione: ${e.message}", e)
+                runOnUiThread {
+                    finish() // Chiudi anche in caso di errore
+                }
+            }
+        }.start()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         
-        // *** SALVA SESSIONE NEL DATABASE (PHASE 1) ***
-        if (!recordSkeleton && sessionReps.isNotEmpty()) {
+        // *** SALVA SESSIONE NEL DATABASE (PHASE 1) - solo se non già salvata ***
+        if (!recordSkeleton && sessionReps.isNotEmpty() && !sessionAlreadySaved) {
+            Log.d("MainActivity", "🎯 onDestroy: salvando sessione non ancora salvata")
             saveWorkoutSession()
         }
         

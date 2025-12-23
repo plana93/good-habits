@@ -526,6 +526,15 @@ class SessionRepository(
     }
     
     /**
+     * ✅ Verifica se una data è stata recuperata
+     * @param dateTimestamp Il timestamp della data da verificare (inizio giorno)
+     * @return True se esiste una sessione RECOVERY per quella data
+     */
+    suspend fun isDateRecovered(dateTimestamp: Long): Boolean {
+        return sessionDao.isDateAlreadyRecovered(dateTimestamp)
+    }
+    
+    /**
      * Data class for average metrics
      */
     private data class AverageMetrics(

@@ -1,0 +1,529 @@
+package com.programminghut.pose_detection.data.validator
+
+import com.programminghut.pose_detection.data.model.*
+import kotlin.math.*
+
+/**
+ * Phase 6: Exercise Validator Core
+ * 
+ * Valida le ripetizioni di qualsiasi esercizio basandosi sulle regole definite.
+ * Implementa la logica per tutti i 15 RuleType.
+ * 
+ * Formato keypoints: FloatArray di 51 elementi (17 keypoints * 3 valori)
+ * Per ogni keypoint: [y, x, confidence]
+ * Indici: 0=nose, 1=left_eye, 2=right_eye, 3=left_ear, 4=right_ear,
+ *         5=left_shoulder, 6=right_shoulder, 7=left_elbow, 8=right_elbow,
+ *         9=left_wrist, 10=right_wrist, 11=left_hip, 12=right_hip,
+ *         13=left_knee, 14=right_knee, 15=left_ankle, 16=right_ankle
+ */
+class ExerciseValidator {
+    
+    companion object {
+        private const val MIN_CONFIDENCE = 0.4f  // Confidenza minima per keypoint valido
+    }
+    
+    /**
+     * Valida una ripetizione secondo le regole dell'esercizio
+     * 
+     * @param currentKeypoints Keypoints della posizione attuale
+     * @param startKeypoints Keypoints della posizione iniziale calibrata
+     * @param endKeypoints Keypoints della posizione finale calibrata
+     * @param exercise Esercizio con regole da validare
+     * @param timeSeconds Tempo impiegato per completare la rep (opzionale)
+     * @return Risultato della validazione con score e dettagli
+     */
+    fun validateRep(
+        currentKeypoints: FloatArray,
+        startKeypoints: FloatArray,
+        endKeypoints: FloatArray,
+        exercise: Exercise,
+        timeSeconds: Float? = null
+    ): RepValidationResult {
+        
+        // Lista risultati per ogni regola
+        val ruleResults = mutableListOf<RuleResult>()
+        var totalWeightedScore = 0f
+        var totalWeight = 0f
+        val warnings = mutableListOf<String>()
+        
+        // Valida ogni regola
+        for (rule in exercise.rules) {
+            val result = validateRule(
+                rule = rule,
+                currentKeypoints = currentKeypoints,
+                startKeypoints = startKeypoints,
+                endKeypoints = endKeypoints,
+                timeSeconds = timeSeconds
+            )
+            
+            ruleResults.add(result)
+            totalWeightedScore += result.score * rule.weight
+            totalWeight += rule.weight
+            
+            // Genera warning se regola non passata
+            if (!result.passed && rule.description.isNotEmpty()) {
+                warnings.add("⚠️ ${rule.description}")
+            }
+        }
+        
+        // Calcola score finale normalizzato (0-1)
+        val finalScore = if (totalWeight > 0) {
+            (totalWeightedScore / totalWeight).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
+        
+        // Rep valida se score >= 0.6
+        val isValid = finalScore >= 0.6f
+        
+        return RepValidationResult(
+            isValid = isValid,
+            totalScore = finalScore,
+            ruleResults = ruleResults,
+            warnings = warnings
+        )
+    }
+    
+    /**
+     * Valida una singola regola
+     */
+    private fun validateRule(
+        rule: ExerciseRule,
+        currentKeypoints: FloatArray,
+        startKeypoints: FloatArray,
+        endKeypoints: FloatArray,
+        timeSeconds: Float?
+    ): RuleResult {
+        
+        val actualValue: Float
+        val expectedValue = rule.targetValue
+        var passed = false
+        var score = 0f
+        
+        when (rule.ruleType) {
+            // ===== REGOLE DI DISTANZA =====
+            RuleType.DISTANCE_MIN -> {
+                if (rule.keypoints.size >= 2) {
+                    actualValue = calculateDistance(
+                        currentKeypoints,
+                        rule.keypoints[0],
+                        rule.keypoints[1]
+                    )
+                    passed = actualValue >= expectedValue * (1 - rule.tolerance)
+                    score = if (passed) 1f else (actualValue / expectedValue).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            RuleType.DISTANCE_MAX -> {
+                if (rule.keypoints.size >= 2) {
+                    actualValue = calculateDistance(
+                        currentKeypoints,
+                        rule.keypoints[0],
+                        rule.keypoints[1]
+                    )
+                    passed = actualValue <= expectedValue * (1 + rule.tolerance)
+                    score = if (passed) 1f else (1f - (actualValue - expectedValue) / expectedValue).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            RuleType.DISTANCE_EQUALS -> {
+                if (rule.keypoints.size >= 2) {
+                    actualValue = calculateDistance(
+                        currentKeypoints,
+                        rule.keypoints[0],
+                        rule.keypoints[1]
+                    )
+                    val diff = abs(actualValue - expectedValue)
+                    passed = diff <= expectedValue * rule.tolerance
+                    score = (1f - (diff / (expectedValue * rule.tolerance))).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            // ===== REGOLE DI ANGOLO =====
+            RuleType.ANGLE_MIN -> {
+                if (rule.keypoints.size >= 3) {
+                    actualValue = calculateAngle(
+                        currentKeypoints,
+                        rule.keypoints[0],
+                        rule.keypoints[1],
+                        rule.keypoints[2]
+                    )
+                    passed = actualValue >= expectedValue - rule.tolerance
+                    score = if (passed) 1f else (actualValue / expectedValue).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            RuleType.ANGLE_MAX -> {
+                if (rule.keypoints.size >= 3) {
+                    actualValue = calculateAngle(
+                        currentKeypoints,
+                        rule.keypoints[0],
+                        rule.keypoints[1],
+                        rule.keypoints[2]
+                    )
+                    passed = actualValue <= expectedValue + rule.tolerance
+                    score = if (passed) 1f else (1f - (actualValue - expectedValue) / 180f).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            RuleType.ANGLE_EQUALS -> {
+                if (rule.keypoints.size >= 3) {
+                    actualValue = calculateAngle(
+                        currentKeypoints,
+                        rule.keypoints[0],
+                        rule.keypoints[1],
+                        rule.keypoints[2]
+                    )
+                    val diff = abs(actualValue - expectedValue)
+                    passed = diff <= rule.tolerance
+                    score = (1f - (diff / rule.tolerance)).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            // ===== REGOLE DI SIMMETRIA =====
+            RuleType.SYMMETRY_LEFT_RIGHT -> {
+                if (rule.keypoints.size >= 2) {
+                    actualValue = calculateSymmetryLeftRight(currentKeypoints, rule.keypoints)
+                    passed = actualValue <= rule.tolerance
+                    score = (1f - (actualValue / rule.tolerance)).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            RuleType.SYMMETRY_UP_DOWN -> {
+                if (rule.keypoints.size >= 2) {
+                    actualValue = calculateSymmetryUpDown(currentKeypoints, rule.keypoints)
+                    passed = actualValue <= rule.tolerance
+                    score = (1f - (actualValue / rule.tolerance)).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            // ===== REGOLE DI POSIZIONE =====
+            RuleType.POSITION_ABOVE -> {
+                if (rule.keypoints.size >= 2) {
+                    val y1 = getKeypointY(currentKeypoints, rule.keypoints[0])
+                    val y2 = getKeypointY(currentKeypoints, rule.keypoints[1])
+                    actualValue = y1 - y2  // Negativo se sopra (y cresce verso il basso)
+                    passed = actualValue < -rule.tolerance
+                    score = if (passed) 1f else (1f - abs(actualValue)).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            RuleType.POSITION_BELOW -> {
+                if (rule.keypoints.size >= 2) {
+                    val y1 = getKeypointY(currentKeypoints, rule.keypoints[0])
+                    val y2 = getKeypointY(currentKeypoints, rule.keypoints[1])
+                    actualValue = y1 - y2  // Positivo se sotto
+                    passed = actualValue > rule.tolerance
+                    score = if (passed) 1f else (1f - abs(actualValue)).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            RuleType.POSITION_LEFT -> {
+                if (rule.keypoints.size >= 2) {
+                    val x1 = getKeypointX(currentKeypoints, rule.keypoints[0])
+                    val x2 = getKeypointX(currentKeypoints, rule.keypoints[1])
+                    actualValue = x1 - x2  // Negativo se a sinistra
+                    passed = actualValue < -rule.tolerance
+                    score = if (passed) 1f else (1f - abs(actualValue)).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            RuleType.POSITION_RIGHT -> {
+                if (rule.keypoints.size >= 2) {
+                    val x1 = getKeypointX(currentKeypoints, rule.keypoints[0])
+                    val x2 = getKeypointX(currentKeypoints, rule.keypoints[1])
+                    actualValue = x1 - x2  // Positivo se a destra
+                    passed = actualValue > rule.tolerance
+                    score = if (passed) 1f else (1f - abs(actualValue)).coerceIn(0f, 1f)
+                } else {
+                    actualValue = 0f
+                }
+            }
+            
+            // ===== REGOLE DI VISIBILITÀ =====
+            RuleType.VISIBILITY_REQUIRED -> {
+                actualValue = calculateAverageConfidence(currentKeypoints, rule.keypoints)
+                passed = actualValue >= expectedValue
+                score = if (passed) 1f else (actualValue / expectedValue).coerceIn(0f, 1f)
+            }
+            
+            // ===== REGOLE TEMPORALI =====
+            RuleType.TIME_MIN -> {
+                actualValue = timeSeconds ?: 0f
+                passed = actualValue >= expectedValue
+                score = if (passed) 1f else (actualValue / expectedValue).coerceIn(0f, 1f)
+            }
+            
+            RuleType.TIME_MAX -> {
+                actualValue = timeSeconds ?: Float.MAX_VALUE
+                passed = actualValue <= expectedValue
+                score = if (passed) 1f else (expectedValue / actualValue).coerceIn(0f, 1f)
+            }
+        }
+        
+        return RuleResult(
+            rule = rule,
+            actualValue = actualValue,
+            expectedValue = expectedValue,
+            passed = passed,
+            score = score
+        )
+    }
+    
+    // ===== FUNZIONI DI CALCOLO GEOMETRICO =====
+    
+    /**
+     * Calcola distanza euclidea normalizzata tra due keypoint
+     */
+    private fun calculateDistance(
+        keypoints: FloatArray,
+        keypointIdx1: Int,
+        keypointIdx2: Int
+    ): Float {
+        if (!isValidKeypointIndex(keypointIdx1) || !isValidKeypointIndex(keypointIdx2)) {
+            return 0f
+        }
+        
+        val y1 = keypoints[keypointIdx1 * 3]
+        val x1 = keypoints[keypointIdx1 * 3 + 1]
+        val y2 = keypoints[keypointIdx2 * 3]
+        val x2 = keypoints[keypointIdx2 * 3 + 1]
+        
+        return sqrt((x2 - x1).pow(2) + (y2 - y1).pow(2))
+    }
+    
+    /**
+     * Calcola angolo tra tre keypoint (in gradi)
+     * keypointIdx1 -> keypointIdx2 <- keypointIdx3
+     * Il vertice dell'angolo è keypointIdx2
+     */
+    private fun calculateAngle(
+        keypoints: FloatArray,
+        keypointIdx1: Int,
+        keypointIdx2: Int,
+        keypointIdx3: Int
+    ): Float {
+        if (!isValidKeypointIndex(keypointIdx1) || 
+            !isValidKeypointIndex(keypointIdx2) || 
+            !isValidKeypointIndex(keypointIdx3)) {
+            return 0f
+        }
+        
+        val y1 = keypoints[keypointIdx1 * 3]
+        val x1 = keypoints[keypointIdx1 * 3 + 1]
+        val y2 = keypoints[keypointIdx2 * 3]
+        val x2 = keypoints[keypointIdx2 * 3 + 1]
+        val y3 = keypoints[keypointIdx3 * 3]
+        val x3 = keypoints[keypointIdx3 * 3 + 1]
+        
+        // Vettori dal vertice agli altri due punti
+        val v1x = x1 - x2
+        val v1y = y1 - y2
+        val v2x = x3 - x2
+        val v2y = y3 - y2
+        
+        // Calcola angolo usando arctan2 (ritorna Double)
+        val angle1 = atan2(v1y.toDouble(), v1x.toDouble())
+        val angle2 = atan2(v2y.toDouble(), v2x.toDouble())
+        
+        var angle = abs(angle1 - angle2)
+        
+        // Normalizza a 0-180 gradi
+        if (angle > Math.PI) {
+            angle = 2 * Math.PI - angle
+        }
+        
+        return Math.toDegrees(angle).toFloat()
+    }
+    
+    /**
+     * Calcola simmetria sinistra-destra
+     * Restituisce la differenza media delle posizioni Y dei keypoint sinistri vs destri
+     */
+    private fun calculateSymmetryLeftRight(
+        keypoints: FloatArray,
+        keypointIndices: List<Int>
+    ): Float {
+        if (keypointIndices.size < 2) return 0f
+        
+        // Assumiamo che i keypoint siano alternati: left, right, left, right...
+        var totalDiff = 0f
+        var count = 0
+        
+        for (i in 0 until keypointIndices.size step 2) {
+            if (i + 1 < keypointIndices.size) {
+                val leftIdx = keypointIndices[i]
+                val rightIdx = keypointIndices[i + 1]
+                
+                if (isValidKeypointIndex(leftIdx) && isValidKeypointIndex(rightIdx)) {
+                    val yLeft = keypoints[leftIdx * 3]
+                    val yRight = keypoints[rightIdx * 3]
+                    totalDiff += abs(yLeft - yRight)
+                    count++
+                }
+            }
+        }
+        
+        return if (count > 0) totalDiff / count else 0f
+    }
+    
+    /**
+     * Calcola simmetria alto-basso
+     */
+    private fun calculateSymmetryUpDown(
+        keypoints: FloatArray,
+        keypointIndices: List<Int>
+    ): Float {
+        if (keypointIndices.size < 2) return 0f
+        
+        // Assumiamo che i keypoint siano alternati: top, bottom, top, bottom...
+        var totalDiff = 0f
+        var count = 0
+        
+        for (i in 0 until keypointIndices.size step 2) {
+            if (i + 1 < keypointIndices.size) {
+                val topIdx = keypointIndices[i]
+                val bottomIdx = keypointIndices[i + 1]
+                
+                if (isValidKeypointIndex(topIdx) && isValidKeypointIndex(bottomIdx)) {
+                    val xTop = keypoints[topIdx * 3 + 1]
+                    val xBottom = keypoints[bottomIdx * 3 + 1]
+                    totalDiff += abs(xTop - xBottom)
+                    count++
+                }
+            }
+        }
+        
+        return if (count > 0) totalDiff / count else 0f
+    }
+    
+    /**
+     * Calcola confidenza media dei keypoint specificati
+     */
+    private fun calculateAverageConfidence(
+        keypoints: FloatArray,
+        keypointIndices: List<Int>
+    ): Float {
+        if (keypointIndices.isEmpty()) return 0f
+        
+        var totalConfidence = 0f
+        var count = 0
+        
+        for (idx in keypointIndices) {
+            if (isValidKeypointIndex(idx)) {
+                totalConfidence += keypoints[idx * 3 + 2]
+                count++
+            }
+        }
+        
+        return if (count > 0) totalConfidence / count else 0f
+    }
+    
+    // ===== HELPER FUNCTIONS =====
+    
+    private fun getKeypointY(keypoints: FloatArray, idx: Int): Float {
+        return if (isValidKeypointIndex(idx)) keypoints[idx * 3] else 0f
+    }
+    
+    private fun getKeypointX(keypoints: FloatArray, idx: Int): Float {
+        return if (isValidKeypointIndex(idx)) keypoints[idx * 3 + 1] else 0f
+    }
+    
+    private fun getKeypointConfidence(keypoints: FloatArray, idx: Int): Float {
+        return if (isValidKeypointIndex(idx)) keypoints[idx * 3 + 2] else 0f
+    }
+    
+    private fun isValidKeypointIndex(idx: Int): Boolean {
+        return idx in 0..16
+    }
+    
+    /**
+     * Verifica se un keypoint è visibile (confidence sufficiente)
+     */
+    fun isKeypointVisible(keypoints: FloatArray, idx: Int): Boolean {
+        return isValidKeypointIndex(idx) && 
+               getKeypointConfidence(keypoints, idx) >= MIN_CONFIDENCE
+    }
+    
+    /**
+     * Verifica se tutti i keypoint essenziali sono visibili
+     */
+    fun areAllKeypointsVisible(keypoints: FloatArray, indices: List<Int>): Boolean {
+        return indices.all { isKeypointVisible(keypoints, it) }
+    }
+    
+    /**
+     * Genera warning automatici basati sui risultati della validazione
+     */
+    fun generateDetailedWarnings(result: RepValidationResult): List<String> {
+        val warnings = result.warnings.toMutableList()
+        
+        // Aggiungi warning generali basati su score
+        when {
+            result.totalScore < 0.3f -> warnings.add("❌ Forma molto scadente - rivedi la tecnica")
+            result.totalScore < 0.5f -> warnings.add("⚠️ Forma insufficiente - concentrati sui dettagli")
+            result.totalScore < 0.7f -> warnings.add("📊 Forma accettabile - margini di miglioramento")
+            result.totalScore < 0.85f -> warnings.add("👍 Buona forma - continua così")
+            else -> warnings.add("🌟 Forma eccellente!")
+        }
+        
+        return warnings
+    }
+    
+    /**
+     * Calcola profondità del movimento (quanto "profondo" è stato il movimento)
+     * Confronta posizione corrente con posizioni start/end
+     */
+    fun calculateDepthScore(
+        currentKeypoints: FloatArray,
+        startKeypoints: FloatArray,
+        endKeypoints: FloatArray,
+        criticalKeypointIndices: List<Int> = listOf(11, 12, 13, 14)  // Anche e ginocchia di default
+    ): Float {
+        var totalDistance = 0f
+        var maxPossibleDistance = 0f
+        var count = 0
+        
+        for (idx in criticalKeypointIndices) {
+            if (!isValidKeypointIndex(idx)) continue
+            
+            // Distanza attuale da start
+            val distFromStart = calculateDistance(currentKeypoints, idx, idx)
+            
+            // Distanza massima possibile (start -> end)
+            val maxDist = calculateDistance(startKeypoints, idx, idx)
+            
+            totalDistance += distFromStart
+            maxPossibleDistance += maxDist
+            count++
+        }
+        
+        return if (maxPossibleDistance > 0 && count > 0) {
+            (totalDistance / maxPossibleDistance).coerceIn(0f, 1f)
+        } else {
+            0.5f  // Default medio se non calcolabile
+        }
+    }
+}

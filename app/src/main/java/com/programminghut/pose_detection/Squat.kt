@@ -88,6 +88,11 @@ class Squat : ComponentActivity()  {
                             val intent = Intent(this@Squat, CameraSelectionActivity::class.java)
                             intent.putExtra("base_position", outputFeature0_base_position)
                             intent.putExtra("squat_position", outputFeature0_squat_position)
+                            
+                            // Phase 6: Pass exercise info (default to Squat)
+                            intent.putExtra("EXERCISE_ID", 0L)
+                            intent.putExtra("EXERCISE_NAME", "Squat")
+                            intent.putExtra("EXERCISE_TYPE", "SQUAT")
 
                             startActivity(intent)
                         },

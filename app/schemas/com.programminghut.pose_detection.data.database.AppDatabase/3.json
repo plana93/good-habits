@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "4b58d27c520a1f2ca03da3a6e9e4bd2b",
+    "identityHash": "5f969edaea847b5fa69e1e16f30606e6",
     "entities": [
       {
         "tableName": "workout_sessions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sessionId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `durationSeconds` INTEGER NOT NULL, `exerciseType` TEXT NOT NULL, `totalReps` INTEGER NOT NULL, `avgDepthScore` REAL NOT NULL, `avgFormScore` REAL NOT NULL, `avgSpeed` REAL NOT NULL, `notes` TEXT, `tags` TEXT NOT NULL, `location` TEXT, `appVersion` TEXT NOT NULL, `deviceModel` TEXT, `isSynced` INTEGER NOT NULL, `exportedAt` INTEGER, `sessionType` TEXT NOT NULL, `recoveredDate` INTEGER, `affectsStreak` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sessionId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `durationSeconds` INTEGER NOT NULL, `exerciseType` TEXT NOT NULL, `exerciseName` TEXT NOT NULL, `totalReps` INTEGER NOT NULL, `avgDepthScore` REAL NOT NULL, `avgFormScore` REAL NOT NULL, `avgSpeed` REAL NOT NULL, `notes` TEXT, `tags` TEXT NOT NULL, `location` TEXT, `appVersion` TEXT NOT NULL, `deviceModel` TEXT, `isSynced` INTEGER NOT NULL, `exportedAt` INTEGER, `sessionType` TEXT NOT NULL, `recoveredDate` INTEGER, `affectsStreak` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "sessionId",
@@ -35,6 +35,12 @@
           {
             "fieldPath": "exerciseType",
             "columnName": "exerciseType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exerciseName",
+            "columnName": "exerciseName",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -330,7 +336,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4b58d27c520a1f2ca03da3a6e9e4bd2b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5f969edaea847b5fa69e1e16f30606e6')"
     ]
   }
 }

@@ -7,12 +7,19 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.programminghut.pose_detection.data.dao.DailySessionDao
+import com.programminghut.pose_detection.data.dao.DailySessionRelationDao
 import com.programminghut.pose_detection.data.dao.ExerciseDao
 import com.programminghut.pose_detection.data.dao.RepDao
 import com.programminghut.pose_detection.data.dao.SessionDao
+import com.programminghut.pose_detection.data.dao.WorkoutDao
+import com.programminghut.pose_detection.data.model.DailySession
+import com.programminghut.pose_detection.data.model.DailySessionItem
 import com.programminghut.pose_detection.data.model.Exercise
 import com.programminghut.pose_detection.data.model.ExerciseTypeConverters
 import com.programminghut.pose_detection.data.model.RepData
+import com.programminghut.pose_detection.data.model.Workout
+import com.programminghut.pose_detection.data.model.WorkoutExercise
 import com.programminghut.pose_detection.data.model.WorkoutSession
 
 /**
@@ -24,17 +31,24 @@ import com.programminghut.pose_detection.data.model.WorkoutSession
  * Version 1: Initial database with WorkoutSession and RepData tables
  * Version 2: Phase 4 - Added sessionType, recoveredDate, affectsStreak fields
  * Version 3: Phase 6 - Added Exercise table for multi-exercise tracking
+ * Version 4: Phase 6 - Added exerciseName field to WorkoutSession
+ * Version 5: Semplificazione - Rimossi keypoints/rules da Exercise, aggiunte Workout entities
+ * Version 6: Modularità - Aggiunte DailySession entities per sessioni giornaliere flessibili
  */
 @Database(
     entities = [
         WorkoutSession::class,
         RepData::class,
-        Exercise::class  // Phase 6: Exercise table
+        Exercise::class,        // Semplificato: tracking manuale
+        Workout::class,         // Nuova: allenamenti composti
+        WorkoutExercise::class, // Nuova: junction table
+        DailySession::class,    // Nuova: sessioni giornaliere
+        DailySessionItem::class // Nuova: elementi nelle sessioni
     ],
-    version = 3,
+    version = 7,
     exportSchema = true
 )
-@TypeConverters(ExerciseTypeConverters::class)  // Phase 6: Type converters for Exercise
+@TypeConverters(ExerciseTypeConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     
     /**
@@ -48,9 +62,24 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun repDao(): RepDao
     
     /**
-     * Phase 6: Get the ExerciseDao to access exercises table
+     * Get the ExerciseDao to access exercises table
      */
     abstract fun exerciseDao(): ExerciseDao
+    
+    /**
+     * Get the WorkoutDao to access workouts and workout_exercises tables
+     */
+    abstract fun workoutDao(): WorkoutDao
+    
+    /**
+     * Get the DailySessionDao to access daily_sessions table
+     */
+    abstract fun dailySessionDao(): DailySessionDao
+    
+    /**
+     * Get the DailySessionRelationDao for complex queries with relations
+     */
+    abstract fun dailySessionRelationDao(): DailySessionRelationDao
     
     companion object {
         // Singleton prevents multiple instances of database opening at the same time
@@ -79,7 +108,7 @@ abstract class AppDatabase : RoomDatabase() {
                     DATABASE_NAME
                 )
                     // Add migrations
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)  // Phase 6: Add migration 2->3
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)  // Phase 6: Add migration 3->4
                     
                     // For development only - destroys and rebuilds database on version changes
                     // Remove this in production and use proper migrations
@@ -164,6 +193,24 @@ abstract class AppDatabase : RoomDatabase() {
                 // Create index on exercise type
                 database.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_exercises_type ON exercises(type)"
+                )
+            }
+        }
+        
+        /**
+         * Migration from version 3 to 4
+         * Adds exerciseName field to WorkoutSession table
+         */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add exerciseName column to workout_sessions table with temporary default
+                database.execSQL(
+                    "ALTER TABLE workout_sessions ADD COLUMN exerciseName TEXT NOT NULL DEFAULT ''"
+                )
+                
+                // Update exerciseName to match exerciseType for all existing records
+                database.execSQL(
+                    "UPDATE workout_sessions SET exerciseName = exerciseType WHERE exerciseName = ''"
                 )
             }
         }

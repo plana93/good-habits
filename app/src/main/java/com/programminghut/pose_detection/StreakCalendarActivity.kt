@@ -2,6 +2,7 @@ package com.programminghut.pose_detection
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import com.programminghut.pose_detection.ui.calendar.CalendarViewModel
 import com.programminghut.pose_detection.ui.calendar.CalendarViewModelFactory
 import com.programminghut.pose_detection.ui.calendar.DayStatus
 import com.programminghut.pose_detection.ui.calendar.StreakCalendarScreen
+import com.programminghut.pose_detection.ui.activity.NewMainActivity
 import com.programminghut.pose_detection.ui.theme.Pose_detectionTheme
 
 /**
@@ -52,19 +54,42 @@ class StreakCalendarActivity : ComponentActivity() {
                         onBackClick = { finish() },
                         onDayClick = { timestamp, status ->
                             // Handle day selection
+                            Log.d("CALENDAR_DEBUG", "🗓️ Day clicked: $timestamp, status: $status")
                             when (status) {
-                                DayStatus.COMPLETED, DayStatus.COMPLETED_MANUAL, DayStatus.RECOVERED -> {
-                                    // Could open session detail
+                                DayStatus.COMPLETED, DayStatus.COMPLETED_MANUAL -> {
+                                    Log.d("CALENDAR_DEBUG", "✅ Completed day clicked - navigating to Today screen")
+                                    // ✅ Per giorni completati, vai alla schermata Oggi per quella data
+                                    val intent = Intent(this, NewMainActivity::class.java).apply {
+                                        putExtra("NAVIGATE_TO_DATE", timestamp)
+                                    }
+                                    startActivity(intent)
+                                }
+                                DayStatus.RECOVERED -> {
+                                    Log.d("CALENDAR_DEBUG", "🎉 Recovered day clicked - navigating to Today screen")
+                                    // ✅ Per giorni recuperati, vai alla schermata Oggi per quella data
+                                    val intent = Intent(this, NewMainActivity::class.java).apply {
+                                        putExtra("NAVIGATE_TO_DATE", timestamp)
+                                    }
+                                    startActivity(intent)
                                 }
                                 DayStatus.MISSED -> {
-                                    // Show recovery option in detail card
+                                    Log.d("CALENDAR_DEBUG", "❌ Missed day clicked - starting recovery directly")
+                                    // ✅ Per giorni persi, avvia direttamente la procedura di recupero
+                                    val intent = Intent(this, CameraSelectionActivity::class.java).apply {
+                                        putExtra("MODE", "RECOVERY")
+                                        putExtra("RECOVERED_DATE", timestamp)
+                                        putExtra("MIN_REPS_REQUIRED", 50)
+                                    }
+                                    startActivity(intent)
                                 }
                                 DayStatus.FUTURE -> {
+                                    Log.d("CALENDAR_DEBUG", "⏳ Future day clicked")
                                     // Do nothing
                                 }
                             }
                         },
                         onRecoveryClick = { missedDayTimestamp ->
+                            Log.d("CALENDAR_DEBUG", "🔄 Recovery button clicked for: $missedDayTimestamp")
                             // Launch CameraSelectionActivity in RECOVERY mode
                             val intent = Intent(this, CameraSelectionActivity::class.java).apply {
                                 putExtra("MODE", "RECOVERY")

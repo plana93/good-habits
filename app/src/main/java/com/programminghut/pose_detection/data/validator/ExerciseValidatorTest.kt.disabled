@@ -1,0 +1,268 @@
+package com.programminghut.pose_detection.data.validator
+
+import com.programminghut.pose_detection.data.model.*
+
+/**
+ * Test helper per ExerciseValidator
+ * Fornisce mock data e test case per validare il funzionamento del validator
+ */
+object ExerciseValidatorTest {
+    
+    /**
+     * Genera keypoints mock per posizione squat perfetta (posizione bassa)
+     */
+    fun getMockSquatDownKeypoints(): FloatArray {
+        // FloatArray di 51 elementi (17 keypoints * 3)
+        // Formato: [y, x, confidence] per ogni keypoint
+        return floatArrayOf(
+            // 0: nose
+            0.15f, 0.5f, 0.95f,
+            // 1: left_eye
+            0.12f, 0.48f, 0.92f,
+            // 2: right_eye
+            0.12f, 0.52f, 0.92f,
+            // 3: left_ear
+            0.14f, 0.45f, 0.88f,
+            // 4: right_ear
+            0.14f, 0.55f, 0.88f,
+            // 5: left_shoulder
+            0.25f, 0.42f, 0.96f,
+            // 6: right_shoulder
+            0.25f, 0.58f, 0.96f,
+            // 7: left_elbow
+            0.32f, 0.40f, 0.90f,
+            // 8: right_elbow
+            0.32f, 0.60f, 0.90f,
+            // 9: left_wrist
+            0.38f, 0.38f, 0.87f,
+            // 10: right_wrist
+            0.38f, 0.62f, 0.87f,
+            // 11: left_hip
+            0.50f, 0.42f, 0.97f,
+            // 12: right_hip
+            0.50f, 0.58f, 0.97f,
+            // 13: left_knee - GINOCCHIO PIEGATO (angolo ~90°)
+            0.68f, 0.40f, 0.95f,
+            // 14: right_knee - GINOCCHIO PIEGATO
+            0.68f, 0.60f, 0.95f,
+            // 15: left_ankle
+            0.82f, 0.38f, 0.93f,
+            // 16: right_ankle
+            0.82f, 0.62f, 0.93f
+        )
+    }
+    
+    /**
+     * Genera keypoints mock per posizione squat in piedi (posizione alta)
+     */
+    fun getMockSquatUpKeypoints(): FloatArray {
+        return floatArrayOf(
+            // 0: nose
+            0.10f, 0.5f, 0.95f,
+            // 1: left_eye
+            0.08f, 0.48f, 0.92f,
+            // 2: right_eye
+            0.08f, 0.52f, 0.92f,
+            // 3: left_ear
+            0.10f, 0.45f, 0.88f,
+            // 4: right_ear
+            0.10f, 0.55f, 0.88f,
+            // 5: left_shoulder
+            0.20f, 0.42f, 0.96f,
+            // 6: right_shoulder
+            0.20f, 0.58f, 0.96f,
+            // 7: left_elbow
+            0.28f, 0.40f, 0.90f,
+            // 8: right_elbow
+            0.28f, 0.60f, 0.90f,
+            // 9: left_wrist
+            0.35f, 0.38f, 0.87f,
+            // 10: right_wrist
+            0.35f, 0.62f, 0.87f,
+            // 11: left_hip
+            0.42f, 0.42f, 0.97f,
+            // 12: right_hip
+            0.42f, 0.58f, 0.97f,
+            // 13: left_knee - GINOCCHIO ESTESO (angolo ~170°)
+            0.62f, 0.41f, 0.95f,
+            // 14: right_knee - GINOCCHIO ESTESO
+            0.62f, 0.59f, 0.95f,
+            // 15: left_ankle
+            0.85f, 0.40f, 0.93f,
+            // 16: right_ankle
+            0.85f, 0.60f, 0.93f
+        )
+    }
+    
+    /**
+     * Test completo del validator con preset squat
+     */
+    fun runSquatValidationTest(validator: ExerciseValidator): String {
+        val report = StringBuilder()
+        report.appendLine("=== EXERCISE VALIDATOR TEST ===\n")
+        
+        // Crea esercizio squat mock
+        val squat = Exercise(
+            exerciseId = 1,
+            name = "Test Squat",
+            type = ExerciseType.SQUAT,
+            description = "Squat test per validator",
+            startPositionKeypoints = getMockSquatUpKeypoints(),
+            endPositionKeypoints = getMockSquatDownKeypoints(),
+            rules = listOf(
+                // Regola 1: Ginocchia devono piegarsi a ~90°
+                ExerciseRule(
+                    ruleType = RuleType.ANGLE_EQUALS,
+                    keypoints = listOf(11, 13, 15),  // Anca-Ginocchio-Caviglia (sinistra)
+                    targetValue = 90f,
+                    tolerance = 15f,
+                    weight = 2.0f,
+                    description = "Piega il ginocchio sinistro a 90°"
+                ),
+                ExerciseRule(
+                    ruleType = RuleType.ANGLE_EQUALS,
+                    keypoints = listOf(12, 14, 16),  // Anca-Ginocchio-Caviglia (destra)
+                    targetValue = 90f,
+                    tolerance = 15f,
+                    weight = 2.0f,
+                    description = "Piega il ginocchio destro a 90°"
+                ),
+                // Regola 2: Simmetria sinistra-destra
+                ExerciseRule(
+                    ruleType = RuleType.SYMMETRY_LEFT_RIGHT,
+                    keypoints = listOf(5, 6, 13, 14),  // Spalle e ginocchia
+                    targetValue = 0.0f,
+                    tolerance = 0.1f,
+                    weight = 1.0f,
+                    description = "Mantieni il corpo simmetrico"
+                ),
+                // Regola 3: Keypoint visibili
+                ExerciseRule(
+                    ruleType = RuleType.VISIBILITY_REQUIRED,
+                    keypoints = listOf(5, 6, 11, 12, 13, 14, 15, 16),
+                    targetValue = 0.45f,
+                    tolerance = 0.0f,
+                    weight = 1.5f,
+                    description = "Corpo completamente visibile"
+                )
+            )
+        )
+        
+        report.appendLine("📋 Exercise: ${squat.name}")
+        report.appendLine("📊 Total Rules: ${squat.rules.size}")
+        report.appendLine()
+        
+        // TEST 1: Validazione posizione DOWN perfetta
+        report.appendLine("--- TEST 1: Perfect Squat Down Position ---")
+        val perfectResult = validator.validateRep(
+            currentKeypoints = getMockSquatDownKeypoints(),
+            startKeypoints = squat.startPositionKeypoints,
+            endKeypoints = squat.endPositionKeypoints,
+            exercise = squat,
+            timeSeconds = 1.2f
+        )
+        
+        report.appendLine("✅ Is Valid: ${perfectResult.isValid}")
+        report.appendLine("📈 Total Score: ${String.format("%.2f", perfectResult.totalScore * 100)}%")
+        report.appendLine("⚠️ Warnings: ${perfectResult.warnings.size}")
+        perfectResult.warnings.forEach { report.appendLine("   - $it") }
+        report.appendLine()
+        
+        report.appendLine("📋 Rule Details:")
+        perfectResult.ruleResults.forEachIndexed { idx, ruleResult ->
+            report.appendLine("   Rule ${idx + 1}: ${ruleResult.rule.ruleType}")
+            report.appendLine("      Expected: ${ruleResult.expectedValue}")
+            report.appendLine("      Actual: ${String.format("%.2f", ruleResult.actualValue)}")
+            report.appendLine("      Passed: ${ruleResult.passed}")
+            report.appendLine("      Score: ${String.format("%.2f", ruleResult.score * 100)}%")
+        }
+        report.appendLine()
+        
+        // TEST 2: Validazione posizione UP (dovrebbe fallire alcune regole)
+        report.appendLine("--- TEST 2: Squat Up Position (Should Fail Angle Rules) ---")
+        val upResult = validator.validateRep(
+            currentKeypoints = getMockSquatUpKeypoints(),
+            startKeypoints = squat.startPositionKeypoints,
+            endKeypoints = squat.endPositionKeypoints,
+            exercise = squat,
+            timeSeconds = 1.2f
+        )
+        
+        report.appendLine("✅ Is Valid: ${upResult.isValid}")
+        report.appendLine("📈 Total Score: ${String.format("%.2f", upResult.totalScore * 100)}%")
+        report.appendLine("⚠️ Warnings: ${upResult.warnings.size}")
+        upResult.warnings.forEach { report.appendLine("   - $it") }
+        report.appendLine()
+        
+        // TEST 3: Keypoint visibility check
+        report.appendLine("--- TEST 3: Keypoint Visibility Tests ---")
+        val downKeypoints = getMockSquatDownKeypoints()
+        val essentialIndices = listOf(5, 6, 11, 12, 13, 14, 15, 16)
+        report.appendLine("Essential keypoints: ${essentialIndices.joinToString(", ")}")
+        report.appendLine("All visible: ${validator.areAllKeypointsVisible(downKeypoints, essentialIndices)}")
+        
+        essentialIndices.forEach { idx ->
+            val visible = validator.isKeypointVisible(downKeypoints, idx)
+            val conf = downKeypoints[idx * 3 + 2]
+            report.appendLine("   Keypoint $idx: ${if (visible) "✅" else "❌"} (conf: ${String.format("%.2f", conf)})")
+        }
+        report.appendLine()
+        
+        // TEST 4: Angle calculation test
+        report.appendLine("--- TEST 4: Angle Calculation Tests ---")
+        val leftKneeAngle = calculateTestAngle(downKeypoints, 11, 13, 15)
+        val rightKneeAngle = calculateTestAngle(downKeypoints, 12, 14, 16)
+        report.appendLine("Left knee angle: ${String.format("%.1f", leftKneeAngle)}°")
+        report.appendLine("Right knee angle: ${String.format("%.1f", rightKneeAngle)}°")
+        report.appendLine()
+        
+        // TEST 5: Distance calculation test
+        report.appendLine("--- TEST 5: Distance Calculation Tests ---")
+        val shoulderToHipLeft = calculateTestDistance(downKeypoints, 5, 11)
+        val shoulderToHipRight = calculateTestDistance(downKeypoints, 6, 12)
+        report.appendLine("Shoulder-Hip distance (left): ${String.format("%.3f", shoulderToHipLeft)}")
+        report.appendLine("Shoulder-Hip distance (right): ${String.format("%.3f", shoulderToHipRight)}")
+        report.appendLine()
+        
+        report.appendLine("=== TEST COMPLETED ===")
+        
+        return report.toString()
+    }
+    
+    // Helper per test angoli
+    private fun calculateTestAngle(keypoints: FloatArray, idx1: Int, idx2: Int, idx3: Int): Float {
+        val y1 = keypoints[idx1 * 3]
+        val x1 = keypoints[idx1 * 3 + 1]
+        val y2 = keypoints[idx2 * 3]
+        val x2 = keypoints[idx2 * 3 + 1]
+        val y3 = keypoints[idx3 * 3]
+        val x3 = keypoints[idx3 * 3 + 1]
+        
+        val v1x = x1 - x2
+        val v1y = y1 - y2
+        val v2x = x3 - x2
+        val v2y = y3 - y2
+        
+        val angle1 = kotlin.math.atan2(v1y.toDouble(), v1x.toDouble())
+        val angle2 = kotlin.math.atan2(v2y.toDouble(), v2x.toDouble())
+        
+        var angle = kotlin.math.abs(angle1 - angle2)
+        if (angle > kotlin.math.PI) {
+            angle = 2 * kotlin.math.PI - angle
+        }
+        
+        return Math.toDegrees(angle).toFloat()
+    }
+    
+    // Helper per test distanze
+    private fun calculateTestDistance(keypoints: FloatArray, idx1: Int, idx2: Int): Float {
+        val y1 = keypoints[idx1 * 3]
+        val x1 = keypoints[idx1 * 3 + 1]
+        val y2 = keypoints[idx2 * 3]
+        val x2 = keypoints[idx2 * 3 + 1]
+        
+        val dx = (x2 - x1).toDouble()
+        val dy = (y2 - y1).toDouble()
+        return kotlin.math.sqrt(dx * dx + dy * dy).toFloat()
+    }
+}

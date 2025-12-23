@@ -34,20 +34,37 @@ class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
     var outputFeature0_base_position: FloatArray? = null
     var outputFeature0_squat_position: FloatArray? = null
     
-    // Phase 4: Recovery mode parameters
+    // Phase 4: Recovery mode and AI mode parameters
     private var isRecoveryMode = false
+    private var isAISquatMode = false
     private var recoveredDate: Long = 0
     private var minRepsRequired = 50
+    
+    // Phase 6: Exercise parameters
+    private var exerciseId: Long = 0
+    private var exerciseName: String = "Squat"
+    private var exerciseType: String = "SQUAT"
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Phase 4: Check for recovery mode
-        isRecoveryMode = intent.getStringExtra("MODE") == "RECOVERY"
+        // Phase 6: Get exercise parameters
+        exerciseId = intent.getLongExtra("EXERCISE_ID", 0)
+        exerciseName = intent.getStringExtra("EXERCISE_NAME") ?: "Squat"
+        exerciseType = intent.getStringExtra("EXERCISE_TYPE") ?: "SQUAT"
+        
+        // Phase 4: Check for recovery mode and AI mode
+        val mode = intent.getStringExtra("MODE")
+        isRecoveryMode = mode == "RECOVERY"
+        isAISquatMode = mode == "AI_SQUAT"
+        
         if (isRecoveryMode) {
             recoveredDate = intent.getLongExtra("RECOVERED_DATE", 0)
             minRepsRequired = intent.getIntExtra("MIN_REPS_REQUIRED", 50)
             // In recovery mode, calibration positions are optional
+        } else if (isAISquatMode) {
+            minRepsRequired = intent.getIntExtra("MIN_REPS_REQUIRED", 20)
+            // In AI mode, calibration positions are optional (auto-calibration)
         } else {
             // Normal mode: require calibration positions
             outputFeature0_base_position = intent.getFloatArrayExtra("base_position")
@@ -72,6 +89,11 @@ class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
         intent.putExtra("cameraIndex", cameraIndex)
         intent.putExtra("isFrontCamera", cameraIndex == 1) // Front camera index is 1
         
+        // Phase 6: Pass exercise parameters
+        intent.putExtra("EXERCISE_ID", exerciseId)
+        intent.putExtra("EXERCISE_NAME", exerciseName)
+        intent.putExtra("EXERCISE_TYPE", exerciseType)
+        
         // Add calibration positions if available (normal mode)
         outputFeature0_base_position?.let {
             intent.putExtra("base_position", it)
@@ -80,14 +102,30 @@ class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
             intent.putExtra("squat_position", it)
         }
         
-        // Phase 4: Propagate recovery mode parameters
+        // Phase 4: Propagate recovery mode and AI mode parameters
         if (isRecoveryMode) {
             intent.putExtra("MODE", "RECOVERY")
             intent.putExtra("RECOVERED_DATE", recoveredDate)
             intent.putExtra("MIN_REPS_REQUIRED", minRepsRequired)
+            startActivity(intent)
+        } else if (isAISquatMode) {
+            intent.putExtra("MODE", "AI_SQUAT")
+            intent.putExtra("MIN_REPS_REQUIRED", minRepsRequired)
+            // ✅ In AI mode, propagate the result back to the launcher
+            startActivityForResult(intent, 1001)
+        } else {
+            // Normal mode
+            startActivity(intent)
         }
-        
-        startActivity(intent)
+    }
+    
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1001) {
+            // AI_SQUAT mode: propagate result back to NewMainActivity
+            setResult(resultCode, data)
+            finish()
+        }
     }
 }
 

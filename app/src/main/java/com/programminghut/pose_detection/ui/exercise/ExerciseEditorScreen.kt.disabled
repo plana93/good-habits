@@ -1,0 +1,555 @@
+package com.programminghut.pose_detection.ui.exercise
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.programminghut.pose_detection.data.model.*
+
+/**
+ * Phase 6: Exercise Editor Screen
+ * 
+ * Schermata per creare o modificare esercizi custom.
+ * Features:
+ * - Form per nome, descrizione, tipo
+ * - Selector keypoints interattivo
+ * - Rule builder visuale
+ * - Validazione input
+ * - Salvataggio/Aggiornamento
+ */
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ExerciseEditorScreen(
+    exercise: Exercise? = null,
+    onSave: (Exercise) -> Unit,
+    onCancel: () -> Unit,
+    onCaptureStartPosition: () -> Unit,
+    onCaptureEndPosition: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var name by remember { mutableStateOf(exercise?.name ?: "") }
+    var description by remember { mutableStateOf(exercise?.description ?: "") }
+    var selectedType by remember { mutableStateOf(exercise?.type ?: ExerciseType.CUSTOM) }
+    var rules by remember { mutableStateOf(exercise?.rules ?: emptyList()) }
+    var tags by remember { mutableStateOf(exercise?.tags ?: emptyList()) }
+    var tagInput by remember { mutableStateOf("") }
+    var showRuleBuilder by remember { mutableStateOf(false) }
+    var editingRuleIndex by remember { mutableStateOf<Int?>(null) }
+    
+    var showValidationError by remember { mutableStateOf(false) }
+    var validationMessage by remember { mutableStateOf("") }
+    
+    val isEditMode = exercise != null
+    
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(if (isEditMode) "Modifica Esercizio" else "Nuovo Esercizio") },
+                navigationIcon = {
+                    IconButton(onClick = onCancel) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
+                    }
+                },
+                actions = {
+                    // Pulsante salva
+                    TextButton(
+                        onClick = {
+                            // Validazione
+                            when {
+                                name.isBlank() -> {
+                                    showValidationError = true
+                                    validationMessage = "Il nome è obbligatorio"
+                                }
+                                rules.isEmpty() -> {
+                                    showValidationError = true
+                                    validationMessage = "Aggiungi almeno una regola"
+                                }
+                                else -> {
+                                    val newExercise = Exercise(
+                                        exerciseId = exercise?.exerciseId ?: 0,
+                                        name = name,
+                                        type = selectedType,
+                                        description = description,
+                                        startPositionKeypoints = exercise?.startPositionKeypoints ?: FloatArray(51),
+                                        endPositionKeypoints = exercise?.endPositionKeypoints ?: FloatArray(51),
+                                        rules = rules,
+                                        tags = tags,
+                                        isCustom = true
+                                    )
+                                    onSave(newExercise)
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Salva", fontWeight = FontWeight.Bold)
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // === INFORMAZIONI BASE ===
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Informazioni Base",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    // Nome
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Nome Esercizio") },
+                        placeholder = { Text("Es. Squat profondo") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(Icons.Default.Star, contentDescription = null)
+                        }
+                    )
+                    
+                    // Tipo
+                    Text(
+                        text = "Tipo",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ExerciseType.entries.forEach { type ->
+                            FilterChip(
+                                selected = selectedType == type,
+                                onClick = { selectedType = type },
+                                label = { Text(type.toDisplayString()) }
+                            )
+                        }
+                    }
+                    
+                    // Descrizione
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Descrizione") },
+                        placeholder = { Text("Descrivi come eseguire l'esercizio...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3,
+                        maxLines = 5
+                    )
+                }
+            }
+            
+            // === POSIZIONI DI CALIBRAZIONE ===
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Posizioni di Calibrazione",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Text(
+                        text = "Cattura le posizioni iniziale e finale dell'esercizio usando la fotocamera",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onCaptureStartPosition,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.AddCircle, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Pos. Iniziale")
+                        }
+                        
+                        OutlinedButton(
+                            onClick = onCaptureEndPosition,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.AddCircle, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Pos. Finale")
+                        }
+                    }
+                }
+            }
+            
+            // === REGOLE DI VALIDAZIONE ===
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Regole (${rules.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        IconButton(onClick = { showRuleBuilder = true }) {
+                            Icon(Icons.Default.Add, contentDescription = "Aggiungi regola")
+                        }
+                    }
+                    
+                    if (rules.isEmpty()) {
+                        Text(
+                            text = "Nessuna regola definita. Aggiungi regole per validare l'esecuzione dell'esercizio.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
+                        rules.forEachIndexed { index, rule ->
+                            RuleCard(
+                                rule = rule,
+                                onEdit = {
+                                    editingRuleIndex = index
+                                    showRuleBuilder = true
+                                },
+                                onDelete = {
+                                    rules = rules.toMutableList().apply { removeAt(index) }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // === TAGS ===
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Tags",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = tagInput,
+                            onValueChange = { tagInput = it },
+                            placeholder = { Text("Aggiungi tag...") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                        
+                        IconButton(
+                            onClick = {
+                                if (tagInput.isNotBlank() && !tags.contains(tagInput)) {
+                                    tags = tags + tagInput
+                                    tagInput = ""
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Aggiungi tag")
+                        }
+                    }
+                    
+                    if (tags.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            tags.forEach { tag ->
+                                AssistChip(
+                                    onClick = { tags = tags.filter { it != tag } },
+                                    label = { Text(tag) },
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Rimuovi",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // === RULE BUILDER DIALOG ===
+    if (showRuleBuilder) {
+        val editingRule = editingRuleIndex?.let { rules[it] }
+        RuleBuilderDialog(
+            rule = editingRule,
+            onSave = { newRule ->
+                rules = if (editingRuleIndex != null) {
+                    rules.toMutableList().apply { set(editingRuleIndex!!, newRule) }
+                } else {
+                    rules + newRule
+                }
+                showRuleBuilder = false
+                editingRuleIndex = null
+            },
+            onDismiss = {
+                showRuleBuilder = false
+                editingRuleIndex = null
+            }
+        )
+    }
+    
+    // === VALIDATION ERROR SNACKBAR ===
+    if (showValidationError) {
+        Snackbar(
+            action = {
+                TextButton(onClick = { showValidationError = false }) {
+                    Text("OK")
+                }
+            },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(validationMessage)
+        }
+    }
+}
+
+@Composable
+private fun RuleCard(
+    rule: ExerciseRule,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = rule.ruleType.toDisplayString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                
+                if (rule.description.isNotEmpty()) {
+                    Text(
+                        text = rule.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Text(
+                    text = "Target: ${formatRuleValue(rule.ruleType, rule.targetValue)} | Peso: ${String.format("%.1f", rule.weight)}x",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Modifica",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Elimina",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RuleBuilderDialog(
+    rule: ExerciseRule?,
+    onSave: (ExerciseRule) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedRuleType by remember { mutableStateOf(rule?.ruleType ?: RuleType.ANGLE_EQUALS) }
+    var targetValue by remember { mutableStateOf(rule?.targetValue?.toString() ?: "90") }
+    var tolerance by remember { mutableStateOf(rule?.tolerance?.toString() ?: "15") }
+    var weight by remember { mutableStateOf(rule?.weight?.toString() ?: "1.0") }
+    var description by remember { mutableStateOf(rule?.description ?: "") }
+    var keypoints by remember { mutableStateOf(rule?.keypoints ?: listOf(11, 13, 15)) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (rule != null) "Modifica Regola" else "Nuova Regola") },
+        text = {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    Text("Tipo Regola", style = MaterialTheme.typography.labelLarge)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        RuleType.entries.forEach { type ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedRuleType = type }
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedRuleType == type,
+                                    onClick = { selectedRuleType = type }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(type.toDisplayString())
+                            }
+                        }
+                    }
+                }
+                
+                item {
+                    OutlinedTextField(
+                        value = targetValue,
+                        onValueChange = { targetValue = it },
+                        label = { Text("Valore Target") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                
+                item {
+                    OutlinedTextField(
+                        value = tolerance,
+                        onValueChange = { tolerance = it },
+                        label = { Text("Tolleranza") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                
+                item {
+                    OutlinedTextField(
+                        value = weight,
+                        onValueChange = { weight = it },
+                        label = { Text("Peso (importanza)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                
+                item {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Descrizione") },
+                        placeholder = { Text("Es. Piega il ginocchio a 90°") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2
+                    )
+                }
+                
+                item {
+                    Text(
+                        text = "Keypoints: ${keypoints.joinToString(", ")}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val newRule = ExerciseRule(
+                        ruleType = selectedRuleType,
+                        keypoints = keypoints,
+                        targetValue = targetValue.toFloatOrNull() ?: 0f,
+                        tolerance = tolerance.toFloatOrNull() ?: 0.1f,
+                        weight = weight.toFloatOrNull() ?: 1.0f,
+                        description = description
+                    )
+                    onSave(newRule)
+                }
+            ) {
+                Text("Salva")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Annulla")
+            }
+        }
+    )
+}
