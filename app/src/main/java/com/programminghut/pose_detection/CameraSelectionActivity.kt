@@ -59,11 +59,11 @@ class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
         isAISquatMode = mode == "AI_SQUAT"
         
         if (isRecoveryMode) {
-            recoveredDate = intent.getLongExtra("RECOVERED_DATE", 0)
-            minRepsRequired = intent.getIntExtra("MIN_REPS_REQUIRED", 50)
+            recoveredDate = intent.getLongExtra("RECOVERY_DATE", 0)
+            minRepsRequired = intent.getIntExtra("RECOVERY_TARGET_SQUAT", 20)
             // In recovery mode, calibration positions are optional
         } else if (isAISquatMode) {
-            minRepsRequired = intent.getIntExtra("MIN_REPS_REQUIRED", 20)
+            minRepsRequired = intent.getIntExtra("RECOVERY_TARGET_SQUAT", 20)
             // In AI mode, calibration positions are optional (auto-calibration)
         } else {
             // Normal mode: require calibration positions
@@ -105,12 +105,12 @@ class CameraSelectionActivity : ComponentActivity(), OnCameraSelectedListener {
         // Phase 4: Propagate recovery mode and AI mode parameters
         if (isRecoveryMode) {
             intent.putExtra("MODE", "RECOVERY")
-            intent.putExtra("RECOVERED_DATE", recoveredDate)
-            intent.putExtra("MIN_REPS_REQUIRED", minRepsRequired)
-            startActivity(intent)
+            intent.putExtra("RECOVERY_DATE", recoveredDate)
+            intent.putExtra("RECOVERY_TARGET_SQUAT", minRepsRequired)
+            startActivityForResult(intent, 1001) // ✅ Usa launcher anche per recovery
         } else if (isAISquatMode) {
             intent.putExtra("MODE", "AI_SQUAT")
-            intent.putExtra("MIN_REPS_REQUIRED", minRepsRequired)
+            intent.putExtra("RECOVERY_TARGET_SQUAT", minRepsRequired)
             // ✅ In AI mode, propagate the result back to the launcher
             startActivityForResult(intent, 1001)
         } else {

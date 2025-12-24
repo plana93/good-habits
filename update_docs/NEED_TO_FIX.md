@@ -1,4 +1,29 @@
-Da fixare:
+# To Fix: 
+rivediamo il design delle due pagine Exercise e Workout 
+
+mi piace avere la lista di eserci non usando la lista standard ma usando delle box a griglia 
+solo che ogni esercizio ha una box rettangolare che occupa troppo spazio vorrei una box quadrata 
+
+se clicco mi piace che mi chiede il numero di ripetizioni o numero di minuti (deve poter accettare anche numeri con la virgola)
+
+se tengo premuto però mi deve aprire una scheda che mostra 
+
+nome (editabile se ci clicco) 
+descrizione (editabile se ci clicco)
+immagine precaricata o aggiungibile (in modo da ricordarmi l'esercizio)
+
+# To fix: 
+
+errore nel cancellare gli esercizi del workout (ovvero se li cancello non decremento il conteggio dei squat) però funziona bene con gli esercizi singoli 
+(documentato qui update_docs/BUG_WORKOUT_SQUAT_DELETION.md)
+
+# Done:
+
+Nell'ultimo fix per sbaglio è stata rimossa l'opportunità di aggiungere gli esercizi al giorno coorrente. I pulsanti ci sono ancora tutti ma quando li clicco non vengono aggiunti al giorno coorrente. (prima funzionava quindi forse c'è stato un aggiornamento ha compromesso questa features, attendo nel risolvela di non rompoere quella passata)
+
+se vuoi prima di risovere ti mostro l'errore eseguendo l'app e puoi leggere dai log il problema.
+
+# Done:
 
 Vorrei che nei giorni passati non si può aggiungere gli esercizi 
 (diciamo che sono persi) però voglio aggiungere un concetto di recupera giorno 
@@ -8,7 +33,7 @@ quando vado nella dashboard e po nel calendario il concetto di giorno recuperato
 
 ovviamente se poi faccio l'esercizio il giorno deve apparire recuperato anche nella activity del giorno (ovviamente alla data corretta non al giorno corrente) aggiornato la schermata dall'emoticon triste ad emoticon sorridente 
 
-Da fixare:
+# Done:
 
 Per quanto rigiuarda la lista degli esercizi che appare nel giorno vorrei migliorare la visualizzazione 
 
@@ -16,7 +41,7 @@ Vorrei quando apro la tendinza un bottono aggiuni ripetizione (ovvero ti aggiung
 
 Vorrei che la possibilità di cancellare l'esercizio sia una gesture da a sinistra sul elemento 
 
-Da fixare:
+# Done:
 
 Quando aggiungo le cose e clicco direttametne dalla scheramta di oggi con il botono più Squat AI 
 deve far partire la sessione con la camera 
@@ -52,3 +77,14 @@ che si incrementa sempre
 
 diciamo che lo squat è l'esercizio base 
 quindi deve avere più rilevanza e più caratteristiche dell'app si basano su di esso
+
+
+# TO DO 
+da aggiungiungere 
+Kaizen 
+Ikigai
+Hara Hachi BU
+Focus Ancorato 
+Seiri Seiton
+Mentalità Kintsugi 
+Wabi-sabi

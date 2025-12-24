@@ -916,7 +916,41 @@ class DailySessionRepository(
      * Elimina elemento dalla sessione
      */
     suspend fun removeItemFromSession(itemId: Long) {
+        android.util.Log.d("TODAY_DEBUG", "🗑️ Repository.removeItemFromSession chiamato per itemId: $itemId")
+        
+        // Prima controlliamo se l'item da rimuovere è uno squat o un workout con squat
+        val itemToRemove = dailySessionDao.getSessionItemById(itemId)
+        val isSquatExercise = itemToRemove?.exerciseId == 3L // ID 3 = squat
+        
+        android.util.Log.d("TODAY_DEBUG", "🔍 Item da rimuovere: exerciseId=${itemToRemove?.exerciseId}, workoutId=${itemToRemove?.workoutId}")
+        
+        // Se è un workout, controlliamo se contiene squat tra i suoi esercizi figli
+        var workoutContainsSquat = false
+        if (itemToRemove?.workoutId != null) {
+            // È un workout - controlliamo se tra i suoi esercizi figli c'è uno squat
+            val childItems = dailySessionDao.getItemsByParentWorkout(itemId)
+            workoutContainsSquat = childItems.any { it.exerciseId == 3L }
+            android.util.Log.d("TODAY_DEBUG", "🏋️ È un workout con ${childItems.size} esercizi figli. Contiene squat: $workoutContainsSquat")
+        }
+        
+        val needsSquatCacheInvalidation = isSquatExercise || workoutContainsSquat
+        android.util.Log.d("TODAY_DEBUG", "🔍 isSquatExercise=$isSquatExercise, workoutContainsSquat=$workoutContainsSquat, needsInvalidation=$needsSquatCacheInvalidation")
+        
+        // Elimina l'item (e automaticamente tutti i figli se è un workout)
         dailySessionDao.deleteSessionItem(itemId)
+        
+        android.util.Log.d("TODAY_DEBUG", "✅ Item eliminato dal database. ID: $itemId")
+        
+        // Se era uno squat o un workout contenente squat, forza un refresh esplicito
+        if (needsSquatCacheInvalidation) {
+            android.util.Log.d("TODAY_DEBUG", "🦵 Conteneva squat! Forzando invalidazione cache Room...")
+            try {
+                // Forza Room a re-eseguire la query del conteggio squat
+                dailySessionDao.invalidateSquatCountCache()
+            } catch (e: Exception) {
+                android.util.Log.d("TODAY_DEBUG", "⚠️ Errore invalidazione cache: ${e.message}")
+            }
+        }
     }
     
     /**

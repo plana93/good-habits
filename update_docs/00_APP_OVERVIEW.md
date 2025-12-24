@@ -35,8 +35,11 @@
 #### 💡 Motivazione & Gamification
 - **Frasi motivazionali**: 30+ quote per giorni vuoti
 - **Streak tracking**: Conteggio giorni consecutivi
-- **Recovery system**: Sistema recupero sessioni mancate
-- **Visual feedback**: Codifica colori per stato giorni
+- **Recovery system**: Sistema recupero sessioni mancate tramite 20 AI squat
+- **Recovery execution**: Eseguito nel giorno corrente, segna giorno passato come recuperato
+- **Streak contribution**: Recovery contribuisce alla streak e ai totali squat
+- **Calendar integration**: Toccare giorni mancati avvia direttamente procedura recovery
+- **Visual feedback**: Codifica colori per stato giorni (normale/mancato/recuperato)
 
 ---
 
@@ -90,7 +93,9 @@
 - ✅ Horizontal day navigation
 - ✅ Temporal restrictions (add solo oggi)
 - ✅ Motivational quotes per giorni vuoti
-- ✅ Recovery system per sessioni mancate
+- ✅ Recovery system per sessioni mancate (20 AI squat)
+- ✅ Recovery execution nel giorno corrente
+- ✅ Calendar-recovery integration (tap giorni mancati)
 - ✅ Calendar-dashboard integration
 - ✅ Multi-camera support (front/back)
 
@@ -144,9 +149,10 @@ L'app traccia le seguenti metriche:
 
 - **Sessioni totali**: Conteggio allenamenti completati
 - **Esercizi per giorno**: Numero elementi sessione odierna
-- **Streak giorni**: Giorni consecutivi con attività
+- **Streak giorni**: Giorni consecutivi con attività (include recovery)
 - **Squat AI**: Ripetizioni automatiche con timestamp
-- **Recovery sessions**: Sessioni recuperate vs perse
+- **Recovery sessions**: Sessioni recuperate tramite 20 AI squat vs perse
+- **Recovery tracking**: Giorni passati marcati come recuperati
 
 ---
 

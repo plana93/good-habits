@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -21,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -58,16 +61,28 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import java.util.*
 import com.programminghut.pose_detection.CameraSelectionActivity
 import com.programminghut.pose_detection.ui.theme.Pose_detectionTheme
 import com.programminghut.pose_detection.data.model.*
+import com.programminghut.pose_detection.ui.calendar.DayStatus
 import com.programminghut.pose_detection.service.TemplateToSessionService
 import com.programminghut.pose_detection.ui.viewmodel.TodayViewModel
 import com.programminghut.pose_detection.ui.viewmodel.TodayViewModelFactory
 import com.programminghut.pose_detection.data.repository.DailySessionRepository
 import com.programminghut.pose_detection.data.database.AppDatabase
 import com.programminghut.pose_detection.utils.MotivationalQuotes
+
+/**
+ * ✅ Status del giorno per logica UI
+ */
+enum class DayStatus {
+    CURRENT,    // Giorno corrente (oggi)
+    DONE,       // Giorno passato con esercizi fatti
+    LOST,       // Giorno passato vuoto non recuperato
+    RECOVER     // Giorno passato recuperato con AI squat
+}
 
 /**
  * ✅ Classe per raggruppamento gerarchico degli elementi sessione
@@ -163,12 +178,62 @@ class NewMainActivity : ComponentActivity() {
             result.data?.let { data ->
                 val repsCompleted = data.getIntExtra("REPS_COMPLETED", 0)
                 val sessionDuration = data.getLongExtra("SESSION_DURATION", 0L)
+                val isRecoveryMode = data.getBooleanExtra("RECOVERY_MODE", false)
+                val recoveryDate = data.getLongExtra("RECOVERY_DATE", 0L)
                 
                 if (repsCompleted > 0) {
                     Log.d("TODAY_DEBUG", "🎯 AI Squat completato! Reps: $repsCompleted, Duration: $sessionDuration")
-                    // Gli squat sono già stati salvati nel database dalla MainActivity
-                    // Qui possiamo aggiornare la UI per riflettere i cambiamenti
-                    todayViewModel.refreshTodayData()
+                    
+                    if (isRecoveryMode && recoveryDate > 0L) {
+                        // ✅ Gestione del recovery
+                        Log.d("TODAY_DEBUG", "🔄 Recovery completato per data: $recoveryDate con $repsCompleted squat")
+                        
+                        // Verifica se ha raggiunto i 20 squat richiesti per il recovery
+                        if (repsCompleted >= 20) {
+                            lifecycleScope.launch {
+                                try {
+                                    val recoverySuccess = todayViewModel.completeRecoveryForDate(recoveryDate, repsCompleted)
+                                    
+                                    if (recoverySuccess) {
+                                        Log.d("TODAY_DEBUG", "🎉 Recovery completato con successo per data: $recoveryDate")
+                                        
+                        // ✅ Forza refresh di tutti i dati dopo recovery
+                        todayViewModel.refreshTodayData()
+                        
+                        // ✅ Refresh del calendario nella dashboard tramite callback
+                        refreshCalendarCallback?.invoke() ?: run {
+                            Log.w("TODAY_DEBUG", "⚠️ refreshCalendarCallback è null - calendario non aggiornato")
+                        }
+                        
+                        Log.d("TODAY_DEBUG", "🔄 Refresh completato per Today e Calendar")                                        // TODO: Mostrare messaggio di successo
+                                    } else {
+                                        Log.d("TODAY_DEBUG", "⚠️ Recovery non riuscito - data già recuperata: $recoveryDate")
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("TODAY_DEBUG", "❌ Errore durante recovery: ${e.message}", e)
+                                }
+                            }
+                        } else {
+                            Log.d("TODAY_DEBUG", "⚠️ Squat insufficienti per recovery: $repsCompleted/20")
+                            // TODO: Mostrare messaggio che servono 20 squat
+                        }
+                    } else {
+                        // ✅ Gestione normale degli AI squat - aggiungi come esercizio giornaliero
+                        Log.d("TODAY_DEBUG", "💪 AI Squat normale completato - aggiungendo come esercizio giornaliero")
+                        
+                        lifecycleScope.launch {
+                            try {
+                                // Aggiunge l'AI squat come esercizio nella sessione di oggi
+                                todayViewModel.addAISquatToToday(targetReps = repsCompleted)
+                                Log.d("TODAY_DEBUG", "✅ AI Squat aggiunto alla sessione di oggi con $repsCompleted reps")
+                                
+                                // Refresh per mostrare il nuovo esercizio
+                                todayViewModel.refreshTodayData()
+                            } catch (e: Exception) {
+                                Log.e("TODAY_DEBUG", "❌ Errore durante aggiunta AI squat normale: ${e.message}", e)
+                            }
+                        }
+                    }
                 } else {
                     Log.d("TODAY_DEBUG", "⚠️ Nessuna ripetizione completata")
                 }
@@ -178,23 +243,42 @@ class NewMainActivity : ComponentActivity() {
         }
     }
     
+    /**
+     * ✅ Avvia il recovery per una data specifica tramite AI squat (unificato con Today screen)
+     */
+    private fun startRecoveryForDate(recoveryDate: Long) {
+        Log.d("TODAY_DEBUG", "🎯 Avvio recovery tramite AI squat per data: $recoveryDate (CALENDARIO)")
+        
+        // ✅ UNIFICATO: Usa stesso sistema del Today screen
+        val aiSquatIntent = Intent(this, CameraSelectionActivity::class.java).apply {
+            putExtra("MODE", "RECOVERY")
+            putExtra("RECOVERY_DATE", recoveryDate)
+            putExtra("RECOVERY_TARGET_SQUAT", 20)
+        }
+        startActivity(aiSquatIntent)
+    }
+
     // ✅ SHARED CALLBACKS - Set when needed
     internal var onExerciseSelected: (Long) -> Unit = { }
     internal var onWorkoutSelected: (Long) -> Unit = { }
     
     // ✅ Callback per navigazione - sarà impostata da MainContent
     private var navigateToToday: () -> Unit = { }
+    
+    // ✅ Callback per refresh del calendario nella dashboard
+    internal var refreshCalendarCallback: (() -> Unit)? = null
 
     /**
-     * Avvia la procedura di recupero per un giorno passato con 50 squat AI
+     * ⚠️ DEPRECATO - Usare il launcher invece di startActivity diretto
+     * Avvia la procedura di recupero per un giorno passato con 20 squat AI
      */
     private fun startRecoveryProcedure(recoveredDate: Long) {
         Log.d("🔄 RECOVERY", "Avviando recupero per data: $recoveredDate")
         
         val intent = Intent(this, CameraSelectionActivity::class.java).apply {
             putExtra("MODE", "RECOVERY")
-            putExtra("RECOVERED_DATE", recoveredDate)
-            putExtra("MIN_REPS_REQUIRED", 50)
+            putExtra("RECOVERY_DATE", recoveredDate)
+            putExtra("RECOVERY_TARGET_SQUAT", 20)
         }
         startActivity(intent)
     }
@@ -225,7 +309,8 @@ class NewMainActivity : ComponentActivity() {
                     aiSquatCameraLauncher = aiSquatCameraLauncher,
                     todayViewModel = todayViewModel,
                     initialRoute = navigateToSection ?: "dashboard",
-                    onSetNavigateToToday = { callback -> navigateToToday = callback }
+                    onSetNavigateToToday = { callback -> navigateToToday = callback },
+                    onStartRecovery = { recoveryDate -> startRecoveryForDate(recoveryDate) }
                 )
             }
         }
@@ -259,7 +344,8 @@ fun MainContent(
     aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
     todayViewModel: TodayViewModel,
     initialRoute: String = "dashboard",
-    onSetNavigateToToday: (() -> Unit) -> Unit
+    onSetNavigateToToday: (() -> Unit) -> Unit,
+    onStartRecovery: (Long) -> Unit = {}
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
@@ -300,6 +386,22 @@ fun MainContent(
     
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    
+    // ✅ Reset selectedDate to today SOLO quando si esce completamente dal gruppo di schermate correlate
+    LaunchedEffect(currentRoute) {
+        // Reset SOLO se passiamo a schermate non correlate (non Today, non Dashboard che può portare a Today)
+        if (currentRoute != null && currentRoute !in setOf("today", "dashboard")) {
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            
+            Log.d("TODAY_DEBUG", "📱 Route changed to $currentRoute (unrelated screen) - resetting selectedDate to today: $today")
+            todayViewModel.setSelectedDate(today)
+        }
+    }
     
     // ✅ Barra di navigazione sempre visibile
     val screensWithBottomBar = setOf("dashboard", "today", "history", "exercises", "workouts")
@@ -352,11 +454,11 @@ fun MainContent(
                             val isPast = selected.before(today) && !isToday
                             
                             if (isPast) {
-                                // Per date passate: avvia procedura di recupero
+                                // ⚠️ DEPRECATO: Per date passate: avvia procedura di recupero (meglio usare il pulsante nella TodayScreen)
                                 val intent = Intent(context, CameraSelectionActivity::class.java).apply {
                                     putExtra("MODE", "RECOVERY")
-                                    putExtra("RECOVERED_DATE", selectedDate)
-                                    putExtra("MIN_REPS_REQUIRED", 50)
+                                    putExtra("RECOVERY_DATE", selectedDate)
+                                    putExtra("RECOVERY_TARGET_SQUAT", 20)
                                 }
                                 context.startActivity(intent)
                             } else {
@@ -419,7 +521,7 @@ fun MainContent(
                 modifier = Modifier.padding(paddingValues)
             ) {
                 composable("dashboard") { 
-                    DashboardScreen(navController, todayViewModel)
+                    DashboardScreen(navController, todayViewModel, onStartRecovery)
                 }
                 composable("today") { 
                     TodayScreen(showBottomSheet, exerciseSelectionLauncher, workoutSelectionLauncher, aiSquatCameraLauncher, todayViewModel) { showBottomSheet = false }
@@ -470,17 +572,92 @@ fun TodayScreen(
         pageCount = { maxPastDays + 1 } // Da -365 giorni a oggi (0)
     )
     
-    // ✅ Calcola la data per ogni pagina - solo passato e presente
-    val currentPageOffset = pagerState.currentPage - initialPage // negativo per passato, 0 per oggi
-    val baseDate = Calendar.getInstance().timeInMillis
+    // ✅ FIXED: Base date fissa per calcoli consistenti
+    val baseDate = remember {
+        Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
     
-    // ✅ Aggiorna il ViewModel quando cambia la pagina
-    LaunchedEffect(pagerState.currentPage) {
-        val calendar = Calendar.getInstance().apply { 
-            timeInMillis = baseDate
-            add(Calendar.DAY_OF_MONTH, currentPageOffset)
+    // ✅ Flag per controllare la navigazione dal calendario - con stato duraturo
+    var isNavigatingFromCalendar by remember { mutableStateOf(false) }
+    
+    // ✅ Timer per reset automatico del flag (sicurezza)
+    LaunchedEffect(isNavigatingFromCalendar) {
+        if (isNavigatingFromCalendar) {
+            Log.d("TODAY_DEBUG", "🧭 Calendar navigation flag set - auto-reset in 3 seconds")
+            kotlinx.coroutines.delay(3000) // 3 secondi di sicurezza
+            isNavigatingFromCalendar = false
+            Log.d("TODAY_DEBUG", "🧭 Calendar navigation flag auto-reset after timeout")
         }
-        todayViewModel.setSelectedDate(calendar.timeInMillis)
+    }
+    
+    // ✅ Aggiorna il ViewModel quando cambia la pagina del pager (solo se NON navighiamo dal calendario)
+    LaunchedEffect(pagerState.currentPage) {
+        if (!isNavigatingFromCalendar) {
+            val currentPageOffset = pagerState.currentPage - initialPage // negativo per passato, 0 per oggi
+            val calendar = Calendar.getInstance().apply { 
+                timeInMillis = baseDate
+                add(Calendar.DAY_OF_YEAR, currentPageOffset) // ✅ FIXED: Use DAY_OF_YEAR instead of DAY_OF_MONTH
+            }
+            Log.d("TODAY_DEBUG", "📄 Pager page changed to ${pagerState.currentPage}, offset: $currentPageOffset, setting date: ${calendar.timeInMillis}")
+            todayViewModel.setSelectedDate(calendar.timeInMillis)
+        } else {
+            Log.d("TODAY_DEBUG", "📄 Pager page changed to ${pagerState.currentPage} (from calendar navigation - skipping ViewModel update)")
+        }
+    }
+    
+    // ✅ Naviga al pager quando viene impostata una data specifica dal calendario
+    LaunchedEffect(selectedDate) {
+        // ✅ Agisci SOLO se NON stiamo già navigando dal calendario
+        if (!isNavigatingFromCalendar) {
+            // Calcola quale pagina corrisponde alla selectedDate usando la stessa baseDate
+            val currentCal = Calendar.getInstance().apply { 
+                timeInMillis = baseDate
+            }
+            val selectedCal = Calendar.getInstance().apply { 
+                timeInMillis = selectedDate
+                // Normalizza la selectedDate
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            
+            // Calcola la differenza in giorni
+            val diffInMillis = selectedCal.timeInMillis - currentCal.timeInMillis
+            val diffInDays = (diffInMillis / (24 * 60 * 60 * 1000)).toInt()
+            
+            // Calcola l'indice del pager (today = initialPage = maxPastDays)
+            val targetPage = initialPage + diffInDays
+            
+            Log.d("TODAY_DEBUG", "🧭 Calendar navigation - selectedDate: $selectedDate, baseDate: $baseDate, diffDays: $diffInDays, targetPage: $targetPage")
+            
+            // ✅ Naviga al pager solo se è una pagina valida e diversa da quella attuale
+            if (targetPage in 0 until (maxPastDays + 1) && targetPage != pagerState.currentPage) {
+                Log.d("TODAY_DEBUG", "🧭 Navigating to page $targetPage for date $selectedDate")
+                // ✅ Imposta flag per BLOCCARE la sincronizzazione pager->ViewModel
+                isNavigatingFromCalendar = true
+                
+                // ✅ Usa animazione semplice senza try-catch per evitare errori di scope
+                scope.launch {
+                    try {
+                        pagerState.animateScrollToPage(targetPage)
+                        Log.d("TODAY_DEBUG", "🧭 Calendar navigation animation completed successfully")
+                    } catch (e: Exception) {
+                        Log.e("TODAY_DEBUG", "🧭 Error during pager animation: ${e.message}")
+                    }
+                    // Il flag verrà resettato automaticamente dal timer dopo 3 secondi
+                }
+            } else {
+                Log.d("TODAY_DEBUG", "🧭 Navigation skipped - targetPage: $targetPage, currentPage: ${pagerState.currentPage}, valid range: 0 until ${maxPastDays + 1}")
+            }
+        } else {
+            Log.d("TODAY_DEBUG", "🧭 selectedDate change during calendar navigation - skipping")
+        }
     }
     
     // ✅ Verifica se si può aggiungere esercizi
@@ -496,47 +673,58 @@ fun TodayScreen(
         ) {
             // ✅ Header con controlli di navigazione
             DateNavigationHeader(
-                selectedDate = selectedDate,
-                onPreviousDay = { 
-                    scope.launch { 
-                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                    }
-                },
-                onNextDay = { 
-                    scope.launch { 
-                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                    }
-                },
-                onGoToToday = {
-                    scope.launch {
-                        pagerState.animateScrollToPage(initialPage)
-                    }
-                },
-                todayViewModel = todayViewModel
-            )
-            
-            // ✅ HorizontalPager per i giorni
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
-            ) { page ->
-                // Calcola la data per questa pagina - solo passato e presente
-                val pageOffset = page - initialPage // negativo per passato, 0 per oggi
-                val pageDate = Calendar.getInstance().apply {
-                    timeInMillis = baseDate
-                    add(Calendar.DAY_OF_MONTH, pageOffset)
-                }.timeInMillis
-                
-                // ✅ Crea contenuto con dati specifici per questa data
-                DayPageContent(
-                    pageDate = pageDate,
-                    onAddClick = { /* Non usato - FAB ora è nel MainContent */ },
+                    selectedDate = remember(pagerState.currentPage, baseDate) {
+                        // ✅ Usa sempre la data calcolata dalla pagina corrente del pager per sincronizzazione immediata
+                        val pageOffset = pagerState.currentPage - initialPage
+                        val calendar = Calendar.getInstance().apply {
+                            timeInMillis = baseDate
+                            add(Calendar.DAY_OF_YEAR, pageOffset)
+                        }
+                        calendar.timeInMillis
+                    },
+                    onPreviousDay = { 
+                        scope.launch { 
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        }
+                    },
+                    onNextDay = { 
+                        scope.launch { 
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        }
+                    },
+                    onGoToToday = {
+                        scope.launch {
+                            pagerState.animateScrollToPage(initialPage)
+                        }
+                    },
                     todayViewModel = todayViewModel
                 )
+                
+                // ✅ HorizontalPager per i giorni
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) { page ->
+                    // Calcola la data per questa pagina - solo passato e presente
+                    val pageOffset = page - initialPage // negativo per passato, 0 per oggi
+                    val pageDate = Calendar.getInstance().apply {
+                        timeInMillis = baseDate
+                        add(Calendar.DAY_OF_YEAR, pageOffset) // ✅ FIXED: Use DAY_OF_YEAR instead of DAY_OF_MONTH
+                    }.timeInMillis
+                    
+                    Log.d("TODAY_DEBUG", "🗓️ Page $page: offset=$pageOffset, pageDate=$pageDate (${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(pageDate))})")
+                    
+                    // ✅ Crea contenuto con dati specifici per questa data
+                    DayPageContent(
+                        pageDate = pageDate,
+                        onAddClick = { /* Non usato - FAB ora è nel MainContent */ },
+                        todayViewModel = todayViewModel,
+                        aiSquatCameraLauncher = aiSquatCameraLauncher
+                    )
+                }
             }
-        }
         
         // ✅ Bottom sheet per aggiungere elementi
         if (showBottomSheet) {
@@ -564,7 +752,7 @@ fun TodayScreen(
                     // ✅ Dalla schermata "Oggi" → Avvia direttamente la camera per conteggio AI
                     val intent = Intent(context, CameraSelectionActivity::class.java).apply {
                         putExtra("MODE", "AI_SQUAT")
-                        putExtra("MIN_REPS_REQUIRED", 20)
+                        putExtra("RECOVERY_TARGET_SQUAT", 20)
                     }
                     aiSquatCameraLauncher.launch(intent)
                 }
@@ -610,35 +798,47 @@ fun DateNavigationHeader(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // ✅ Usa il parametro selectedDate passato dal pager invece del ViewModel
+                    val dateFormat = remember { java.text.SimpleDateFormat("d MMMM", java.util.Locale.ITALIAN) }
+                    val longDateFormat = remember { java.text.SimpleDateFormat("EEEE, d MMMM yyyy", java.util.Locale.ITALIAN) }
+                    
                     Text(
-                        text = todayViewModel.getFormattedSelectedDate(),
+                        text = dateFormat.format(java.util.Date(selectedDate)),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     
                     Text(
-
-                        text = todayViewModel.getFormattedSelectedDateLong(),
+                        text = longDateFormat.format(java.util.Date(selectedDate)),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
                 }
                 
+                // ✅ Verifica se si può navigare al giorno successivo usando selectedDate
+                val canNavigateToNextDay = remember(selectedDate) {
+                    val selected = Calendar.getInstance().apply { timeInMillis = selectedDate }
+                    val today = Calendar.getInstance()
+                    selected.get(Calendar.YEAR) < today.get(Calendar.YEAR) || 
+                    (selected.get(Calendar.YEAR) == today.get(Calendar.YEAR) && 
+                     selected.get(Calendar.DAY_OF_YEAR) < today.get(Calendar.DAY_OF_YEAR))
+                }
+                
                 IconButton(
                     onClick = {
                         // ✅ Controlla se si può navigare al giorno successivo
-                        if (todayViewModel.canNavigateToNextDay()) {
+                        if (canNavigateToNextDay) {
                             onNextDay()
                         }
                     },
                     modifier = Modifier.size(48.dp),
-                    enabled = todayViewModel.canNavigateToNextDay() // ✅ Disabilita se non può navigare
+                    enabled = canNavigateToNextDay // ✅ Disabilita se non può navigare
                 ) {
                     Icon(
                         Icons.Default.ChevronRight, 
                         contentDescription = "Giorno successivo",
-                        tint = if (todayViewModel.canNavigateToNextDay()) 
+                        tint = if (canNavigateToNextDay) 
                             MaterialTheme.colorScheme.onPrimaryContainer 
                         else 
                             MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.3f)
@@ -684,7 +884,8 @@ fun DateNavigationHeader(
 fun DayPageContent(
     pageDate: Long,
     onAddClick: () -> Unit,
-    todayViewModel: TodayViewModel
+    todayViewModel: TodayViewModel,
+    aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
 ) {
     // ✅ Ottieni i dati per questa specifica data
     val sessionData by todayViewModel.getSessionForDate(pageDate).collectAsState(initial = null)
@@ -731,7 +932,8 @@ fun DayPageContent(
         canAddExercises = canAddExercises,
         isInPast = isInPast,
         pageDate = pageDate,
-        todayViewModel = todayViewModel
+        todayViewModel = todayViewModel,
+        aiSquatCameraLauncher = aiSquatCameraLauncher
     )
 }
 
@@ -742,23 +944,57 @@ fun DaySessionContent(
     canAddExercises: Boolean,
     isInPast: Boolean,
     pageDate: Long,
-    todayViewModel: TodayViewModel
+    todayViewModel: TodayViewModel,
+    aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
 ) {
     // ✅ Determina se questo è un giorno passato vuoto per il background rosso
     val isEmpty = sessionData?.items?.isEmpty() ?: true
     val shouldShowRedBackground = isInPast && isEmpty
     
-    // ✅ Verifica se la data è stata recuperata (per giorni passati vuoti)
-    var isRecovered by remember { mutableStateOf(false) }
-    
-    // Controlla se il giorno è recuperato quando è un giorno passato vuoto
-    LaunchedEffect(pageDate, isInPast, isEmpty) {
-        if (isInPast && isEmpty) {
-            // Aggiorna la data selezionata del ViewModel temporaneamente per il controllo
-            val originalDate = todayViewModel.selectedDate.value
-            todayViewModel.setSelectedDate(pageDate)
-            isRecovered = todayViewModel.isSelectedDateRecovered()
-            todayViewModel.setSelectedDate(originalDate) // Ripristina la data originale
+    // ✅ Verifica se la data è stata recuperata (per giorni passati) - reagisce ai cambiamenti del DB
+    val isRecovered by produceState(initialValue = false, pageDate, isInPast) {
+        if (isInPast) {
+            // ✅ Log debug per tracking
+            Log.d("TODAY_DEBUG", "🔍 Observing recovery status for past date: $pageDate")
+            
+            // ✅ Osserva continuamente i cambiamenti tramite il Flow del TodayViewModel
+            todayViewModel.getSessionForDate(pageDate).collect { sessionData ->
+                // ✅ STRATEGIA MULTIPLA per rilevare recovery
+                val hasAnySession = sessionData != null && sessionData.items.isNotEmpty()
+                
+                // 1. Controlla AI Squat nelle sessioni
+                val hasAISquat = sessionData?.items?.any { item ->
+                    // ✅ STRATEGIA MULTIPLA per AI Squat detection
+                    (item.exerciseId == 3L && (
+                        item.aiData?.contains("squat_ai") == true || 
+                        item.aiData?.contains("recovery") == true ||
+                        item.aiData?.contains("AI_SQUAT") == true ||
+                        item.aiData == null  // ✅ FALLBACK: exerciseId=3 senza aiData può essere AI squat
+                    )) ||
+                    // ✅ Controlla anche se ci sono parametri recovery nell'intent
+                    (item.exerciseId == 3L && isInPast) // Squat in giorni passati presumibilmente da recovery
+                } ?: false
+                
+                // 2. Controlla recovery diretto nel ViewModel
+                val directRecovery = todayViewModel.isDateRecovered(pageDate)
+                
+                // 3. Controlla se c'è una sessione per questa data (qualsiasi tipo)
+                val hasAnyActivity = hasAnySession
+                
+                // ✅ CONSIDERA RECUPERATO SE QUALSIASI CONDIZIONE È VERA
+                val newValue = hasAISquat || directRecovery || hasAnyActivity
+                
+                Log.d("TODAY_DEBUG", "🔄 MULTI-CHECK Recovery status - Date: $pageDate")
+                Log.d("TODAY_DEBUG", "   ✅ IsRecovered: $newValue")
+                Log.d("TODAY_DEBUG", "   📊 hasAnySession: $hasAnySession (${sessionData?.items?.size ?: 0} items)")
+                Log.d("TODAY_DEBUG", "   🤖 hasAISquat: $hasAISquat") 
+                Log.d("TODAY_DEBUG", "   🎯 directRecovery: $directRecovery")
+                Log.d("TODAY_DEBUG", "   📅 hasAnyActivity: $hasAnyActivity")
+                
+                value = newValue
+            }
+        } else {
+            value = false
         }
     }
     
@@ -843,58 +1079,162 @@ fun DaySessionContent(
                     EmptyHistoryCard(
                         isInPast = isInPast,
                         pageDate = pageDate,
-                        isRecovered = isRecovered
+                        isRecovered = isRecovered,
+                        aiSquatCameraLauncher = aiSquatCameraLauncher
                     )
                 }
             } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(vertical = 16.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp) // ✅ Spazio per il FAB
-                ) {
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (canAddExercises) "Sessione di allenamento" else "Sessione completata",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = if (canAddExercises) 
-                                    MaterialTheme.colorScheme.onSurface 
-                                else 
-                                    MaterialTheme.colorScheme.onSurfaceVariant
+                // ✅ Se la sessione ha items ma è un recovery, mostra il messaggio di recuperato
+                val hasRecoveryItems = sessionWithItems.items.any { item ->
+                    // ✅ STRATEGIA PRIMARIA: Recovery esplicito tramite aiData
+                    item.aiData?.contains("recovery") == true || 
+                    item.aiData?.contains("squat_ai") == true ||
+                    item.aiData?.contains("AI_SQUAT") == true ||
+                    // ⚠️ FALLBACK LIMITATO: Solo se aiData è null E non ci sono altre attività nel giorno
+                    // Questo evita di considerare "recovery" giorni con vere attività storiche
+                    (item.exerciseId == 3L && item.aiData == null && isInPast && 
+                     sessionWithItems.items.size == 1 && // Solo se è l'unico item
+                     sessionWithItems.items.none { it.exerciseId != 3L }) // E non ci sono altri esercizi
+                }
+                
+                Log.d("TODAY_DEBUG", "📝 Checking hasRecoveryItems for date $pageDate: $hasRecoveryItems")
+                Log.d("TODAY_DEBUG", "📋 Items in session: ${sessionWithItems.items.size}")
+                sessionWithItems.items.forEach { item ->
+                    Log.d("TODAY_DEBUG", "   📌 Item: exerciseId=${item.exerciseId}, aiData=${item.aiData}")
+                }
+                
+                if (isInPast && (hasRecoveryItems || isRecovered)) {
+                    // ✅ Mostra messaggio di "Giorno recuperato" E la lista degli esercizi
+                    Log.d("TODAY_DEBUG", "🎉 Showing RECOVERED day with exercises for date $pageDate")
+                    
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp)
+                    ) {
+                        // ✅ Prima mostra il messaggio di recupero
+                        item {
+                            EmptyHistoryCard(
+                                isInPast = isInPast,
+                                pageDate = pageDate,
+                                isRecovered = true,
+                                aiSquatCameraLauncher = aiSquatCameraLauncher
                             )
-                            
-                            // ✅ Indicatore visivo per sessioni passate/future
-                            if (!canAddExercises) {
-                                Icon(
-                                    Icons.Default.History,
-                                    contentDescription = "Sessione non modificabile",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
+                        }
+                        
+                        // ✅ Poi mostra l'header della sessione
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Esercizi completati",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "${groupedItems.size}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
+                        
+                        // ✅ Infine mostra gli esercizi in modalità read-only
+                        items(groupedItems) { item ->
+                            when (item) {
+                                is GroupedSessionItem.WorkoutGroup -> {
+                                    WorkoutGroupCard(
+                                        workout = item.workout,
+                                        exercises = item.exercises,
+                                        todayViewModel = todayViewModel,
+                                        isReadOnly = true // Read-only per giorni passati
+                                    )
+                                }
+                                is GroupedSessionItem.StandaloneExercise -> {
+                                    StandaloneExerciseCard(
+                                        exercise = item.exercise,
+                                        todayViewModel = todayViewModel,
+                                        isReadOnly = true // Read-only per giorni passati
+                                    )
+                                }
+                            }
+                        }
                     }
-                    
-                    items(groupedItems) { groupedItem ->
-                        when (groupedItem) {
-                            is GroupedSessionItem.WorkoutGroup -> {
-                                WorkoutGroupCard(
-                                    workout = groupedItem.workout,
-                                    exercises = groupedItem.exercises,
-                                    todayViewModel = todayViewModel,
-                                    isReadOnly = !canAddExercises
+                } else {
+                    // ✅ Mostra la lista normale degli esercizi
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp) // ✅ Spazio per il FAB
+                    ) {
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (canAddExercises) "Sessione di allenamento" else "Sessione completata",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (canAddExercises) 
+                                        MaterialTheme.colorScheme.onSurface 
+                                    else 
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                
+                                // ✅ Indicatore visivo per sessioni passate/future
+                                if (!canAddExercises) {
+                                    Icon(
+                                        Icons.Default.History,
+                                        contentDescription = "Sessione non modificabile",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                        
+                        items(groupedItems) { groupedItem ->
+                            when (groupedItem) {
+                                is GroupedSessionItem.WorkoutGroup -> {
+                                    WorkoutGroupCard(
+                                        workout = groupedItem.workout,
+                                        exercises = groupedItem.exercises,
+                                        todayViewModel = todayViewModel,
+                                        isReadOnly = !canAddExercises
+                                    )
+                                }
+                                is GroupedSessionItem.StandaloneExercise -> {
+                                    StandaloneExerciseCard(
+                                        exercise = groupedItem.exercise,
+                                        todayViewModel = todayViewModel,
+                                        isReadOnly = !canAddExercises
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // ✅ Aggiunta: Quick Add Exercises Section (solo per oggi)
+                        if (canAddExercises) {
+                            item {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                QuickAddExercisesSection(
+                                    todayViewModel = todayViewModel
                                 )
                             }
-                            is GroupedSessionItem.StandaloneExercise -> {
-                                StandaloneExerciseCard(
-                                    exercise = groupedItem.exercise,
-                                    todayViewModel = todayViewModel,
-                                    isReadOnly = !canAddExercises
+                        }
+                        
+                        // ✅ Aggiunta: Quick Add Workouts Section (solo per oggi)
+                        if (canAddExercises) {
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                QuickAddWorkoutsSection(
+                                    todayViewModel = todayViewModel
                                 )
                             }
                         }
@@ -907,7 +1247,8 @@ fun DaySessionContent(
             EmptyHistoryCard(
                 isInPast = isInPast,
                 pageDate = pageDate,
-                isRecovered = isRecovered
+                isRecovered = isRecovered,
+                aiSquatCameraLauncher = aiSquatCameraLauncher
             )
         }
     }
@@ -1462,10 +1803,18 @@ fun HistoryScreen() {
 }
 
 @Composable
-fun DashboardScreen(navController: NavController, todayViewModel: TodayViewModel) {
+fun DashboardScreen(
+    navController: NavController, 
+    todayViewModel: TodayViewModel,
+    onStartRecovery: (Long) -> Unit = {}
+) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope() // ✅ Aggiungi scope per navigazione
     var showExportDialog by remember { mutableStateOf(false) }
     var showCalendarDialog by remember { mutableStateOf(false) }
+    
+    // ✅ Ottieni riferimento all'Activity per impostare la callback
+    val activity = context as? NewMainActivity
     
     // Database per statistiche 
     val database = remember { com.programminghut.pose_detection.data.database.AppDatabase.getDatabase(context) }
@@ -1497,6 +1846,22 @@ fun DashboardScreen(navController: NavController, todayViewModel: TodayViewModel
             }
         }
     )
+    
+    // ✅ Imposta la callback per il refresh del calendario al mount del componente
+    LaunchedEffect(calendarViewModel) {
+        activity?.refreshCalendarCallback = {
+            Log.d("TODAY_DEBUG", "🔄 Refreshing calendar from callback...")
+            calendarViewModel.loadCalendarData()
+        }
+        Log.d("TODAY_DEBUG", "✅ Callback del calendario impostata con successo")
+    }
+    
+    // ✅ Cleanup della callback quando il componente si smonta
+    DisposableEffect(Unit) {
+        onDispose {
+            activity?.refreshCalendarCallback = null
+        }
+    }
     
     val exportViewModel: ExportViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -1664,6 +2029,14 @@ fun DashboardScreen(navController: NavController, todayViewModel: TodayViewModel
     
     // ✅ Dialog per il calendario completo
     if (showCalendarDialog) {
+        // ✅ Refresh automatico del calendario ogni volta che viene aperto
+        LaunchedEffect(showCalendarDialog) {
+            if (showCalendarDialog) {
+                Log.d("TODAY_DEBUG", "🔄 Refresh automatico calendario all'apertura")
+                calendarViewModel.loadCalendarData()
+            }
+        }
+        
         Dialog(
             onDismissRequest = { showCalendarDialog = false },
             properties = DialogProperties(
@@ -1682,13 +2055,25 @@ fun DashboardScreen(navController: NavController, todayViewModel: TodayViewModel
                     viewModel = calendarViewModel,
                     onBackClick = { showCalendarDialog = false },
                     onDayClick = { timestamp, dayStatus ->
-                        // Naviga al giorno selezionato nel TodayScreen
-                        todayViewModel.setSelectedDate(timestamp)
-                        showCalendarDialog = false
-                        navController.navigate("today")
+                        Log.d("TODAY_DEBUG", "🗓️ Calendar day clicked - timestamp: $timestamp, dayStatus: $dayStatus")
+                        // ✅ Comportamento differenziato per giorni mancati vs normali  
+                        if (dayStatus == DayStatus.MISSED) {
+                            // Chiudi calendario e avvia recovery
+                            Log.d("TODAY_DEBUG", "🔧 MISSED day - starting recovery for $timestamp")
+                            showCalendarDialog = false
+                            onStartRecovery(timestamp)
+                        } else {
+                            // ✅ Comportamento normale: imposta data e naviga 
+                            Log.d("TODAY_DEBUG", "📅 Normal navigation - setting selectedDate to $timestamp and navigating to today")
+                            todayViewModel.setSelectedDate(timestamp)
+                            showCalendarDialog = false
+                            navController.navigate("today")
+                        }
                     },
                     onRecoveryClick = { timestamp ->
-                        // Handle recovery
+                        // ✅ Recovery click specifico - avvia direttamente AI squat
+                        showCalendarDialog = false
+                        onStartRecovery(timestamp)
                     }
                 )
             }
@@ -1772,7 +2157,12 @@ fun StatCard(
 }
 
 @Composable
-fun EmptyHistoryCard(isInPast: Boolean, pageDate: Long, isRecovered: Boolean = false) {
+fun EmptyHistoryCard(
+    isInPast: Boolean, 
+    pageDate: Long, 
+    isRecovered: Boolean = false,
+    aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
+) {
     val context = LocalContext.current
     
     // ✅ Ottieni frase motivazionale usando la data come seed per consistenza
@@ -1861,13 +2251,13 @@ fun EmptyHistoryCard(isInPast: Boolean, pageDate: Long, isRecovered: Boolean = f
                 // ✅ Pulsante per recuperare il giorno
                 Button(
                     onClick = {
-                        // Avvia procedura di recupero con 50 squat AI
+                        // ✅ Avvia procedura di recupero con 20 squat AI tramite launcher
                         val intent = Intent(context, CameraSelectionActivity::class.java).apply {
                             putExtra("MODE", "RECOVERY")
-                            putExtra("RECOVERED_DATE", pageDate)
-                            putExtra("MIN_REPS_REQUIRED", 50)
+                            putExtra("RECOVERY_DATE", pageDate)
+                            putExtra("RECOVERY_TARGET_SQUAT", 20)
                         }
-                        context.startActivity(intent)
+                        aiSquatCameraLauncher.launch(intent)
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
@@ -1880,7 +2270,7 @@ fun EmptyHistoryCard(isInPast: Boolean, pageDate: Long, isRecovered: Boolean = f
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Recupera Giorno (50 Squat AI)")
+                    Text("Recupera Giorno (20 Squat AI)")
                 }
             } else if (isInPast && isRecovered) {
                 // ✅ Giorno passato RECUPERATO - mostra messaggio positivo con emoticon
@@ -1895,7 +2285,7 @@ fun EmptyHistoryCard(isInPast: Boolean, pageDate: Long, isRecovered: Boolean = f
                     )
                     
                     Text(
-                        text = "Hai recuperato questo giorno completando 50 squat con l'IA!",
+                        text = "Hai recuperato questo giorno completando 20 squat con l'IA!",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                         textAlign = TextAlign.Center,
@@ -1977,6 +2367,260 @@ fun EmptySessionCard(
 }
 
 /**
+ * ✅ Sezione per aggiungere velocemente esercizi comuni
+ */
+@Composable
+fun QuickAddExercisesSection(
+    todayViewModel: TodayViewModel
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.FlashOn,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Aggiungi Velocemente",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // ✅ Griglia di pulsanti per esercizi comuni
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Push-up
+                QuickExerciseButton(
+                    icon = Icons.Default.Accessibility,
+                    name = "Push-up",
+                    exerciseId = 1L,
+                    todayViewModel = todayViewModel,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Squat
+                QuickExerciseButton(
+                    icon = Icons.Default.DirectionsRun,
+                    name = "Squat",
+                    exerciseId = 3L,
+                    todayViewModel = todayViewModel,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Jumping Jacks
+                QuickExerciseButton(
+                    icon = Icons.Default.FitnessCenter,
+                    name = "J. Jacks",
+                    exerciseId = 5L,
+                    todayViewModel = todayViewModel,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Plank
+                QuickExerciseButton(
+                    icon = Icons.Default.Timer,
+                    name = "Plank",
+                    exerciseId = 2L,
+                    todayViewModel = todayViewModel,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Burpee
+                QuickExerciseButton(
+                    icon = Icons.Default.SportsMartialArts,
+                    name = "Burpee",
+                    exerciseId = 4L,
+                    todayViewModel = todayViewModel,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Spacer per mantenere allineamento
+                Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/**
+ * ✅ Pulsante per aggiungere velocemente un esercizio
+ */
+@Composable
+fun QuickExerciseButton(
+    icon: ImageVector,
+    name: String,
+    exerciseId: Long,
+    todayViewModel: TodayViewModel,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = { 
+            Log.d("QUICK_ADD_DEBUG", "🚀 Aggiunta veloce esercizio: $name (ID: $exerciseId)")
+            todayViewModel.addExerciseToToday(exerciseId)
+        },
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            contentColor = MaterialTheme.colorScheme.primary
+        ),
+        contentPadding = PaddingValues(8.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                icon,
+                contentDescription = name,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/**
+ * ✅ Sezione per aggiungere velocemente workout comuni
+ */
+@Composable
+fun QuickAddWorkoutsSection(
+    todayViewModel: TodayViewModel
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Workout Veloci",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // ✅ Griglia di pulsanti per workout comuni
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Upper Body Power
+                QuickWorkoutButton(
+                    icon = Icons.Default.AccessibilityNew,
+                    name = "Upper Body",
+                    workoutId = 1L,
+                    todayViewModel = todayViewModel,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Cardio Blast  
+                QuickWorkoutButton(
+                    icon = Icons.Default.DirectionsRun,
+                    name = "Cardio Blast",
+                    workoutId = 2L,
+                    todayViewModel = todayViewModel,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Spacer per mantenere allineamento
+                Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/**
+ * ✅ Pulsante per aggiungere velocemente un workout
+ */
+@Composable
+fun QuickWorkoutButton(
+    icon: ImageVector,
+    name: String,
+    workoutId: Long,
+    todayViewModel: TodayViewModel,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = { 
+            Log.d("QUICK_ADD_DEBUG", "🚀 Aggiunta veloce workout: $name (ID: $workoutId)")
+            todayViewModel.addWorkoutToToday(workoutId)
+        },
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f),
+            contentColor = MaterialTheme.colorScheme.tertiary
+        ),
+        contentPadding = PaddingValues(8.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                icon,
+                contentDescription = name,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/**
  * Utility function to get exercise name by ID from templates
  */
 fun getExerciseNameById(exerciseId: Long): String {
@@ -2005,6 +2649,7 @@ fun getWorkoutNameById(workoutId: Long): String {
 /**
  * ✅ Componente per gruppi di workout (workout + esercizi figli)
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutGroupCard(
     workout: DailySessionItem,
@@ -2014,6 +2659,7 @@ fun WorkoutGroupCard(
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
+    var showDeleteButton by remember { mutableStateOf(false) }
     
     // Auto-espansione se è l'ultimo elemento aggiunto
     val lastAddedItemId by todayViewModel.lastAddedItemId.collectAsState()
@@ -2035,11 +2681,18 @@ fun WorkoutGroupCard(
         elevation = CardDefaults.cardElevation(defaultElevation = if (isExpanded) 6.dp else 2.dp)
     ) {
         Column {
-            // Header del workout (sempre visibile)
+            // Header del workout (sempre visibile) - con long press per mostrare elimina
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { isExpanded = !isExpanded }
+                    .combinedClickable(
+                        onClick = { isExpanded = !isExpanded },
+                        onLongClick = { 
+                            if (!isReadOnly) {
+                                showDeleteButton = !showDeleteButton 
+                            }
+                        }
+                    )
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -2083,12 +2736,16 @@ fun WorkoutGroupCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Bottone elimina tutto il workout
-                    if (!isReadOnly) {
+                    // ✅ Bottone elimina - visibile solo dopo long press
+                    AnimatedVisibility(
+                        visible = showDeleteButton && !isReadOnly,
+                        enter = fadeIn() + scaleIn(),
+                        exit = fadeOut() + scaleOut()
+                    ) {
                         IconButton(
                             onClick = { 
-                                // Rimuovi il workout e tutti i suoi esercizi
                                 todayViewModel.removeSessionItem(workout.itemId)
+                                showDeleteButton = false // Nascondi dopo l'eliminazione
                             }
                         ) {
                             Icon(
@@ -2156,8 +2813,9 @@ fun StandaloneExerciseCard(
 }
 
 /**
- * ✅ Componente semplificato per singolo esercizio (senza controlli complessi)
+ * ✅ Componente semplificato per singolo esercizio (sempre compatto, bottone elimina con long press)
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SimpleExerciseItem(
     exercise: DailySessionItem,
@@ -2165,16 +2823,8 @@ fun SimpleExerciseItem(
     isReadOnly: Boolean,
     modifier: Modifier = Modifier
 ) {
-    // Auto-espansione se è l'ultimo elemento aggiunto
-    var isExpanded by remember { mutableStateOf(false) }
-    val lastAddedItemId by todayViewModel.lastAddedItemId.collectAsState()
-    
-    LaunchedEffect(lastAddedItemId) {
-        if (lastAddedItemId == exercise.itemId && lastAddedItemId != null) {
-            isExpanded = true
-            todayViewModel.clearLastAddedItem()
-        }
-    }
+    // ✅ State per mostrare/nascondere il bottone elimina
+    var showDeleteButton by remember { mutableStateOf(false) }
     
     // Get exercise name
     val exerciseName = remember(exercise.exerciseId, exercise.aiData) {
@@ -2192,220 +2842,110 @@ fun SimpleExerciseItem(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
     ) {
-        Column {
-            // Header dell'esercizio
+        // Header dell'esercizio - sempre compatto, con long press per mostrare elimina
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = { /* Nessuna azione sul click normale */ },
+                    onLongClick = { 
+                        if (!isReadOnly && exercise.parentWorkoutItemId == null) {
+                            showDeleteButton = !showDeleteButton 
+                        }
+                    }
+                )
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isExpanded = !isExpanded }
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
+                // Icona dell'esercizio
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            if (exercise.aiData?.contains("squat_ai") == true) 
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Icona dell'esercizio
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                if (exercise.aiData?.contains("squat_ai") == true) 
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
-                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                            ),
-                        contentAlignment = Alignment.Center
+                    Icon(
+                        imageVector = when {
+                            exercise.aiData?.contains("squat_ai") == true -> Icons.Default.VideoCall
+                            exercise.exerciseId != null -> getExerciseIcon(exercise.exerciseId!!)
+                            else -> Icons.Default.FitnessCenter
+                        },
+                        contentDescription = null,
+                        tint = if (exercise.aiData?.contains("squat_ai") == true) 
+                            MaterialTheme.colorScheme.tertiary
+                        else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Column {
+                    Text(
+                        text = exerciseName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    
+                    // Mostra quantità impostata
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = when {
-                                exercise.aiData?.contains("squat_ai") == true -> Icons.Default.VideoCall
-                                exercise.exerciseId != null -> getExerciseIcon(exercise.exerciseId!!)
-                                else -> Icons.Default.FitnessCenter
-                            },
-                            contentDescription = null,
-                            tint = if (exercise.aiData?.contains("squat_ai") == true) 
-                                MaterialTheme.colorScheme.tertiary
-                            else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.width(8.dp))
-                    
-                    Column {
-                        Text(
-                            text = exerciseName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        
-                        // Mostra quantità impostata
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            when {
-                                exercise.customReps != null -> {
-                                    Text(
-                                        text = "${exercise.customReps} ripetizioni",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                exercise.customTime != null -> {
-                                    Text(
-                                        text = "${exercise.customTime}s",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                else -> {
-                                    Text(
-                                        text = "Quantità libera",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                        when {
+                            exercise.customReps != null -> {
+                                Text(
+                                    text = "${exercise.customReps} ripetizioni",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            exercise.customTime != null -> {
+                                Text(
+                                    text = "${exercise.customTime}s",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            else -> {
+                                Text(
+                                    text = "Quantità libera",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
-                }
-                
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Bottone elimina singolo esercizio (solo se standalone)
-                    if (!isReadOnly && exercise.parentWorkoutItemId == null) {
-                        IconButton(
-                            onClick = { todayViewModel.removeSessionItem(exercise.itemId) }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Elimina esercizio",
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                    
-                    // Icona di espansione
-                    Icon(
-                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = if (isExpanded) "Comprimi" else "Espandi",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
-                    )
                 }
             }
             
-            // Dettagli espandibili (solo per modificare quantità)
+            // ✅ Bottone elimina - visibile solo dopo long press
             AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
+                visible = showDeleteButton && !isReadOnly && exercise.parentWorkoutItemId == null,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut()
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
-                ) {
-                    Divider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                    )
-                    
-                    if (!isReadOnly) {
-                        // Modifica quantità
-                        when {
-                            exercise.customReps != null -> {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Ripetizioni:",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "${exercise.customReps}",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            modifier = Modifier.padding(horizontal = 16.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            exercise.customTime != null -> {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Durata:",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "${exercise.customTime}s",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            modifier = Modifier.padding(horizontal = 16.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Bottone "Segna come fatto"
-                        OutlinedButton(
-                            onClick = { 
-                                todayViewModel.toggleItemCompletion(exercise.itemId)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = if (exercise.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                                contentDescription = null,
-                                tint = if (exercise.isCompleted) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (exercise.isCompleted) "Completato ✓" else "Segna come fatto",
-                                color = if (exercise.isCompleted) Color.Green else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        // Modalità readonly - mostra solo lo stato
-                        if (exercise.isCompleted) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = Color.Green,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Completato",
-                                    color = Color.Green,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
+                IconButton(
+                    onClick = { 
+                        todayViewModel.removeSessionItem(exercise.itemId)
+                        showDeleteButton = false // Nascondi dopo l'eliminazione
                     }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Elimina esercizio",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
         }

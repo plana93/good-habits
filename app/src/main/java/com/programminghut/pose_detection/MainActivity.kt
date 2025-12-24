@@ -158,8 +158,8 @@ class MainActivity : AppCompatActivity() {
         isRecoveryMode = intent.getStringExtra("MODE") == "RECOVERY"
         isAISquatMode = intent.getStringExtra("MODE") == "AI_SQUAT"
         if (isRecoveryMode || isAISquatMode) {
-            recoveredDate = intent.getLongExtra("RECOVERED_DATE", 0)
-            minRepsRequired = intent.getIntExtra("MIN_REPS_REQUIRED", 50)
+            recoveredDate = intent.getLongExtra("RECOVERY_DATE", 0)
+            minRepsRequired = intent.getIntExtra("RECOVERY_TARGET_SQUAT", 20)
         }
 
         setContentView(R.layout.activity_main)
@@ -1306,23 +1306,26 @@ class MainActivity : AppCompatActivity() {
                             kotlinx.coroutines.GlobalScope.launch {
                                 kotlinx.coroutines.delay(2000) // Aspetta 2 secondi
                                 runOnUiThread {
-                                    // ✅ Imposta il risultato prima di finire
+                                    // ✅ Imposta il risultato prima di finire con flag di recovery
                                     val resultIntent = android.content.Intent().apply {
                                         putExtra("REPS_COMPLETED", reps.size)
                                         putExtra("SESSION_DURATION", endTime - actualStartTime)
+                                        putExtra("RECOVERY_MODE", true)
+                                        putExtra("RECOVERY_DATE", recoveredDate)
                                     }
                                     setResult(Activity.RESULT_OK, resultIntent)
                                     finish() // Chiude MainActivity e torna al calendario
                                 }
                             }
                         } else {
-                            // ✅ Per sessioni normali, imposta il risultato e chiudi dopo un breve delay
+                            // ✅ Per sessioni normali (AI Squat giornalieri), imposta il risultato senza flag di recovery
                             kotlinx.coroutines.GlobalScope.launch {
                                 kotlinx.coroutines.delay(1000) // Breve delay per mostrare il toast
                                 runOnUiThread {
                                     val resultIntent = android.content.Intent().apply {
                                         putExtra("REPS_COMPLETED", reps.size)
                                         putExtra("SESSION_DURATION", endTime - actualStartTime)
+                                        putExtra("RECOVERY_MODE", false)
                                     }
                                     setResult(Activity.RESULT_OK, resultIntent)
                                     Log.d("MainActivity", "🎯 Risultato impostato e activity in chiusura: ${reps.size} reps")
@@ -1553,6 +1556,12 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("MissingPermission")
     fun open_camera() {
+        // Validazione indice camera per evitare crash
+        if (selectedCameraIndex < 0 || selectedCameraIndex >= cameraManager.cameraIdList.size) {
+            // Usa la prima camera disponibile come fallback
+            selectedCameraIndex = if (cameraManager.cameraIdList.isNotEmpty()) 0 else return
+        }
+        
         cameraManager.openCamera(
             cameraManager.cameraIdList[selectedCameraIndex],
             object : CameraDevice.StateCallback() {

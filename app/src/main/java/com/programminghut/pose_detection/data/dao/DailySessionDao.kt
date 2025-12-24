@@ -156,4 +156,17 @@ interface DailySessionDao {
         AND (customReps > 0 OR actualReps > 0)
     """)
     fun getTotalSquatsCount(): Flow<Int>
+    
+    /**
+     * 🔄 Metodo di supporto per forzare invalidazione cache del conteggio squat
+     * Questo è un workaround per assicurarsi che il Flow si aggiorni dopo eliminazioni
+     */
+    @Query("SELECT COUNT(*) FROM daily_session_items WHERE exerciseId = 3")
+    suspend fun invalidateSquatCountCache(): Int
+    
+    /**
+     * 🏋️ Ottiene tutti gli esercizi figli di un workout
+     */
+    @Query("SELECT * FROM daily_session_items WHERE parentWorkoutItemId = :workoutItemId")
+    suspend fun getItemsByParentWorkout(workoutItemId: Long): List<DailySessionItem>
 }
