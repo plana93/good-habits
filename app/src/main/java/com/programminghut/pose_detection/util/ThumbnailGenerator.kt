@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import androidx.core.content.ContextCompat
 import com.programminghut.pose_detection.R
 import com.programminghut.pose_detection.data.model.TemplateExerciseType
@@ -49,20 +50,50 @@ object ThumbnailGenerator {
         val thumbnailsDir = getThumbnailsDirectory(context)
         val thumbnailFile = File(thumbnailsDir, "thumb_${exerciseId}.jpg")
         
+        android.util.Log.d("ThumbnailGenerator", "🎯 generateThumbnail - exerciseId: $exerciseId, imagePath: $imagePath")
+        android.util.Log.d("ThumbnailGenerator", "🎯 thumbnailFile exists: ${thumbnailFile.exists()}, path: ${thumbnailFile.absolutePath}")
+        
+        // Se abbiamo un'immagine custom, rigenera sempre la thumbnail per assicurarsi sia aggiornata
+        if (!imagePath.isNullOrEmpty() && imagePath.startsWith("content://") && thumbnailFile.exists()) {
+            android.util.Log.d("ThumbnailGenerator", "🎯 Deleting existing thumbnail for custom image")
+            thumbnailFile.delete()
+        }
+        
         // Se esiste già, la restituiamo (cache)
         if (thumbnailFile.exists()) {
+            android.util.Log.d("ThumbnailGenerator", "🎯 Using cached thumbnail")
             return thumbnailFile.absolutePath
         }
         
-        val bitmap = if (!imagePath.isNullOrEmpty() && File(imagePath).exists()) {
-            // Genera da immagine esistente
-            generateFromImage(imagePath)
+        val bitmap = if (!imagePath.isNullOrEmpty()) {
+            try {
+                if (imagePath.startsWith("content://")) {
+                    android.util.Log.d("ThumbnailGenerator", "🎯 Generating from URI: $imagePath")
+                    // Gestisce URI (da image picker)
+                    generateFromUri(context, Uri.parse(imagePath))
+                } else {
+                    android.util.Log.d("ThumbnailGenerator", "🎯 Generating from file path: $imagePath")
+                    // Gestisce file path tradizionale
+                    if (File(imagePath).exists()) {
+                        generateFromImage(imagePath)
+                    } else {
+                        android.util.Log.d("ThumbnailGenerator", "🎯 File doesn't exist, using placeholder")
+                        generatePlaceholder(context, exerciseType, exerciseName)
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ThumbnailGenerator", "🎯 Error loading image: ${e.message}")
+                // Se c'è errore nel caricamento, usa placeholder
+                generatePlaceholder(context, exerciseType, exerciseName)
+            }
         } else {
+            android.util.Log.d("ThumbnailGenerator", "🎯 No imagePath, using placeholder")
             // Genera placeholder
             generatePlaceholder(context, exerciseType, exerciseName)
         }
         
         // Salva thumbnail
+        android.util.Log.d("ThumbnailGenerator", "🎯 Saving thumbnail to: ${thumbnailFile.absolutePath}")
         saveThumbnail(bitmap, thumbnailFile)
         
         return thumbnailFile.absolutePath
@@ -75,6 +106,20 @@ object ThumbnailGenerator {
         val originalBitmap = BitmapFactory.decodeFile(imagePath)
             ?: throw IOException("Impossibile caricare immagine: $imagePath")
         
+        return resizeAndCropBitmap(originalBitmap)
+    }
+    
+    /**
+     * Genera thumbnail da URI (per immagini selezionate da image picker)
+     */
+    private fun generateFromUri(context: Context, uri: Uri): Bitmap {
+        val inputStream = context.contentResolver.openInputStream(uri)
+            ?: throw IOException("Impossibile aprire URI: $uri")
+        
+        val originalBitmap = BitmapFactory.decodeStream(inputStream)
+            ?: throw IOException("Impossibile decodificare immagine da URI: $uri")
+        
+        inputStream.close()
         return resizeAndCropBitmap(originalBitmap)
     }
     

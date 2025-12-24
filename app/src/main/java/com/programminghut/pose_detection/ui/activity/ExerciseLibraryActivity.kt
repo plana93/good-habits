@@ -18,17 +18,31 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.clickable
 import com.programminghut.pose_detection.ui.theme.Pose_detectionTheme
 import com.programminghut.pose_detection.data.model.*
 import com.programminghut.pose_detection.test.RuntimeChainTest
@@ -304,32 +318,29 @@ fun ExerciseLibraryScreen(
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    columns = GridCells.Fixed(3), // 3 colonne per box più piccole
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(8.dp)
                 ) {
                     items(exerciseTemplates) { template ->
                         ExerciseTemplateCard(
                             template = template,
                             onClick = { 
                                 Log.d("🔍 EXERCISE_SELECT", "Click su template: ${template.name}, ID: ${template.id}")
-                                Log.d("🔍 EXERCISE_SELECT", "isSelectionMode: $isSelectionMode")
                                 if (isSelectionMode) {
-                                    // 🧪 TEST: Verifica selezione esercizio
-                                    RuntimeChainTest.testExerciseSelection(
-                                        template.id, 
-                                        template.name, 
-                                        "ExerciseLibrary-Selezione"
-                                    )
-                                    Log.d("🔍 EXERCISE_SELECT", "Modalità selezione: mostrando dialog quantità per: ${template.name}")
-                                    // ✅ In modalità selezione: mostra dialog quantità
+                                    // In modalità selezione: mostra dialog quantità
                                     selectedExerciseForQuantity = template
                                     showQuantityDialog = true
                                 } else {
-                                    Log.d("🔍 EXERCISE_SELECT", "Modalità normale - aprendo dialog")
-                                    // Modalità normale: apre dialog dettagli
-                                    selectedExercise = template
+                                    // Modalità normale: mostra dialog quantità
+                                    selectedExerciseForQuantity = template
+                                    showQuantityDialog = true
                                 }
+                            },
+                            onLongClick = {
+                                // Long press: apre dialog dettagli completo
+                                selectedExercise = template
                             }
                         )
                     }
@@ -342,14 +353,12 @@ fun ExerciseLibraryScreen(
             ExerciseDetailDialog(
                 exercise = exercise,
                 onDismiss = { selectedExercise = null },
-                onUseToday = {
-                    exerciseForToday = exercise
-                    selectedExercise = null
-                    showUseTodayParametersDialog = true
-                },
-                onEdit = {
-                    // TODO: Implementare modifica esercizio
-                    selectedExercise = null
+                onUpdateExercise = { updatedExercise ->
+                    // Aggiorna l'esercizio nella lista
+                    exerciseTemplates = exerciseTemplates.map { template ->
+                        if (template.id == updatedExercise.id) updatedExercise else template
+                    }
+                    selectedExercise = updatedExercise
                 }
             )
         }
@@ -508,67 +517,77 @@ fun ExerciseLibraryScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExerciseTemplateCard(
     template: ExerciseTemplate,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(6.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Thumbnail dell'esercizio (occupa la maggior parte dello spazio)
+            // Thumbnail dell'esercizio (più compatta)
             ExerciseThumbnail(
                 exercise = template,
-                modifier = Modifier.weight(1f),
-                size = 80.dp,
-                cornerRadius = 8.dp,
-                showTypeIcon = true
+                modifier = Modifier.size(45.dp),
+                size = 45.dp,
+                cornerRadius = 6.dp,
+                showTypeIcon = false
             )
 
-            // Info esercizio compatta
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = template.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                // Parametri di default compatti
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // Nome esercizio compatto
+            Text(
+                text = template.name,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                color = MaterialTheme.colorScheme.onSurface,
+                lineHeight = 12.sp
+            )
+            
+            // Parametri di default molto compatti
+            if (template.defaultReps != null || template.defaultTime != null) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.padding(top = 2.dp)
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     template.defaultReps?.let { reps ->
                         Text(
                             text = "${reps}x",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                         )
+                    }
+                    if (template.defaultReps != null && template.defaultTime != null) {
+                        Text(" • ", style = MaterialTheme.typography.labelSmall)
                     }
                     template.defaultTime?.let { time ->
                         Text(
                             text = "${time}s",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.secondary
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
                         )
                     }
                 }
@@ -577,20 +596,61 @@ fun ExerciseTemplateCard(
     }
 }
 
-// Dialog per i dettagli dell'esercizio
+// Dialog per i dettagli dell'esercizio con editing
 @Composable
 fun ExerciseDetailDialog(
     exercise: ExerciseTemplate,
     onDismiss: () -> Unit,
-    onUseToday: () -> Unit,
-    onEdit: () -> Unit
+    onUpdateExercise: ((ExerciseTemplate) -> Unit)? = null
 ) {
+    var isEditingName by remember { mutableStateOf(false) }
+    var isEditingDescription by remember { mutableStateOf(false) }
+    var editedName by remember { mutableStateOf(exercise.name) }
+    var editedDescription by remember { mutableStateOf(exercise.description) }
+    var showImageOptions by remember { mutableStateOf(false) }
+    var currentExercise by remember { mutableStateOf(exercise) }
+    
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        Log.d("IMAGE_PICKER", "🎯 Image picker callback received, URI: $uri")
+        uri?.let {
+            Log.d("IMAGE_PICKER", "🎯 Immagine selezionata: $uri")
+            
+            // Aggiorna l'esercizio con la nuova immagine
+            val updatedExercise = currentExercise.copy(imagePath = uri.toString())
+            Log.d("IMAGE_PICKER", "🎯 currentExercise prima: id=${currentExercise.id}, imagePath=${currentExercise.imagePath}")
+            currentExercise = updatedExercise
+            Log.d("IMAGE_PICKER", "🎯 currentExercise dopo: id=${updatedExercise.id}, imagePath=${updatedExercise.imagePath}")
+            
+            // Notifica il parent dell'aggiornamento
+            onUpdateExercise?.let { callback ->
+                Log.d("IMAGE_PICKER", "🎯 Calling onUpdateExercise callback")
+                callback.invoke(updatedExercise)
+            } ?: Log.w("IMAGE_PICKER", "🎯 onUpdateExercise callback is null!")
+            
+            Log.d("IMAGE_PICKER", "🎯 Esercizio aggiornato con imagePath: ${updatedExercise.imagePath}")
+        } ?: Log.w("IMAGE_PICKER", "🎯 URI è null!")
+    }
+    
+    // Camera launcher (per future implementazioni)
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            // TODO: Gestire foto scattata
+            Log.d("CAMERA", "Foto scattata con successo")
+        }
+    }
+    
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
                     imageVector = when (exercise.type) {
@@ -600,86 +660,355 @@ fun ExerciseDetailDialog(
                         TemplateExerciseType.SQUAT_AI -> Icons.Default.Visibility
                         else -> Icons.Default.SportsMartialArts
                     },
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
                 )
-                Text(exercise.name)
+                Text(
+                    text = "Dettagli Esercizio",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (exercise.description.isNotBlank()) {
-                    Text(
-                        text = exercise.description,
-                        style = MaterialTheme.typography.bodyMedium
+                // Immagine dell'esercizio
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clickable { 
+                            showImageOptions = true
+                        },
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
-                }
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column {
-                        Text(
-                            text = "Tipo",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        ExerciseThumbnail(
+                            exercise = currentExercise,
+                            modifier = Modifier.size(80.dp),
+                            size = 80.dp,
+                            cornerRadius = 8.dp,
+                            showTypeIcon = false
                         )
-                        Text(
-                            text = when (exercise.type) {
-                                TemplateExerciseType.STRENGTH -> "Forza"
-                                TemplateExerciseType.CARDIO -> "Cardio"
-                                TemplateExerciseType.FLEXIBILITY -> "Flessibilità"
-                                TemplateExerciseType.BALANCE -> "Equilibrio"
-                                TemplateExerciseType.SQUAT_AI -> "Squat AI"
-                                TemplateExerciseType.CUSTOM -> "Personalizzato"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
+                        
+                        // Overlay per indicare possibilità di cambio immagine
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp),
+                            contentAlignment = Alignment.BottomEnd
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = "Cambia immagine",
+                                    modifier = Modifier.padding(4.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Nome editabile
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Nome",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                            IconButton(
+                                onClick = { 
+                                    isEditingName = !isEditingName
+                                    if (!isEditingName) {
+                                        // TODO: Salvare le modifiche
+                                    }
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isEditingName) Icons.Default.Save else Icons.Default.Edit,
+                                    contentDescription = if (isEditingName) "Salva" else "Modifica",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                        
+                        if (isEditingName) {
+                            OutlinedTextField(
+                                value = editedName,
+                                onValueChange = { editedName = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("Nome esercizio") },
+                                singleLine = true
+                            )
+                        } else {
+                            Text(
+                                text = exercise.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Descrizione editabile  
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Descrizione",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                            IconButton(
+                                onClick = { 
+                                    isEditingDescription = !isEditingDescription
+                                    if (!isEditingDescription) {
+                                        // TODO: Salvare le modifiche
+                                    }
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isEditingDescription) Icons.Default.Save else Icons.Default.Edit,
+                                    contentDescription = if (isEditingDescription) "Salva" else "Modifica",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                        
+                        if (isEditingDescription) {
+                            OutlinedTextField(
+                                value = editedDescription,
+                                onValueChange = { editedDescription = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("Descrivi l'esercizio...") },
+                                maxLines = 3,
+                                minLines = 2
+                            )
+                        } else {
+                            Text(
+                                text = if (exercise.description.isNotBlank()) exercise.description else "Nessuna descrizione",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (exercise.description.isNotBlank()) 
+                                    MaterialTheme.colorScheme.onSurface else 
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Info tecniche (non editabili)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                         )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Tipo",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                            Text(
+                                text = when (exercise.type) {
+                                    TemplateExerciseType.STRENGTH -> "💪 Forza"
+                                    TemplateExerciseType.CARDIO -> "🏃 Cardio"
+                                    TemplateExerciseType.FLEXIBILITY -> "🧘 Flessibilità"
+                                    TemplateExerciseType.BALANCE -> "⚖️ Equilibrio"
+                                    TemplateExerciseType.SQUAT_AI -> "🤖 Squat AI"
+                                    TemplateExerciseType.CUSTOM -> "✨ Custom"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                     
-                    Column {
-                        Text(
-                            text = "Modalità",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
                         )
-                        Text(
-                            text = when (exercise.mode) {
-                                TemplateExerciseMode.REPS -> "Ripetizioni"
-                                TemplateExerciseMode.TIME -> "Tempo"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Modalità",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                            Text(
+                                text = when (exercise.mode) {
+                                    TemplateExerciseMode.REPS -> "🔢 Ripetizioni"
+                                    TemplateExerciseMode.TIME -> "⏱️ Tempo"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
         },
         confirmButton = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Modifica")
-                }
-                
-                Button(onClick = onUseToday) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Usa Oggi")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
+            Button(onClick = onDismiss) {
                 Text("Chiudi")
             }
-        }
+        },
+        dismissButton = null
     )
+    
+    // Dialog opzioni immagine
+    if (showImageOptions) {
+        AlertDialog(
+            onDismissRequest = { showImageOptions = false },
+            title = { 
+                Text("Cambia Immagine", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Scegli come vuoi aggiungere l'immagine per l'esercizio:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    
+                    // Opzione Galleria
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showImageOptions = false
+                                imagePickerLauncher.launch("image/*")
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Photo,
+                                contentDescription = "Galleria",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Column {
+                                Text(
+                                    "Scegli dalla Galleria",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    "Seleziona un'immagine esistente",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Opzione Camera (per future implementazioni)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showImageOptions = false
+                                // TODO: Implementare scatto foto
+                                Log.d("CAMERA", "Scatto foto non ancora implementato")
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.PhotoCamera,
+                                contentDescription = "Camera",
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
+                            Column {
+                                Text(
+                                    "Scatta Foto",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    "Scatta una nuova foto (presto)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showImageOptions = false }) {
+                    Text("Annulla")
+                }
+            }
+        )
+    }
 }
 
 // Dialog per creare nuovo esercizio
@@ -836,11 +1165,11 @@ fun QuantitySelectionDialog(
     onConfirm: (reps: Int?, time: Int?) -> Unit,
     onCancel: () -> Unit
 ) {
-    var selectedReps by remember { 
-        mutableIntStateOf(exercise.defaultReps ?: 10) 
+    var repsText by remember { 
+        mutableStateOf((exercise.defaultReps ?: 10).toString()) 
     }
-    var selectedTime by remember { 
-        mutableIntStateOf(exercise.defaultTime ?: 30) 
+    var timeText by remember { 
+        mutableStateOf((exercise.defaultTime ?: 30).toString()) 
     }
     
     AlertDialog(
@@ -853,90 +1182,77 @@ fun QuantitySelectionDialog(
             )
         },
         text = {
-            Column {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Text(
                     text = "Esercizio: ${exercise.name}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 when (exercise.mode) {
                     TemplateExerciseMode.REPS -> {
                         Column {
                             Text(
-                                text = "Ripetizioni",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = "Numero di Ripetizioni",
+                                style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                IconButton(
-                                    onClick = { 
-                                        selectedReps = (selectedReps - 1).coerceAtLeast(1)
+                            OutlinedTextField(
+                                value = repsText,
+                                onValueChange = { newValue ->
+                                    // Permette solo numeri e virgola/punto decimale
+                                    if (newValue.matches(Regex("^\\d*[,.]?\\d*$"))) {
+                                        repsText = newValue.replace(",", ".")
                                     }
-                                ) {
-                                    Icon(Icons.Default.Remove, "Diminuisci")
-                                }
-                                
-                                Text(
-                                    text = "$selectedReps",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                
-                                IconButton(
-                                    onClick = { 
-                                        selectedReps += 1
-                                    }
-                                ) {
-                                    Icon(Icons.Default.Add, "Aumenta")
-                                }
-                            }
+                                },
+                                label = { Text("Ripetizioni") },
+                                placeholder = { Text("es. 10 o 12.5") },
+                                leadingIcon = { 
+                                    Icon(Icons.Default.FitnessCenter, contentDescription = null) 
+                                },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Done
+                                ),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
                     
                     TemplateExerciseMode.TIME -> {
                         Column {
                             Text(
-                                text = "Durata (secondi)",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = "Durata in Minuti",
+                                style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                IconButton(
-                                    onClick = { 
-                                        selectedTime = (selectedTime - 5).coerceAtLeast(5)
+                            OutlinedTextField(
+                                value = timeText,
+                                onValueChange = { newValue ->
+                                    // Permette solo numeri e virgola/punto decimale
+                                    if (newValue.matches(Regex("^\\d*[,.]?\\d*$"))) {
+                                        timeText = newValue.replace(",", ".")
                                     }
-                                ) {
-                                    Icon(Icons.Default.Remove, "Diminuisci")
-                                }
-                                
-                                Text(
-                                    text = "${selectedTime}s",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                
-                                IconButton(
-                                    onClick = { 
-                                        selectedTime += 5
-                                    }
-                                ) {
-                                    Icon(Icons.Default.Add, "Aumenta")
-                                }
-                            }
+                                },
+                                label = { Text("Minuti") },
+                                placeholder = { Text("es. 5 o 2.5") },
+                                leadingIcon = { 
+                                    Icon(Icons.Default.Timer, contentDescription = null) 
+                                },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Done
+                                ),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
                 }
@@ -945,12 +1261,24 @@ fun QuantitySelectionDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val reps = if (exercise.mode == TemplateExerciseMode.REPS) selectedReps else null
-                    val time = if (exercise.mode == TemplateExerciseMode.TIME) selectedTime else null
-                    onConfirm(reps, time)
+                    when (exercise.mode) {
+                        TemplateExerciseMode.REPS -> {
+                            val reps = repsText.toDoubleOrNull()?.times(1)?.toInt() // Converte da decimale
+                            onConfirm(reps, null)
+                        }
+                        TemplateExerciseMode.TIME -> {
+                            val timeMinutes = timeText.toDoubleOrNull()
+                            val timeSeconds = timeMinutes?.times(60)?.toInt() // Converte minuti in secondi
+                            onConfirm(null, timeSeconds)
+                        }
+                    }
+                },
+                enabled = when (exercise.mode) {
+                    TemplateExerciseMode.REPS -> repsText.toDoubleOrNull() != null && repsText.toDoubleOrNull()!! > 0
+                    TemplateExerciseMode.TIME -> timeText.toDoubleOrNull() != null && timeText.toDoubleOrNull()!! > 0
                 }
             ) {
-                Text("Conferma")
+                Text("Conferma", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

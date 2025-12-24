@@ -43,13 +43,14 @@ fun ExerciseThumbnail(
     showTypeIcon: Boolean = true
 ) {
     val context = LocalContext.current
-    var thumbnailPath by remember(exercise.id) { mutableStateOf<String?>(null) }
+    var thumbnailPath by remember(exercise.id, exercise.imagePath) { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var hasError by remember { mutableStateOf(false) }
     
     // Genera thumbnail se necessario
-    LaunchedEffect(exercise.id) {
+    LaunchedEffect(exercise.id, exercise.imagePath) {
         try {
+            android.util.Log.d("ExerciseThumbnail", "🎯 Loading thumbnail for exercise ${exercise.id}, imagePath: ${exercise.imagePath}")
             val path = ThumbnailGenerator.generateThumbnail(
                 context = context,
                 exerciseId = exercise.id,
@@ -58,8 +59,10 @@ fun ExerciseThumbnail(
                 exerciseName = exercise.name
             )
             thumbnailPath = path
+            android.util.Log.d("ExerciseThumbnail", "🎯 Thumbnail generated: $path")
             isLoading = false
         } catch (e: Exception) {
+            android.util.Log.e("ExerciseThumbnail", "🎯 Error generating thumbnail: ${e.message}")
             hasError = true
             isLoading = false
         }
