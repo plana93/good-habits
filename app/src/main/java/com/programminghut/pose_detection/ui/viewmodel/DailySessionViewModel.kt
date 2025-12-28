@@ -140,11 +140,11 @@ class DailySessionViewModel(
     /**
      * Aggiungi esercizio alla sessione odierna
      */
-    fun addExerciseToSession(exerciseId: Long) {
+    fun addExerciseToSession(context: android.content.Context, exerciseId: Long) {
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
-                val item = dailySessionRepository.addExerciseToTodaySession(exerciseId)
+                val item = dailySessionRepository.addExerciseToTodaySession(context, exerciseId)
                 if (item != null) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -168,11 +168,11 @@ class DailySessionViewModel(
     /**
      * Aggiungi allenamento alla sessione odierna
      */
-    fun addWorkoutToSession(workoutId: Long) {
+    fun addWorkoutToSession(context: android.content.Context, workoutId: Long) {
         viewModelScope.launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
-                val items = dailySessionRepository.addWorkoutToTodaySession(workoutId)
+                val items = dailySessionRepository.addWorkoutToTodaySession(context, workoutId)
                 if (items.isNotEmpty()) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

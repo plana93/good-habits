@@ -1460,7 +1460,7 @@ class MainActivity : AppCompatActivity() {
                             android.util.Log.d("BRIDGE_DEBUG", "🔧 Reps totali: ${reps.size}")
                             
                             // ✅ Step 1: Crea AI Squat item con default 0 reps
-                            val aiSquatAdded = dailySessionRepository.addAISquatToTodaySession(0)
+                            val aiSquatAdded = dailySessionRepository.addAISquatToTodaySession(this@MainActivity, 0)
                             
                             if (aiSquatAdded != null) {
                                 android.util.Log.d("BRIDGE_DEBUG", "✅ AI Squat item creato con ID: ${aiSquatAdded.itemId}")

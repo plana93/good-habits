@@ -324,14 +324,14 @@ class TodayViewModel(
      * 
      * QUESTO È QUELLO CHE DEVE SUCCEDERE quando clicchi un esercizio!
      */
-    fun addExerciseToToday(exerciseId: Long, customReps: Int? = null, customTime: Int? = null) {
+    fun addExerciseToToday(context: android.content.Context, exerciseId: Long, customReps: Int? = null, customTime: Int? = null) {
         viewModelScope.launch {
             try {
                 Log.d("TODAY_DEBUG", "🚀 TodayViewModel.addExerciseToToday() chiamato con exerciseId: $exerciseId, reps: $customReps, time: $customTime")
                 println("🚀 TodayViewModel.addExerciseToToday() chiamato con exerciseId: $exerciseId, reps: $customReps, time: $customTime")
                 
                 // ✅ SOLUZIONE: Usa direttamente addExerciseToTodaySession che gestisce la creazione automatica della sessione
-                val newItem = dailySessionRepository.addExerciseToTodaySession(exerciseId, customReps, customTime)
+                val newItem = dailySessionRepository.addExerciseToTodaySession(context, exerciseId, customReps, customTime)
                 
                 if (newItem != null) {
                     Log.d("TODAY_DEBUG", "✅ Esercizio aggiunto con successo: ${newItem.itemId}")
@@ -360,7 +360,7 @@ class TodayViewModel(
     /**
      * ✅ Aggiunge un AI Squat alla sessione della data selezionata
      */
-    fun addAISquatToToday(targetReps: Int = 20) {
+    fun addAISquatToToday(context: android.content.Context, targetReps: Int = 20) {
         viewModelScope.launch {
             try {
                 Log.d("TODAY_DEBUG", "🤖 TodayViewModel.addAISquatToToday() chiamato con targetReps: $targetReps")
@@ -372,7 +372,7 @@ class TodayViewModel(
                 }
                 
                 // Aggiungi AI squat alla sessione
-                val newItem = dailySessionRepository.addAISquatToTodaySession(targetReps)
+                val newItem = dailySessionRepository.addAISquatToTodaySession(context, targetReps)
                 
                 if (newItem != null) {
                     // Ricarica la sessione aggiornata
@@ -396,10 +396,10 @@ class TodayViewModel(
     /**
      * Helper per aggiungere esercizio a una sessione specifica per data
      */
-    private suspend fun addExerciseToSession(exerciseId: Long, dateMillis: Long, customReps: Int? = null, customTime: Int? = null): DailySessionItem? {
+    private suspend fun addExerciseToSession(context: android.content.Context, exerciseId: Long, dateMillis: Long, customReps: Int? = null, customTime: Int? = null): DailySessionItem? {
         // Per ora usa la funzione esistente che aggiunge a "oggi" con quantità personalizzate
         // TODO: Implementare versione che supporta date specifiche nel repository
-        return dailySessionRepository.addExerciseToTodaySession(exerciseId, customReps, customTime)
+        return dailySessionRepository.addExerciseToTodaySession(context, exerciseId, customReps, customTime)
     }
 
     /**
@@ -407,14 +407,14 @@ class TodayViewModel(
      * 
      * SROTOLA il workout in singoli esercizi
      */
-    fun addWorkoutToToday(workoutId: Long) {
+    fun addWorkoutToToday(context: android.content.Context, workoutId: Long) {
         android.util.Log.d("TODAY_DEBUG", "🚀 TodayViewModel.addWorkoutToToday() chiamato con workoutId: $workoutId")
         
         viewModelScope.launch {
             try {
                 // La repository addWorkoutToTodaySession gestisce automaticamente la creazione della sessione
                 android.util.Log.d("TODAY_DEBUG", "⚡ Chiamando addWorkoutToTodaySession...")
-                val newItems = dailySessionRepository.addWorkoutToTodaySession(workoutId)
+                val newItems = dailySessionRepository.addWorkoutToTodaySession(context, workoutId)
                 android.util.Log.d("TODAY_DEBUG", "🔄 addWorkoutToTodaySession completato, items: ${newItems.size}")
                 
                 if (newItems.isNotEmpty()) {

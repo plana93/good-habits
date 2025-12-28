@@ -1,0 +1,28 @@
+{
+  "id": 3,
+  "name": "🧘 Flexibility Flow",
+  "description": "Stretching e mobilità per flessibilità completa",
+  "icon": "self_improvement",
+  "estimatedDuration": 15,
+  "difficulty": "beginner",
+  "exercises": [
+    {
+      "exerciseId": 3,
+      "orderIndex": 0,
+      "targetReps": null,
+      "targetTime": 60,
+      "restTime": 15
+    },
+    {
+      "exerciseId": 1,
+      "orderIndex": 1,
+      "targetReps": 8,
+      "targetTime": null,
+      "restTime": 15
+    }
+  ],
+  "tags": ["flexibility", "stretching", "recovery"],
+  "createdAt": "2024-12-25",
+  "modifiedAt": "2024-12-25",
+  "category": "recovery"
+}

@@ -1,0 +1,14 @@
+{
+  "id": 5,
+  "name": "Jumping Jacks",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Salti coordinati per riscaldamento e cardio",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 30,
+  "defaultTime": null,
+  "createdAt": 1735062000000,
+  "isCustom": false
+}

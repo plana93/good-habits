@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +28,8 @@ import com.programminghut.pose_detection.data.model.WorkoutTemplate
 import com.programminghut.pose_detection.data.model.WorkoutExerciseTemplate
 import com.programminghut.pose_detection.data.model.ExerciseTemplate
 import com.programminghut.pose_detection.data.model.TodaySession
+import com.programminghut.pose_detection.data.repository.WorkoutTemplateFileManager
+import com.programminghut.pose_detection.util.ExerciseTemplateFileManager
 import com.programminghut.pose_detection.ui.theme.Pose_detectionTheme
 import com.programminghut.pose_detection.ui.components.WorkoutThumbnail
 import com.programminghut.pose_detection.service.TemplateToSessionService
@@ -80,12 +83,36 @@ fun WorkoutLibraryScreen(
     onWorkoutSelected: (WorkoutTemplate) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     
     // Stato per la lista di workout template e esercizi disponibili
-    var workoutTemplates by remember { mutableStateOf(getSampleWorkoutTemplates()) }
-    val availableExercises by remember { mutableStateOf(getSampleExerciseTemplatesForWorkout()) }
+    var workoutTemplates by remember { mutableStateOf<List<WorkoutTemplate>>(emptyList()) }
+    var availableExercises by remember { mutableStateOf<List<ExerciseTemplate>>(emptyList()) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var selectedWorkout by remember { mutableStateOf<WorkoutTemplate?>(null) }
+    var debugMode by remember { mutableStateOf(false) }
+    var fileInspectionResult by remember { mutableStateOf<String?>(null) }
+    
+    // Carica workout ed esercizi dai file JSON all'avvio
+    LaunchedEffect(Unit) {
+        try {
+            val loadedWorkouts = WorkoutTemplateFileManager.loadWorkoutTemplates(context)
+            workoutTemplates = loadedWorkouts
+            android.util.Log.d("WorkoutLibraryActivity", "Caricati ${loadedWorkouts.size} workout dai JSON")
+
+            // Log dei file disponibili per debug - utile se la lista risulta vuota
+            val availableFiles = WorkoutTemplateFileManager.getAvailableTemplateFiles(context)
+            android.util.Log.d("WorkoutLibraryActivity", "File template disponibili: ${availableFiles.joinToString()}")
+
+            val loadedExercises = ExerciseTemplateFileManager.loadExerciseTemplates(context)
+            availableExercises = loadedExercises
+            android.util.Log.d("WorkoutLibraryActivity", "Caricati ${loadedExercises.size} esercizi dai JSON")
+        } catch (e: Exception) {
+            android.util.Log.e("WorkoutLibraryActivity", "Errore caricamento templates dai JSON", e)
+            // Invece di usare fallback hardcoded, mostra errore
+            // Gli array rimangono vuoti e l'UI gestisce il caso vuoto
+        }
+    }
     
     // Stati per "Usa Oggi" da workout (più complesso, gestisce interi circuiti)
     var existingSessions by remember { mutableStateOf<List<TodaySession>>(emptyList()) }
@@ -99,6 +126,11 @@ fun WorkoutLibraryScreen(
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
+                },
+                actions = {
+                    IconButton(onClick = { debugMode = !debugMode }) {
+                        Icon(Icons.Default.BugReport, contentDescription = "Toggle debug")
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -259,6 +291,54 @@ fun WorkoutLibraryScreen(
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
+                            // Mostra i file template se presenti per aiutare il debugging
+                            val files = WorkoutTemplateFileManager.getAvailableTemplateFiles(context)
+                            if (files.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "File template rilevati: ${files.joinToString()}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                TextButton(onClick = {
+                                    // Permette di forzare un reload dei template per debug
+                                    scope.launch {
+                                        try {
+                                            val reloaded = WorkoutTemplateFileManager.loadWorkoutTemplates(context)
+                                            workoutTemplates = reloaded
+                                            android.util.Log.d("WorkoutLibraryActivity", "Reload completato: ${reloaded.size} workout")
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("WorkoutLibraryActivity", "Errore reload templates", e)
+                                        }
+                                    }
+                                }) {
+                                    Text("Ricarica template")
+                                }
+                            }
+                            // Se in debug mode mostra l'elenco dei file con pulsante di preview
+                            if (debugMode) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("DEBUG: Ispeziona file template", style = MaterialTheme.typography.titleSmall)
+                                val filesList = WorkoutTemplateFileManager.getAvailableTemplateFiles(context)
+                                filesList.forEach { fname ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(fname, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                        TextButton(onClick = {
+                                            scope.launch {
+                                                val tpl = WorkoutTemplateFileManager.loadWorkoutTemplateFromFile(context, fname)
+                                                fileInspectionResult = tpl?.let { "Parsed: ${it.name} (id=${it.id}), exercises=${it.exercises.size}" } ?: "Errore parsing $fname"
+                                            }
+                                        }) { Text("Mostra") }
+                                    }
+                                }
+                                fileInspectionResult?.let { msg ->
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(msg, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
                     }
                 }
             } else {
@@ -329,16 +409,24 @@ fun WorkoutLibraryScreen(
             SimpleCreateDialog(
                 onDismiss = { showCreateDialog = false },
                 onCreate = { name ->
+                    // Crea un workout vuoto o prepopolato con i primi esercizi disponibili (se presenti)
+                    val selectedExercises = availableExercises.take(2).mapIndexed { idx, ex ->
+                        WorkoutExerciseTemplate(
+                            exerciseId = ex.id,
+                            orderIndex = idx,
+                            targetReps = ex.defaultReps,
+                            targetTime = ex.defaultTime
+                        )
+                    }
+
                     val newWorkout = WorkoutTemplate(
                         id = (workoutTemplates.size + 1).toLong(),
                         name = name,
                         description = "Allenamento personalizzato",
-                        exercises = listOf(
-                            WorkoutExerciseTemplate(exerciseId = 1, orderIndex = 0, targetReps = 10),
-                            WorkoutExerciseTemplate(exerciseId = 2, orderIndex = 1, targetTime = 30)
-                        ),
+                        exercises = selectedExercises,
                         estimatedDuration = 15
                     )
+
                     workoutTemplates = workoutTemplates + newWorkout
                     showCreateDialog = false
                 }
@@ -487,75 +575,6 @@ private fun SimpleCreateDialog(
     )
 }
 
-private fun getSampleExerciseTemplatesForWorkout(): List<ExerciseTemplate> {
-    return listOf(
-        ExerciseTemplate(
-            id = 1,
-            name = "Push-up",
-            type = com.programminghut.pose_detection.data.model.TemplateExerciseType.STRENGTH,
-            mode = com.programminghut.pose_detection.data.model.TemplateExerciseMode.REPS,
-            description = "Flessioni tradizionali",
-            defaultReps = 15
-        ),
-        ExerciseTemplate(
-            id = 2,
-            name = "Plank",
-            type = com.programminghut.pose_detection.data.model.TemplateExerciseType.STRENGTH,
-            mode = com.programminghut.pose_detection.data.model.TemplateExerciseMode.TIME,
-            description = "Posizione di plank",
-            defaultTime = 45
-        ),
-        ExerciseTemplate(
-            id = 3,
-            name = "Burpees",
-            type = com.programminghut.pose_detection.data.model.TemplateExerciseType.CARDIO,
-            mode = com.programminghut.pose_detection.data.model.TemplateExerciseMode.TIME,
-            description = "Burpees completi",
-            defaultTime = 60
-        ),
-        ExerciseTemplate(
-            id = 4,
-            name = "Squat",
-            type = com.programminghut.pose_detection.data.model.TemplateExerciseType.SQUAT_AI,
-            mode = com.programminghut.pose_detection.data.model.TemplateExerciseMode.REPS,
-            description = "Squat con AI",
-            defaultReps = 20
-        )
-    )
-}
-
-private fun getSampleWorkoutTemplates(): List<WorkoutTemplate> {
-    return listOf(
-        WorkoutTemplate(
-            id = 1,
-            name = "💪 Upper Body Power",
-            description = "Allenamento intensivo per parte superiore",
-            exercises = listOf(
-                WorkoutExerciseTemplate(exerciseId = 1, orderIndex = 0, targetReps = 15),
-                WorkoutExerciseTemplate(exerciseId = 2, orderIndex = 1, targetTime = 45),
-                WorkoutExerciseTemplate(exerciseId = 3, orderIndex = 2, targetTime = 30),
-                WorkoutExerciseTemplate(exerciseId = 4, orderIndex = 3, targetReps = 12)
-            ),
-            estimatedDuration = 25
-        ),
-        WorkoutTemplate(
-            id = 2,
-            name = "🏃 Cardio Blast", 
-            description = "Brucia calorie con questo cardio esplosivo",
-            exercises = listOf(
-                WorkoutExerciseTemplate(exerciseId = 3, orderIndex = 0, targetTime = 60),
-                WorkoutExerciseTemplate(exerciseId = 4, orderIndex = 1, targetReps = 20)
-            ),
-            estimatedDuration = 30
-        ),
-        WorkoutTemplate(
-            id = 3,
-            name = "🧘 Flexibility Flow",
-            description = "Stretching e flessibilità",
-            exercises = listOf(
-                WorkoutExerciseTemplate(exerciseId = 2, orderIndex = 0, targetTime = 90)
-            ),
-            estimatedDuration = 15
-        )
-    )
-}
+// Funzioni rimosse - ora tutto viene caricato dinamicamente dai JSON
+// private fun getSampleExerciseTemplatesForWorkout(): List<ExerciseTemplate> { ... }
+// private fun getSampleWorkoutTemplates(): List<WorkoutTemplate> { ... }

@@ -1,0 +1,14 @@
+{
+  "id": 3,
+  "name": "Plank",
+  "type": "STRENGTH",
+  "mode": "TIME",
+  "description": "Tenuta isometrica per addominali e core stability",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Timer",
+  "defaultReps": null,
+  "defaultTime": 60,
+  "createdAt": 1735062000000,
+  "isCustom": false
+}

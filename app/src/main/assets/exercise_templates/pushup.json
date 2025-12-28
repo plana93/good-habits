@@ -1,0 +1,14 @@
+{
+  "id": 1,
+  "name": "Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti classici per petto, spalle e tricipiti",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Accessibility",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1735062000000,
+  "isCustom": false
+}

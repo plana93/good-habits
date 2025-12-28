@@ -1,0 +1,42 @@
+{
+  "id": 1,
+  "name": "💪 Upper Body Power",
+  "description": "Allenamento intensivo per parte superiore del corpo",
+  "icon": "accessibility_new",
+  "estimatedDuration": 25,
+  "difficulty": "intermediate",
+  "exercises": [
+    {
+      "exerciseId": 1,
+      "orderIndex": 0,
+      "targetReps": 15,
+      "targetTime": null,
+      "restTime": 30
+    },
+    {
+      "exerciseId": 2,
+      "orderIndex": 1,
+      "targetReps": 20,
+      "targetTime": null,
+      "restTime": 30
+    },
+    {
+      "exerciseId": 3,
+      "orderIndex": 2,
+      "targetReps": null,
+      "targetTime": 45,
+      "restTime": 30
+    },
+    {
+      "exerciseId": 5,
+      "orderIndex": 3,
+      "targetReps": 30,
+      "targetTime": null,
+      "restTime": 60
+    }
+  ],
+  "tags": ["upper_body", "strength", "intermediate"],
+  "createdAt": "2024-12-25",
+  "modifiedAt": "2024-12-25",
+  "category": "strength"
+}

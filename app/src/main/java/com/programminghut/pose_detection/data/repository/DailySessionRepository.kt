@@ -1,5 +1,6 @@
 package com.programminghut.pose_detection.data.repository
 
+import android.content.Context
 import androidx.room.Transaction
 import com.programminghut.pose_detection.data.dao.DailySessionDao
 import com.programminghut.pose_detection.data.dao.DailySessionRelationDao
@@ -9,6 +10,7 @@ import com.programminghut.pose_detection.data.dao.DailySessionSummary
 import com.programminghut.pose_detection.data.dao.ExerciseStats
 import com.programminghut.pose_detection.data.dao.WorkoutStats
 import com.programminghut.pose_detection.data.model.*
+import com.programminghut.pose_detection.data.repository.WorkoutTemplateFileManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
@@ -176,29 +178,29 @@ class DailySessionRepository(
      * Aggiungi esercizio alla sessione odierna
      */
     @Transaction
-    suspend fun addExerciseToTodaySession(exerciseId: Long, customRepsParam: Int? = null, customTimeParam: Int? = null): DailySessionItem? {
+    suspend fun addExerciseToTodaySession(context: Context, exerciseId: Long, customRepsParam: Int? = null, customTimeParam: Int? = null): DailySessionItem? {
         android.util.Log.d("TODAY_DEBUG", "🔧 addExerciseToTodaySession() chiamato con exerciseId: $exerciseId, customReps: $customRepsParam, customTime: $customTimeParam")
-        
+
         val session = getTodaySession()
         android.util.Log.d("TODAY_DEBUG", "🔧 Sessione ottenuta: ${session.sessionId}")
-        
+
         var exercise = exerciseDao.getExerciseById(exerciseId)
         android.util.Log.d("TODAY_DEBUG", "🔧 Esercizio trovato nel DB: $exercise")
-        
-        // ✅ Se l'esercizio non esiste, crealo dal template
+
+        // ✅ Se l'esercizio non esiste, crealo dal template JSON
         if (exercise == null) {
             android.util.Log.d("TODAY_DEBUG", "⚡ Esercizio non trovato - creazione dal template ID: $exerciseId")
-            exercise = createExerciseFromTemplate(exerciseId)
+            exercise = createExerciseFromTemplate(context, exerciseId)
             android.util.Log.d("TODAY_DEBUG", "✅ Esercizio creato dal template: $exercise")
         }
-        
+
         if (exercise == null) {
             android.util.Log.d("TODAY_DEBUG", "❌ Impossibile creare esercizio per ID: $exerciseId")
             return null
         }
-        
-        // ✅ Usa parametri personalizzati se forniti, altrimenti valori default dal template
-        val template = getSampleExerciseTemplateById(exerciseId)
+
+        // ✅ Usa parametri personalizzati se forniti, altrimenti valori default dal template JSON
+        val template = com.programminghut.pose_detection.util.ExerciseTemplateFileManager.loadExerciseTemplateById(context, exerciseId)
         val customReps = customRepsParam ?: if (template?.mode == TemplateExerciseMode.REPS) template.defaultReps else null
         val customTime = customTimeParam ?: if (template?.mode == TemplateExerciseMode.TIME) template.defaultTime else null
         android.util.Log.d("TODAY_DEBUG", "🔧 Final values - reps: $customReps, time: $customTime (template: ${template?.defaultReps}/${template?.defaultTime})")
@@ -208,11 +210,12 @@ class DailySessionRepository(
         val nextOrder = (currentItems.maxOfOrNull { it.order } ?: -1) + 1
         android.util.Log.d("TODAY_DEBUG", "🔧 Prossimo ordine: $nextOrder, items esistenti: ${currentItems.size}")
         
+        // Usa l'ID dell'esercizio nel DB (exercise.exerciseId), non l'ID del template JSON
         val item = DailySessionItem(
             sessionId = session.sessionId,
             order = nextOrder,
             itemType = SessionItemType.EXERCISE,
-            exerciseId = exerciseId,
+            exerciseId = exercise.exerciseId,
             workoutId = null,
             customReps = customReps,
             customTime = customTime
@@ -232,10 +235,9 @@ class DailySessionRepository(
      * ✅ Aggiungi Squat AI alla sessione odierna
      */
     @Transaction
-    suspend fun addAISquatToTodaySession(targetReps: Int = 0): DailySessionItem? {
+    suspend fun addAISquatToTodaySession(context: Context, targetReps: Int = 0): DailySessionItem? {
         android.util.Log.d("BRIDGE_DEBUG", "🚀🚀🚀 === INIZIO addAISquatToTodaySession ===")
-        android.util.Log.d("BRIDGE_DEBUG", "🤖 Parametri: targetReps=$targetReps")
-        
+        android.util.Log.d("BRIDGE_DEBUG", "🤖 Parametri: targetReps=$targetReps, context=$context")
         try {
             // ✅ Debug: verifica data di oggi vs sessione esistente
             val todayMillis = System.currentTimeMillis()
@@ -315,19 +317,32 @@ class DailySessionRepository(
             }
         }
         
-        // ✅ Crea item AI Squat (stesso exerciseId=3 del template Squat normale)
+        // ✅ Crea item AI Squat (stesso exerciseId=2 del template Squat normale)
         android.util.Log.d("BRIDGE_DEBUG", "🏗️ Creando AI Squat item...")
-        val aiSquatItem = DailySessionItem(
-            sessionId = session.sessionId,
-            order = nextOrder,
-            itemType = SessionItemType.EXERCISE,
-            exerciseId = 3, // ✅ Stesso ID del Squat normale (template ID=3)
-            workoutId = null,
-            customReps = targetReps, // ✅ 0 di default - sarà aggiornato con valore reale
-            customTime = null,
-            notes = "AI Squat Detection",
-            aiData = "squat_ai" // ✅ Marker per distinguere AI vs normale
-        )
+            // ✅ Crea item AI Squat: trova o crea l'Exercise corrispondente al template "Squat"
+            android.util.Log.d("BRIDGE_DEBUG", "🏗️ Creando AI Squat item...")
+            var squatExerciseId: Long? = null
+            try {
+                val squatTemplate = com.programminghut.pose_detection.util.ExerciseTemplateFileManager.loadExerciseTemplateByName(context, "Squat")
+                if (squatTemplate != null) {
+                    val existing = exerciseDao.getExerciseByName(squatTemplate.name)
+                    squatExerciseId = existing?.exerciseId ?: createExerciseFromTemplate(context, squatTemplate.id)?.exerciseId
+                }
+            } catch (e: Exception) {
+                android.util.Log.d("BRIDGE_DEBUG", "⚠️ Errore risoluzione template Squat: ${e.message}")
+            }
+
+            val aiSquatItem = DailySessionItem(
+                sessionId = session.sessionId,
+                order = nextOrder,
+                itemType = SessionItemType.EXERCISE,
+                exerciseId = squatExerciseId,
+                workoutId = null,
+                customReps = targetReps,
+                customTime = null,
+                notes = "AI Squat Detection",
+                aiData = "squat_ai"
+            )
         android.util.Log.d("BRIDGE_DEBUG", "🏗️ AI Squat item creato: $aiSquatItem")
         
         // ✅ Inserimento nel database
@@ -417,19 +432,19 @@ class DailySessionRepository(
     }
     
     /**
-     * Crea un esercizio nel database partendo dal template hardcoded
+     * Crea un esercizio nel database partendo dal template JSON
      */
-    private suspend fun createExerciseFromTemplate(templateId: Long): Exercise? {
+    private suspend fun createExerciseFromTemplate(context: Context, templateId: Long): Exercise? {
         android.util.Log.d("TODAY_DEBUG", "🏗️ createExerciseFromTemplate() iniziato per ID: $templateId")
-        
-        // Ottieni il template dalla lista hardcoded
-        val template = getSampleExerciseTemplateById(templateId)
+
+        // Carica template dall'asset usando il file manager
+        val template = com.programminghut.pose_detection.util.ExerciseTemplateFileManager.loadExerciseTemplateById(context, templateId)
         if (template == null) {
             android.util.Log.d("TODAY_DEBUG", "❌ Template esercizio non trovato per ID: $templateId")
             return null
         }
         android.util.Log.d("TODAY_DEBUG", "✅ Template esercizio trovato: ${template.name}")
-        
+
         val exercise = Exercise(
             exerciseId = 0, // Auto-generate
             name = template.name,
@@ -447,7 +462,7 @@ class DailySessionRepository(
             tags = emptyList()
         )
         android.util.Log.d("TODAY_DEBUG", "🔧 Exercise object creato: ${exercise.name}")
-        
+
         // Inserisci nel database
         val insertedId = try {
             exerciseDao.insertExercise(exercise)
@@ -455,70 +470,22 @@ class DailySessionRepository(
             android.util.Log.d("TODAY_DEBUG", "❌ Errore inserimento exercise: ${e.message}")
             return null
         }
-        
+
         val result = exercise.copy(exerciseId = insertedId)
         android.util.Log.d("TODAY_DEBUG", "✅ Exercise inserito con ID: $insertedId")
         return result
     }
     
-    /**
-     * Helper per ottenere un template per ID
-     */
-    private fun getSampleExerciseTemplateById(id: Long): ExerciseTemplate? {
-        // Copia della lista di template da ExerciseLibraryActivity
-        val templates = listOf(
-            ExerciseTemplate(
-                id = 1, 
-                name = "Push-up", 
-                type = TemplateExerciseType.STRENGTH, 
-                mode = TemplateExerciseMode.REPS, 
-                description = "Piegamenti sulle braccia classici per petto, spalle e tricipiti", 
-                defaultReps = 12
-            ),
-            ExerciseTemplate(
-                id = 2, 
-                name = "Plank", 
-                type = TemplateExerciseType.STRENGTH, 
-                mode = TemplateExerciseMode.TIME, 
-                description = "Posizione statica per core e stabilità", 
-                defaultTime = 30
-            ),
-            ExerciseTemplate(
-                id = 3, 
-                name = "Squat", 
-                type = TemplateExerciseType.STRENGTH, 
-                mode = TemplateExerciseMode.REPS, 
-                description = "Piegamenti sulle gambe per quadricipiti e glutei", 
-                defaultReps = 15
-            ),
-            ExerciseTemplate(
-                id = 4, 
-                name = "Burpee", 
-                type = TemplateExerciseType.CARDIO, 
-                mode = TemplateExerciseMode.REPS, 
-                description = "Esercizio completo che coinvolge tutto il corpo", 
-                defaultReps = 10
-            ),
-            ExerciseTemplate(
-                id = 5, 
-                name = "Jumping Jacks", 
-                type = TemplateExerciseType.CARDIO, 
-                mode = TemplateExerciseMode.TIME, 
-                description = "Saltelli sul posto per attivazione cardiovascolare", 
-                defaultTime = 45
-            )
-        )
-        return templates.find { it.id == id }
-    }
+    // NOTE: Eliminato helper hardcoded. I template vengono caricati da JSON in assets tramite ExerciseTemplateFileManager.
     
     /**
-     * Crea un workout nel database partendo dal template hardcoded
+     * Crea un workout nel database partendo dal template JSON
      */
-    private suspend fun createWorkoutFromTemplate(templateId: Long): WorkoutWithExercises? {
+    private suspend fun createWorkoutFromTemplate(context: Context, templateId: Long): WorkoutWithExercises? {
         android.util.Log.d("TODAY_DEBUG", "🏗️ createWorkoutFromTemplate() iniziato per ID: $templateId")
         
-        // Ottieni il template dalla lista hardcoded
-        val template = getSampleWorkoutTemplateById(templateId)
+        // Ottieni il template dal file JSON
+        val template = WorkoutTemplateFileManager.loadWorkoutTemplateById(context, templateId)
         if (template == null) {
             android.util.Log.d("TODAY_DEBUG", "❌ Template workout non trovato per ID: $templateId")
             return null
@@ -564,8 +531,8 @@ class DailySessionRepository(
             
             if (exercise == null) {
                 android.util.Log.d("TODAY_DEBUG", "⚡ Creando esercizio dal template: ${exerciseTemplate.exerciseId}")
-                exercise = try {
-                    createExerciseFromTemplate(exerciseTemplate.exerciseId)
+                    exercise = try {
+                    createExerciseFromTemplate(context, exerciseTemplate.exerciseId)
                 } catch (e: Exception) {
                     android.util.Log.d("TODAY_DEBUG", "❌ Errore creazione esercizio: ${e.message}")
                     null
@@ -614,54 +581,14 @@ class DailySessionRepository(
     }
     
     /**
-     * Helper per ottenere un workout template per ID
+     * Aggiungi allenamento alla sessione odierna
      */
-    private fun getSampleWorkoutTemplateById(id: Long): WorkoutTemplate? {
-        // Copia della lista di template da WorkoutLibraryActivity
-        val templates = listOf(
-            WorkoutTemplate(
-                id = 1,
-                name = "💪 Upper Body Power",
-                description = "Allenamento intensivo per parte superiore",
-                exercises = listOf(
-                    WorkoutExerciseTemplate(exerciseId = 1, orderIndex = 0, targetReps = 15),
-                    WorkoutExerciseTemplate(exerciseId = 2, orderIndex = 1, targetTime = 45),
-                    WorkoutExerciseTemplate(exerciseId = 3, orderIndex = 2, targetTime = 30),
-                    WorkoutExerciseTemplate(exerciseId = 4, orderIndex = 3, targetReps = 12)
-                ),
-                estimatedDuration = 25
-            ),
-            WorkoutTemplate(
-                id = 2,
-                name = "🏃 Cardio Blast", 
-                description = "Brucia calorie con questo cardio esplosivo",
-                exercises = listOf(
-                    WorkoutExerciseTemplate(exerciseId = 3, orderIndex = 0, targetTime = 60),
-                    WorkoutExerciseTemplate(exerciseId = 4, orderIndex = 1, targetReps = 20),
-                    WorkoutExerciseTemplate(exerciseId = 5, orderIndex = 2, targetTime = 45)
-                ),
-                estimatedDuration = 20
-            ),
-            WorkoutTemplate(
-                id = 3,
-                name = "🧘 Core & Balance",
-                description = "Stabilità e forza del core",
-                exercises = listOf(
-                    WorkoutExerciseTemplate(exerciseId = 2, orderIndex = 0, targetTime = 60),
-                    WorkoutExerciseTemplate(exerciseId = 3, orderIndex = 1, targetReps = 20),
-                    WorkoutExerciseTemplate(exerciseId = 1, orderIndex = 2, targetReps = 10)
-                ),
-                estimatedDuration = 15
-            )
-        )
-        return templates.find { it.id == id }
-    }
     
     /**
      * Aggiungi allenamento alla sessione odierna
      */
     @Transaction
-    suspend fun addWorkoutToTodaySession(workoutId: Long): List<DailySessionItem> {
+    suspend fun addWorkoutToTodaySession(context: Context, workoutId: Long): List<DailySessionItem> {
         android.util.Log.d("TODAY_DEBUG", "🔧 addWorkoutToTodaySession() chiamato con workoutId: $workoutId")
         
         try {
@@ -680,7 +607,7 @@ class DailySessionRepository(
             if (workout == null) {
                 android.util.Log.d("TODAY_DEBUG", "⚡ Workout non trovato - creazione dal template ID: $workoutId")
                 workout = try {
-                    createWorkoutFromTemplate(workoutId)
+                    createWorkoutFromTemplate(context, workoutId)
                 } catch (e: Exception) {
                     android.util.Log.d("TODAY_DEBUG", "❌ Errore creazione workout dal template: ${e.message}")
                     null
@@ -735,7 +662,7 @@ class DailySessionRepository(
                     // ✅ Se l'esercizio non esiste, crealo dal template
                     if (exercise == null) {
                         android.util.Log.d("TODAY_DEBUG", "⚡ Esercizio ${we.exerciseId} non trovato - creazione dal template")
-                        exercise = createExerciseFromTemplate(we.exerciseId)
+                        exercise = createExerciseFromTemplate(context, we.exerciseId)
                     }
                     
                     if (exercise == null) {
@@ -776,7 +703,7 @@ class DailySessionRepository(
      * Crea sessione da template allenamento
      */
     @Transaction
-    suspend fun createSessionFromWorkout(workoutId: Long, sessionName: String? = null): DailySession {
+    suspend fun createSessionFromWorkout(context: Context, workoutId: Long, sessionName: String? = null): DailySession {
         val workout = workoutDao.getWorkoutWithExercises(workoutId)
             ?: throw IllegalArgumentException("Workout not found: $workoutId")
         
@@ -798,7 +725,7 @@ class DailySessionRepository(
         val createdSession = session.copy(sessionId = sessionId)
         
         // Aggiungi tutti gli esercizi dell'allenamento
-        addWorkoutToTodaySession(workoutId)
+        addWorkoutToTodaySession(context, workoutId)
         
         return createdSession
     }
@@ -919,34 +846,31 @@ class DailySessionRepository(
         android.util.Log.d("TODAY_DEBUG", "🗑️ Repository.removeItemFromSession chiamato per itemId: $itemId")
         
         // Prima controlliamo se l'item da rimuovere è uno squat o un workout con squat
-        val itemToRemove = dailySessionDao.getSessionItemById(itemId)
-        val isSquatExercise = itemToRemove?.exerciseId == 3L // ID 3 = squat
+    val itemToRemove = dailySessionDao.getSessionItemById(itemId)
         
         android.util.Log.d("TODAY_DEBUG", "🔍 Item da rimuovere: exerciseId=${itemToRemove?.exerciseId}, workoutId=${itemToRemove?.workoutId}")
         
-        // Se è un workout, controlliamo se contiene squat tra i suoi esercizi figli
-        var workoutContainsSquat = false
+        // Se è un workout, raccogli gli exerciseId dei figli per eventuale invalidazione cache
+        val affectedExerciseIds = mutableSetOf<Long>()
+        if (itemToRemove?.exerciseId != null) affectedExerciseIds.add(itemToRemove.exerciseId!!)
         if (itemToRemove?.workoutId != null) {
-            // È un workout - controlliamo se tra i suoi esercizi figli c'è uno squat
             val childItems = dailySessionDao.getItemsByParentWorkout(itemId)
-            workoutContainsSquat = childItems.any { it.exerciseId == 3L }
-            android.util.Log.d("TODAY_DEBUG", "🏋️ È un workout con ${childItems.size} esercizi figli. Contiene squat: $workoutContainsSquat")
+            childItems.forEach { it.exerciseId?.let { id -> affectedExerciseIds.add(id) } }
+            android.util.Log.d("TODAY_DEBUG", "🏋️ È un workout con ${childItems.size} esercizi figli. Affected exerciseIds: $affectedExerciseIds")
         }
-        
-        val needsSquatCacheInvalidation = isSquatExercise || workoutContainsSquat
-        android.util.Log.d("TODAY_DEBUG", "🔍 isSquatExercise=$isSquatExercise, workoutContainsSquat=$workoutContainsSquat, needsInvalidation=$needsSquatCacheInvalidation")
         
         // Elimina l'item (e automaticamente tutti i figli se è un workout)
         dailySessionDao.deleteSessionItem(itemId)
         
         android.util.Log.d("TODAY_DEBUG", "✅ Item eliminato dal database. ID: $itemId")
         
-        // Se era uno squat o un workout contenente squat, forza un refresh esplicito
-        if (needsSquatCacheInvalidation) {
-            android.util.Log.d("TODAY_DEBUG", "🦵 Conteneva squat! Forzando invalidazione cache Room...")
+        // Forza l'invalidazione della cache per tutti gli exerciseId impactati
+        if (affectedExerciseIds.isNotEmpty()) {
+            android.util.Log.d("TODAY_DEBUG", "🔄 Forzando invalidazione cache per exerciseIds: $affectedExerciseIds")
             try {
-                // Forza Room a re-eseguire la query del conteggio squat
-                dailySessionDao.invalidateSquatCountCache()
+                affectedExerciseIds.forEach { id ->
+                    dailySessionDao.invalidateCountCacheForExercise(id)
+                }
             } catch (e: Exception) {
                 android.util.Log.d("TODAY_DEBUG", "⚠️ Errore invalidazione cache: ${e.message}")
             }
@@ -962,9 +886,33 @@ class DailySessionRepository(
         // Questo richiede update specifiche per ogni elemento
     }
     
+    // NOTE: getTotalSquatsCount removed. Use getTotalCountForTemplate/getTotalCountByTemplateName instead.
+
     /**
-     * 🦵 Conta tutti gli squat totali (AI + manuali + passati)
+     * Ottieni conteggio totale per un esercizio dato il template ID (JSON)
      */
-    fun getTotalSquatsCount(): Flow<Int> = 
-        dailySessionDao.getTotalSquatsCount()
+    fun getTotalCountForTemplate(context: android.content.Context, templateId: Long): Flow<Int> {
+        val template = com.programminghut.pose_detection.util.ExerciseTemplateFileManager.loadExerciseTemplateById(context, templateId)
+        return if (template != null) {
+            // Trova l'esercizio nel DB per nome
+            kotlinx.coroutines.flow.flow {
+                val exercise = exerciseDao.getExerciseByName(template.name)
+                if (exercise != null) {
+                    dailySessionDao.getTotalCountForExercise(exercise.exerciseId).collect { value -> emit(value) }
+                } else {
+                    emit(0)
+                }
+            }
+        } else kotlinx.coroutines.flow.flowOf(0)
+    }
+
+    /**
+     * Ottieni conteggio totale per esercizio dato il nome del template JSON
+     */
+    fun getTotalCountByTemplateName(context: android.content.Context, templateName: String): Flow<Int> {
+        val template = com.programminghut.pose_detection.util.ExerciseTemplateFileManager.loadExerciseTemplates(context).find { it.name == templateName }
+        return if (template != null) getTotalCountForTemplate(context, template.id) else kotlinx.coroutines.flow.flowOf(0)
+}
+
+// End of DailySessionRepository
 }

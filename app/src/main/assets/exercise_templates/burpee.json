@@ -1,0 +1,14 @@
+{
+  "id": 4,
+  "name": "Burpee",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Esercizio completo che combina squat, piegamento e salto",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1735062000000,
+  "isCustom": false
+}

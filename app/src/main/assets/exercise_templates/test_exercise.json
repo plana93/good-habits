@@ -1,0 +1,14 @@
+{
+  "id": 6,
+  "name": "🧪 Test Exercise",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Esercizio di test per verificare la pipeline JSON",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Science",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1735062000000,
+  "isCustom": false
+}

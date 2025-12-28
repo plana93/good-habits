@@ -1,0 +1,14 @@
+{
+  "id": 2,
+  "name": "Squat",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Squat classico per gambe e glutei",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1735062000000,
+  "isCustom": false
+}

@@ -1,0 +1,35 @@
+{
+  "id": 2,
+  "name": "🏃 Cardio Blast",
+  "description": "Brucia calorie con questo cardio esplosivo",
+  "icon": "directions_run",
+  "estimatedDuration": 20,
+  "difficulty": "beginner",
+  "exercises": [
+    {
+      "exerciseId": 4,
+      "orderIndex": 0,
+      "targetReps": 20,
+      "targetTime": null,
+      "restTime": 30
+    },
+    {
+      "exerciseId": 5,
+      "orderIndex": 1,
+      "targetReps": 30,
+      "targetTime": null,
+      "restTime": 30
+    },
+    {
+      "exerciseId": 2,
+      "orderIndex": 2,
+      "targetReps": 10,
+      "targetTime": null,
+      "restTime": 60
+    }
+  ],
+  "tags": ["cardio", "fat_burn", "beginner"],
+  "createdAt": "2024-12-25",
+  "modifiedAt": "2024-12-25",
+  "category": "cardio"
+}

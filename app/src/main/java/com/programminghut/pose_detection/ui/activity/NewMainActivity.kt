@@ -73,6 +73,8 @@ import com.programminghut.pose_detection.ui.viewmodel.TodayViewModelFactory
 import com.programminghut.pose_detection.data.repository.DailySessionRepository
 import com.programminghut.pose_detection.data.database.AppDatabase
 import com.programminghut.pose_detection.utils.MotivationalQuotes
+import com.programminghut.pose_detection.util.ExerciseTemplateFileManager
+import com.programminghut.pose_detection.data.model.ExerciseTemplate
 
 /**
  * ✅ Status del giorno per logica UI
@@ -111,6 +113,9 @@ class NewMainActivity : ComponentActivity() {
     private lateinit var sessionRepository: SessionRepository
     private lateinit var todayViewModel: TodayViewModel
     
+    // ✅ Esercizi caricati dinamicamente dai JSON
+    internal var loadedExercises: List<ExerciseTemplate> = emptyList()
+    
     // ✅ Activity Result Launchers for selection
     private val exerciseSelectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -130,7 +135,7 @@ class NewMainActivity : ComponentActivity() {
                 
                 if (exerciseId != -1L) {
                     Log.d("TODAY_DEBUG", "✅ Esercizio selezionato: $exerciseId, reps=$customReps, time=$customTime")
-                    todayViewModel.addExerciseToToday(exerciseId, customReps, customTime)
+                    todayViewModel.addExerciseToToday(this, exerciseId, customReps, customTime)
                     // ✅ Naviga automaticamente alla schermata "Oggi" dopo aver aggiunto l'esercizio
                     navigateToToday()
                 } else {
@@ -156,7 +161,7 @@ class NewMainActivity : ComponentActivity() {
             result.data?.let { data ->
                 val workoutId = data.getLongExtra("SELECTED_WORKOUT_ID", -1L)
                 if (workoutId != -1L) {
-                    todayViewModel.addWorkoutToToday(workoutId)
+                    todayViewModel.addWorkoutToToday(this, workoutId)
                     // ✅ Naviga automaticamente alla schermata "Oggi" dopo aver aggiunto il workout
                     navigateToToday()
                 } else {
@@ -224,7 +229,8 @@ class NewMainActivity : ComponentActivity() {
                         lifecycleScope.launch {
                             try {
                                 // Aggiunge l'AI squat come esercizio nella sessione di oggi
-                                todayViewModel.addAISquatToToday(targetReps = repsCompleted)
+                                // usa l'istanza Activity come Context ("context" non è definito qui)
+                                todayViewModel.addAISquatToToday(this@NewMainActivity, targetReps = repsCompleted)
                                 Log.d("TODAY_DEBUG", "✅ AI Squat aggiunto alla sessione di oggi con $repsCompleted reps")
                                 
                                 // Refresh per mostrare il nuovo esercizio
@@ -308,6 +314,7 @@ class NewMainActivity : ComponentActivity() {
                     workoutSelectionLauncher = workoutSelectionLauncher,
                     aiSquatCameraLauncher = aiSquatCameraLauncher,
                     todayViewModel = todayViewModel,
+                    exercises = loadedExercises,
                     initialRoute = navigateToSection ?: "dashboard",
                     onSetNavigateToToday = { callback -> navigateToToday = callback },
                     onStartRecovery = { recoveryDate -> startRecoveryForDate(recoveryDate) }
@@ -334,6 +341,19 @@ class NewMainActivity : ComponentActivity() {
         
         val factory = TodayViewModelFactory(dailySessionRepository, sessionRepository)
         todayViewModel = factory.create(TodayViewModel::class.java)
+        
+        // ✅ Carica esercizi dai JSON
+        loadExercisesFromJson()
+    }
+    
+    private fun loadExercisesFromJson() {
+        try {
+            loadedExercises = ExerciseTemplateFileManager.loadExerciseTemplates(applicationContext)
+            Log.d("NewMainActivity", "✅ Caricati ${loadedExercises.size} esercizi dai JSON")
+        } catch (e: Exception) {
+            Log.e("NewMainActivity", "❌ Errore caricamento esercizi dai JSON", e)
+            loadedExercises = emptyList()
+        }
     }
 }
 
@@ -343,6 +363,7 @@ fun MainContent(
     workoutSelectionLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
     aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
     todayViewModel: TodayViewModel,
+    exercises: List<ExerciseTemplate>, // ✅ Aggiunto parametro esercizi
     initialRoute: String = "dashboard",
     onSetNavigateToToday: (() -> Unit) -> Unit,
     onStartRecovery: (Long) -> Unit = {}
@@ -524,7 +545,7 @@ fun MainContent(
                     DashboardScreen(navController, todayViewModel, onStartRecovery)
                 }
                 composable("today") { 
-                    TodayScreen(showBottomSheet, exerciseSelectionLauncher, workoutSelectionLauncher, aiSquatCameraLauncher, todayViewModel) { showBottomSheet = false }
+                    TodayScreen(showBottomSheet, exercises, exerciseSelectionLauncher, workoutSelectionLauncher, aiSquatCameraLauncher, todayViewModel) { showBottomSheet = false }
                 }
                 composable("exercises") { 
                     ExerciseLibraryScreen()
@@ -549,6 +570,7 @@ data class BottomNavItem(
 @Composable
 fun TodayScreen(
     showBottomSheet: Boolean,
+    exercises: List<ExerciseTemplate>, // ✅ Aggiunto parametro esercizi
     exerciseSelectionLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
     workoutSelectionLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
     aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
@@ -719,6 +741,7 @@ fun TodayScreen(
                     // ✅ Crea contenuto con dati specifici per questa data
                     DayPageContent(
                         pageDate = pageDate,
+                        exercises = exercises,
                         onAddClick = { /* Non usato - FAB ora è nel MainContent */ },
                         todayViewModel = todayViewModel,
                         aiSquatCameraLauncher = aiSquatCameraLauncher
@@ -883,6 +906,7 @@ fun DateNavigationHeader(
 @Composable
 fun DayPageContent(
     pageDate: Long,
+    exercises: List<ExerciseTemplate>, // ✅ Aggiunto parametro esercizi
     onAddClick: () -> Unit,
     todayViewModel: TodayViewModel,
     aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
@@ -928,6 +952,7 @@ fun DayPageContent(
     
     DaySessionContent(
         sessionData = sessionData,
+        exercises = exercises,
         onAddClick = onAddClick,
         canAddExercises = canAddExercises,
         isInPast = isInPast,
@@ -940,6 +965,7 @@ fun DayPageContent(
 @Composable
 fun DaySessionContent(
     sessionData: DailySessionWithItems?,
+    exercises: List<ExerciseTemplate>, // ✅ Aggiunto parametro esercizi
     onAddClick: () -> Unit,
     canAddExercises: Boolean,
     isInPast: Boolean,
@@ -950,6 +976,8 @@ fun DaySessionContent(
     // ✅ Determina se questo è un giorno passato vuoto per il background rosso
     val isEmpty = sessionData?.items?.isEmpty() ?: true
     val shouldShowRedBackground = isInPast && isEmpty
+    // Contesto Composable
+    val context = androidx.compose.ui.platform.LocalContext.current
     
     // ✅ Verifica se la data è stata recuperata (per giorni passati) - reagisce ai cambiamenti del DB
     val isRecovered by produceState(initialValue = false, pageDate, isInPast) {
@@ -963,17 +991,37 @@ fun DaySessionContent(
                 val hasAnySession = sessionData != null && sessionData.items.isNotEmpty()
                 
                 // 1. Controlla AI Squat nelle sessioni
-                val hasAISquat = sessionData?.items?.any { item ->
-                    // ✅ STRATEGIA MULTIPLA per AI Squat detection
-                    (item.exerciseId == 3L && (
-                        item.aiData?.contains("squat_ai") == true || 
-                        item.aiData?.contains("recovery") == true ||
-                        item.aiData?.contains("AI_SQUAT") == true ||
-                        item.aiData == null  // ✅ FALLBACK: exerciseId=3 senza aiData può essere AI squat
-                    )) ||
-                    // ✅ Controlla anche se ci sono parametri recovery nell'intent
-                    (item.exerciseId == 3L && isInPast) // Squat in giorni passati presumibilmente da recovery
-                } ?: false
+                var hasAISquat = false
+                sessionData?.items?.let { items ->
+                    // Preferisci marker aiData
+                    for (item in items) {
+                        if (item.aiData?.contains("squat_ai") == true || item.aiData?.contains("AI_SQUAT") == true || item.aiData?.contains("recovery") == true) {
+                            hasAISquat = true
+                            break
+                        }
+                    }
+
+                    // Fallback: se siamo in passato, considera esercizi di tipo SQUAT
+                    if (!hasAISquat && isInPast) {
+                        for (item in items) {
+                            val exId = item.exerciseId
+                            if (exId != null) {
+                                try {
+                                    val ex = com.programminghut.pose_detection.data.database.AppDatabase
+                                        .getDatabase(context)
+                                        .exerciseDao()
+                                        .getExerciseById(exId)
+                                    if (ex?.type == com.programminghut.pose_detection.data.model.ExerciseType.SQUAT) {
+                                        hasAISquat = true
+                                        break
+                                    }
+                                } catch (e: Exception) {
+                                    // ignore lookup errors
+                                }
+                            }
+                        }
+                    }
+                }
                 
                 // 2. Controlla recovery diretto nel ViewModel
                 val directRecovery = todayViewModel.isDateRecovered(pageDate)
@@ -1089,12 +1137,7 @@ fun DaySessionContent(
                     // ✅ STRATEGIA PRIMARIA: Recovery esplicito tramite aiData
                     item.aiData?.contains("recovery") == true || 
                     item.aiData?.contains("squat_ai") == true ||
-                    item.aiData?.contains("AI_SQUAT") == true ||
-                    // ⚠️ FALLBACK LIMITATO: Solo se aiData è null E non ci sono altre attività nel giorno
-                    // Questo evita di considerare "recovery" giorni con vere attività storiche
-                    (item.exerciseId == 3L && item.aiData == null && isInPast && 
-                     sessionWithItems.items.size == 1 && // Solo se è l'unico item
-                     sessionWithItems.items.none { it.exerciseId != 3L }) // E non ci sono altri esercizi
+                    item.aiData?.contains("AI_SQUAT") == true
                 }
                 
                 Log.d("TODAY_DEBUG", "📝 Checking hasRecoveryItems for date $pageDate: $hasRecoveryItems")
@@ -1150,6 +1193,7 @@ fun DaySessionContent(
                                     WorkoutGroupCard(
                                         workout = item.workout,
                                         exercises = item.exercises,
+                                        exerciseTemplates = exercises,
                                         todayViewModel = todayViewModel,
                                         isReadOnly = true // Read-only per giorni passati
                                     )
@@ -1157,6 +1201,7 @@ fun DaySessionContent(
                                 is GroupedSessionItem.StandaloneExercise -> {
                                     StandaloneExerciseCard(
                                         exercise = item.exercise,
+                                        exercises = exercises,
                                         todayViewModel = todayViewModel,
                                         isReadOnly = true // Read-only per giorni passati
                                     )
@@ -1205,6 +1250,7 @@ fun DaySessionContent(
                                     WorkoutGroupCard(
                                         workout = groupedItem.workout,
                                         exercises = groupedItem.exercises,
+                                        exerciseTemplates = exercises,
                                         todayViewModel = todayViewModel,
                                         isReadOnly = !canAddExercises
                                     )
@@ -1212,6 +1258,7 @@ fun DaySessionContent(
                                 is GroupedSessionItem.StandaloneExercise -> {
                                     StandaloneExerciseCard(
                                         exercise = groupedItem.exercise,
+                                        exercises = exercises,
                                         todayViewModel = todayViewModel,
                                         isReadOnly = !canAddExercises
                                     )
@@ -1219,25 +1266,6 @@ fun DaySessionContent(
                             }
                         }
                         
-                        // ✅ Aggiunta: Quick Add Exercises Section (solo per oggi)
-                        if (canAddExercises) {
-                            item {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                QuickAddExercisesSection(
-                                    todayViewModel = todayViewModel
-                                )
-                            }
-                        }
-                        
-                        // ✅ Aggiunta: Quick Add Workouts Section (solo per oggi)
-                        if (canAddExercises) {
-                            item {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                QuickAddWorkoutsSection(
-                                    todayViewModel = todayViewModel
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -1257,6 +1285,7 @@ fun DaySessionContent(
 @Composable
 fun SessionItemCard(
     sessionItem: DailySessionItem,
+    exercises: List<ExerciseTemplate>, // ✅ Aggiunto parametro esercizi
     todayViewModel: TodayViewModel, // ✅ Aggiunto per espansione automatica
     onComplete: (Long) -> Unit,
     onRepsUpdate: (Long, Int) -> Unit,
@@ -1286,10 +1315,13 @@ fun SessionItemCard(
     // Get exercise name from templates
     val exerciseName = remember(sessionItem.exerciseId, sessionItem.aiData) {
         when {
-            // ✅ AI Squat detection (exerciseId=3 + aiData)
-            sessionItem.exerciseId == 3L && sessionItem.aiData?.contains("squat_ai") == true -> "🤖 AI Squat"
+            // ✅ AI Squat detection by aiData marker
+            sessionItem.aiData?.contains("squat_ai") == true -> "🤖 AI Squat"
             // Normal exercise
-            sessionItem.exerciseId != null -> getExerciseNameById(sessionItem.exerciseId!!) 
+            sessionItem.exerciseId != null -> {
+                val exercise = exercises.find { it.id == sessionItem.exerciseId }
+                exercise?.name ?: "Esercizio #${sessionItem.exerciseId}"
+            }
             // Fallback
             else -> "Attività personalizzata"
         }
@@ -1361,7 +1393,19 @@ fun SessionItemCard(
                         Icon(
                             imageVector = when {
                                 sessionItem.aiData?.contains("squat_ai") == true -> Icons.Default.VideoCall
-                                sessionItem.exerciseId != null -> getExerciseIcon(sessionItem.exerciseId!!)
+                                sessionItem.exerciseId != null -> {
+                                    val exercise = exercises.find { it.id == sessionItem.exerciseId }
+                                    exercise?.let { ex ->
+                                        when (ex.iconName) {
+                                            "Accessibility" -> Icons.Default.Accessibility
+                                            "DirectionsRun" -> Icons.Default.DirectionsRun
+                                            "Timer" -> Icons.Default.Timer
+                                            "FitnessCenter" -> Icons.Default.FitnessCenter
+                                            "Science" -> Icons.Default.Science
+                                            else -> Icons.Default.FitnessCenter
+                                        }
+                                    } ?: Icons.Default.FitnessCenter
+                                }
                                 else -> Icons.Default.FitnessCenter
                             },
                             contentDescription = null,
@@ -1631,17 +1675,6 @@ fun TimeControlSection(
     }
 }
 
-fun getExerciseIcon(exerciseId: Long): ImageVector {
-    return when (exerciseId) {
-        1L -> Icons.Default.Accessibility // Push-up
-        2L -> Icons.Default.Timer // Plank 
-        3L -> Icons.Default.DirectionsRun // Squat
-        4L -> Icons.Default.FitnessCenter // Burpee
-        5L -> Icons.Default.DirectionsRun // Jumping Jacks
-        else -> Icons.Default.FitnessCenter
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SimpleAddItemBottomSheet(
@@ -1835,7 +1868,9 @@ fun DashboardScreen(
     
     // Stati per le statistiche
     val totalSessions by sessionRepository.getTotalSessionsCount().collectAsState(initial = 0)
-    val totalSquats by dailySessionRepository.getTotalSquatsCount().collectAsState(initial = 0)
+    // Conteggio squat: risolto dinamicamente dal template JSON con nome "Squat"
+    val totalSquatsFlow = remember { dailySessionRepository.getTotalCountByTemplateName(context, "Squat") }
+    val totalSquats by totalSquatsFlow.collectAsState(initial = 0)
     val todaySession by todayViewModel.todaySession.collectAsState()
     
     // ViewModels per Calendar e Export
@@ -2165,9 +2200,9 @@ fun EmptyHistoryCard(
 ) {
     val context = LocalContext.current
     
-    // ✅ Ottieni frase motivazionale usando la data come seed per consistenza
-    val motivationalQuote = remember(pageDate) { 
-        MotivationalQuotes.getQuoteForSeed(pageDate) 
+    // ✅ Ottieni frase motivazionale casuale
+    val motivationalQuote = remember { 
+        MotivationalQuotes.getRandomQuote() 
     }
     
     Card(
@@ -2367,274 +2402,6 @@ fun EmptySessionCard(
 }
 
 /**
- * ✅ Sezione per aggiungere velocemente esercizi comuni
- */
-@Composable
-fun QuickAddExercisesSection(
-    todayViewModel: TodayViewModel
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.FlashOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Aggiungi Velocemente",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // ✅ Griglia di pulsanti per esercizi comuni
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Push-up
-                QuickExerciseButton(
-                    icon = Icons.Default.Accessibility,
-                    name = "Push-up",
-                    exerciseId = 1L,
-                    todayViewModel = todayViewModel,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                // Squat
-                QuickExerciseButton(
-                    icon = Icons.Default.DirectionsRun,
-                    name = "Squat",
-                    exerciseId = 3L,
-                    todayViewModel = todayViewModel,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                // Jumping Jacks
-                QuickExerciseButton(
-                    icon = Icons.Default.FitnessCenter,
-                    name = "J. Jacks",
-                    exerciseId = 5L,
-                    todayViewModel = todayViewModel,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Plank
-                QuickExerciseButton(
-                    icon = Icons.Default.Timer,
-                    name = "Plank",
-                    exerciseId = 2L,
-                    todayViewModel = todayViewModel,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                // Burpee
-                QuickExerciseButton(
-                    icon = Icons.Default.SportsMartialArts,
-                    name = "Burpee",
-                    exerciseId = 4L,
-                    todayViewModel = todayViewModel,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                // Spacer per mantenere allineamento
-                Spacer(modifier = Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-/**
- * ✅ Pulsante per aggiungere velocemente un esercizio
- */
-@Composable
-fun QuickExerciseButton(
-    icon: ImageVector,
-    name: String,
-    exerciseId: Long,
-    todayViewModel: TodayViewModel,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = { 
-            Log.d("QUICK_ADD_DEBUG", "🚀 Aggiunta veloce esercizio: $name (ID: $exerciseId)")
-            todayViewModel.addExerciseToToday(exerciseId)
-        },
-        modifier = modifier,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-            contentColor = MaterialTheme.colorScheme.primary
-        ),
-        contentPadding = PaddingValues(8.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                icon,
-                contentDescription = name,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = name,
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-/**
- * ✅ Sezione per aggiungere velocemente workout comuni
- */
-@Composable
-fun QuickAddWorkoutsSection(
-    todayViewModel: TodayViewModel
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Workout Veloci",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // ✅ Griglia di pulsanti per workout comuni
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Upper Body Power
-                QuickWorkoutButton(
-                    icon = Icons.Default.AccessibilityNew,
-                    name = "Upper Body",
-                    workoutId = 1L,
-                    todayViewModel = todayViewModel,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                // Cardio Blast  
-                QuickWorkoutButton(
-                    icon = Icons.Default.DirectionsRun,
-                    name = "Cardio Blast",
-                    workoutId = 2L,
-                    todayViewModel = todayViewModel,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                // Spacer per mantenere allineamento
-                Spacer(modifier = Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-/**
- * ✅ Pulsante per aggiungere velocemente un workout
- */
-@Composable
-fun QuickWorkoutButton(
-    icon: ImageVector,
-    name: String,
-    workoutId: Long,
-    todayViewModel: TodayViewModel,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = { 
-            Log.d("QUICK_ADD_DEBUG", "🚀 Aggiunta veloce workout: $name (ID: $workoutId)")
-            todayViewModel.addWorkoutToToday(workoutId)
-        },
-        modifier = modifier,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f),
-            contentColor = MaterialTheme.colorScheme.tertiary
-        ),
-        contentPadding = PaddingValues(8.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                icon,
-                contentDescription = name,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = name,
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-/**
- * Utility function to get exercise name by ID from templates
- */
-fun getExerciseNameById(exerciseId: Long): String {
-    val templates = mapOf(
-        1L to "Push-up",
-        2L to "Plank", 
-        3L to "Squat",
-        4L to "Burpee",
-        5L to "Jumping Jacks"
-    )
-    return templates[exerciseId] ?: "Esercizio #$exerciseId"
-}
-
-/**
  * Utility function to get workout name by ID from templates
  */
 fun getWorkoutNameById(workoutId: Long): String {
@@ -2654,6 +2421,7 @@ fun getWorkoutNameById(workoutId: Long): String {
 fun WorkoutGroupCard(
     workout: DailySessionItem,
     exercises: List<DailySessionItem>,
+    exerciseTemplates: List<ExerciseTemplate>, // ✅ Aggiunto parametro template esercizi
     todayViewModel: TodayViewModel,
     isReadOnly: Boolean,
     modifier: Modifier = Modifier
@@ -2783,6 +2551,7 @@ fun WorkoutGroupCard(
                     exercises.forEach { exercise ->
                         SimpleExerciseItem(
                             exercise = exercise,
+                            exercises = exerciseTemplates, // ✅ Passa i template esercizi
                             todayViewModel = todayViewModel,
                             isReadOnly = isReadOnly,
                             modifier = Modifier.padding(vertical = 4.dp)
@@ -2800,12 +2569,14 @@ fun WorkoutGroupCard(
 @Composable
 fun StandaloneExerciseCard(
     exercise: DailySessionItem,
+    exercises: List<ExerciseTemplate>, // ✅ Aggiunto parametro esercizi
     todayViewModel: TodayViewModel,
     isReadOnly: Boolean,
     modifier: Modifier = Modifier
 ) {
     SimpleExerciseItem(
         exercise = exercise,
+        exercises = exercises, // ✅ Passa esercizi
         todayViewModel = todayViewModel,
         isReadOnly = isReadOnly,
         modifier = modifier.padding(vertical = 4.dp)
@@ -2819,6 +2590,7 @@ fun StandaloneExerciseCard(
 @Composable
 fun SimpleExerciseItem(
     exercise: DailySessionItem,
+    exercises: List<ExerciseTemplate>, // ✅ Aggiunto parametro esercizi
     todayViewModel: TodayViewModel,
     isReadOnly: Boolean,
     modifier: Modifier = Modifier
@@ -2829,8 +2601,11 @@ fun SimpleExerciseItem(
     // Get exercise name
     val exerciseName = remember(exercise.exerciseId, exercise.aiData) {
         when {
-            exercise.exerciseId == 3L && exercise.aiData?.contains("squat_ai") == true -> "🤖 AI Squat"
-            exercise.exerciseId != null -> getExerciseNameById(exercise.exerciseId!!) 
+            exercise.aiData?.contains("squat_ai") == true -> "🤖 AI Squat"
+            exercise.exerciseId != null -> {
+                val exerciseTemplate = exercises.find { it.id == exercise.exerciseId }
+                exerciseTemplate?.name ?: "Esercizio #${exercise.exerciseId}"
+            }
             else -> "Attività personalizzata"
         }
     }
@@ -2877,7 +2652,19 @@ fun SimpleExerciseItem(
                     Icon(
                         imageVector = when {
                             exercise.aiData?.contains("squat_ai") == true -> Icons.Default.VideoCall
-                            exercise.exerciseId != null -> getExerciseIcon(exercise.exerciseId!!)
+                            exercise.exerciseId != null -> {
+                                val exerciseTemplate = exercises.find { it.id == exercise.exerciseId }
+                                exerciseTemplate?.let { ex ->
+                                    when (ex.iconName) {
+                                        "Accessibility" -> Icons.Default.Accessibility
+                                        "DirectionsRun" -> Icons.Default.DirectionsRun
+                                        "Timer" -> Icons.Default.Timer
+                                        "FitnessCenter" -> Icons.Default.FitnessCenter
+                                        "Science" -> Icons.Default.Science
+                                        else -> Icons.Default.FitnessCenter
+                                    }
+                                } ?: Icons.Default.FitnessCenter
+                            }
                             else -> Icons.Default.FitnessCenter
                         },
                         contentDescription = null,

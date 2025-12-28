@@ -140,8 +140,12 @@ interface DailySessionDao {
     suspend fun getTotalItemsCount(sessionId: Long): Int
     
     /**
-     * 🦵 Conta tutti gli squat totali (exerciseId=3) 
+     * 🦵 Conta tutti gli squat totali (exerciseId=2) 
      * Include AI squat, template squat e recupero passati
+     */
+    /**
+     * Conta totale per un esercizio specifico (parametrizzato)
+     * Somma rep o actualReps quando presenti
      */
     @Query("""
         SELECT COALESCE(SUM(
@@ -152,17 +156,16 @@ interface DailySessionDao {
             END
         ), 0)
         FROM daily_session_items 
-        WHERE exerciseId = 3 
+        WHERE exerciseId = :exerciseId 
         AND (customReps > 0 OR actualReps > 0)
     """)
-    fun getTotalSquatsCount(): Flow<Int>
-    
+    fun getTotalCountForExercise(exerciseId: Long): Flow<Int>
+
     /**
-     * 🔄 Metodo di supporto per forzare invalidazione cache del conteggio squat
-     * Questo è un workaround per assicurarsi che il Flow si aggiorni dopo eliminazioni
+     * 🔄 Metodo di supporto per forzare invalidazione cache del conteggio per un esercizio
      */
-    @Query("SELECT COUNT(*) FROM daily_session_items WHERE exerciseId = 3")
-    suspend fun invalidateSquatCountCache(): Int
+    @Query("SELECT COUNT(*) FROM daily_session_items WHERE exerciseId = :exerciseId")
+    suspend fun invalidateCountCacheForExercise(exerciseId: Long): Int
     
     /**
      * 🏋️ Ottiene tutti gli esercizi figli di un workout

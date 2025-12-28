@@ -34,6 +34,9 @@ data class ExerciseTemplate(
     val imagePath: String? = null,
     val thumbnailPath: String? = null,
     
+    // Icona Material Design da usare nell'UI
+    val iconName: String? = null,
+    
     // Parametri SUGGERITI (non tracking)
     val defaultReps: Int? = null,
     val defaultTime: Int? = null,

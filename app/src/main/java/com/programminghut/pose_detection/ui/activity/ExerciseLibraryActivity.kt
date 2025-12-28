@@ -51,6 +51,7 @@ import com.programminghut.pose_detection.ui.components.UseTodayParametersDialog
 import com.programminghut.pose_detection.ui.components.UseTodayConflictDialog
 import com.programminghut.pose_detection.service.TemplateToSessionService
 import com.programminghut.pose_detection.service.UseFromExerciseResult
+import com.programminghut.pose_detection.util.ExerciseTemplateFileManager
 
 /**
  * ExerciseLibraryActivity - SOLO gestione template esercizi
@@ -122,8 +123,20 @@ fun ExerciseLibraryScreen(
 ) {
     val context = LocalContext.current
     
-    // Stato per la lista di esercizi template
-    var exerciseTemplates by remember { mutableStateOf(getSampleExerciseTemplates()) }
+    // Stato per la lista di esercizi template - CARICATI DINAMICAMENTE DAI JSON
+    var exerciseTemplates by remember { mutableStateOf<List<ExerciseTemplate>>(emptyList()) }
+
+    // Carica esercizi dai JSON all'avvio
+    LaunchedEffect(Unit) {
+        try {
+            val loadedExercises = ExerciseTemplateFileManager.loadExerciseTemplates(context)
+            exerciseTemplates = loadedExercises
+            Log.d("ExerciseLibraryActivity", "✅ Caricati ${loadedExercises.size} esercizi dai JSON")
+        } catch (e: Exception) {
+            Log.e("ExerciseLibraryActivity", "❌ Errore caricamento esercizi dai JSON", e)
+            exerciseTemplates = emptyList()
+        }
+    }
     
     // 🧪 TEST: Verifica flusso libreria esercizi
     LaunchedEffect(exerciseTemplates, isSelectionMode) {
@@ -1110,52 +1123,6 @@ fun CreateExerciseDialog(
                 Text("Annulla")
             }
         }
-    )
-}
-
-// Dati di esempio per i template
-fun getSampleExerciseTemplates(): List<ExerciseTemplate> {
-    return listOf(
-        ExerciseTemplate(
-            id = 1,
-            name = "Push-up",
-            type = TemplateExerciseType.STRENGTH,
-            mode = TemplateExerciseMode.REPS,
-            description = "Piegamenti sulle braccia classici per petto, spalle e tricipiti",
-            defaultReps = 12
-        ),
-        ExerciseTemplate(
-            id = 2,
-            name = "Plank",
-            type = TemplateExerciseType.STRENGTH,
-            mode = TemplateExerciseMode.TIME,
-            description = "Mantenimento posizione isometrica per addominali e core",
-            defaultTime = 30
-        ),
-        ExerciseTemplate(
-            id = 3,
-            name = "Squat AI",
-            type = TemplateExerciseType.SQUAT_AI,
-            mode = TemplateExerciseMode.REPS,
-            description = "Squat con tracking automatico tramite intelligenza artificiale",
-            defaultReps = 20
-        ),
-        ExerciseTemplate(
-            id = 4,
-            name = "Jumping Jacks",
-            type = TemplateExerciseType.CARDIO,
-            mode = TemplateExerciseMode.REPS,
-            description = "Saltelli con apertura e chiusura braccia e gambe",
-            defaultReps = 25
-        ),
-        ExerciseTemplate(
-            id = 5,
-            name = "Stretching Braccia",
-            type = TemplateExerciseType.FLEXIBILITY,
-            mode = TemplateExerciseMode.TIME,
-            description = "Allungamento muscoli braccia e spalle",
-            defaultTime = 45
-        )
     )
 }
 

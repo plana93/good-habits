@@ -1,0 +1,14 @@
+{
+  "id": 7,
+  "name": "Mountain Climbers",
+  "type": "CARDIO",
+  "mode": "TIME",
+  "description": "Esercizio dinamico che combina cardio e forza",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": null,
+  "defaultTime": 45,
+  "createdAt": 1735062000000,
+  "isCustom": false
+}

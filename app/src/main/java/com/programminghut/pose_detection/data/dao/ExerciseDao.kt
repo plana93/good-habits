@@ -84,6 +84,12 @@ interface ExerciseDao {
      */
     @Query("SELECT * FROM exercises WHERE name LIKE '%' || :query || '%' ORDER BY name ASC")
     fun searchExercisesByName(query: String): Flow<List<Exercise>>
+
+    /**
+     * Ottieni esercizio per nome esatto
+     */
+    @Query("SELECT * FROM exercises WHERE name = :name LIMIT 1")
+    suspend fun getExerciseByName(name: String): Exercise?
     
     /**
      * Ottieni esercizi per tag
