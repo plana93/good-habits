@@ -279,6 +279,8 @@ fun CalendarLegend() {
                 LegendItem(color = Color(0xFF4CAF50), label = "Completato", icon = "✓")
                 LegendItem(color = Color(0xFFFF5722), label = "Mancato", icon = "✗")
                 LegendItem(color = Color(0xFF2196F3), label = "Recuperato", icon = "↺")
+                LegendItem(color = Color(0xFFFFC107), label = "In corso", icon = "…")
+                // Keep legend compact; completed by session will still show as completed in the cell
                 LegendItem(color = Color(0xFF9E9E9E), label = "Futuro", icon = "○")
             }
         }
@@ -406,15 +408,19 @@ fun DayCell(
 ) {
     val backgroundColor = when (status) {
         DayStatus.COMPLETED, DayStatus.COMPLETED_MANUAL -> Color(0xFF4CAF50)
+        DayStatus.COMPLETED_DAILY -> Color(0xFF66BB6A)
         DayStatus.RECOVERED -> Color(0xFF2196F3)
         DayStatus.MISSED -> Color(0xFFFF5722)
+        DayStatus.IN_PROGRESS -> Color(0xFFFFC107)
         DayStatus.FUTURE -> Color(0xFF9E9E9E)
     }
     
     val icon = when (status) {
         DayStatus.COMPLETED -> "✓"
+        DayStatus.COMPLETED_DAILY -> "✓"
         DayStatus.COMPLETED_MANUAL -> "✎"
         DayStatus.RECOVERED -> "↺"
+        DayStatus.IN_PROGRESS -> "…"
         DayStatus.MISSED -> "✗"
         DayStatus.FUTURE -> ""
     }
@@ -495,6 +501,28 @@ fun DayDetailCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Recupera Giorno (50+ reps)")
                 }
+            } else if (dayData.status == DayStatus.IN_PROGRESS) {
+                Text(
+                    text = "Sessione in corso",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Apri la schermata Oggi per completare la sessione",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            } else if (dayData.status == DayStatus.COMPLETED_DAILY) {
+                Text(
+                    text = "Giorno completo",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF2E7D32),
+                    fontWeight = FontWeight.Bold
+                )
+                // Keep the detail short
+                Text(
+                    text = "Completato nella sessione Today",
+                    style = MaterialTheme.typography.bodySmall
+                )
             } else {
                 Text(
                     text = "${dayData.sessionCount} sessione${if (dayData.sessionCount > 1) "i" else ""}",

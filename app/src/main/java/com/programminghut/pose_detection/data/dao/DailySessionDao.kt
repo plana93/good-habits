@@ -57,6 +57,58 @@ interface DailySessionDao {
      */
     @Query("SELECT * FROM daily_sessions ORDER BY date DESC")
     fun getAllSessions(): Flow<List<DailySession>>
+
+    /**
+     * Ottieni sessione per ID
+     */
+    @Query("SELECT * FROM daily_sessions WHERE sessionId = :sessionId LIMIT 1")
+    suspend fun getSessionById(sessionId: Long): DailySession?
+
+    /**
+     * Ottieni le date (startOfDay equivalenti) delle sessioni che hanno items in un range
+     */
+    @Query("""
+        SELECT DISTINCT date FROM daily_sessions s
+        JOIN daily_session_items i ON s.sessionId = i.sessionId
+        WHERE s.date >= :startOfDay AND s.date <= :endOfDay
+    """)
+    suspend fun getSessionDatesWithItemsInRange(startOfDay: Long, endOfDay: Long): List<Long>
+
+    @Query("""
+        SELECT s.date as date,
+               COUNT(i.itemId) as itemCount,
+               SUM(CASE WHEN i.isCompleted = 1 THEN 1 ELSE 0 END) as completedCount,
+               COALESCE(SUM(
+                   CASE
+                       WHEN i.actualReps IS NOT NULL THEN i.actualReps
+                       WHEN i.customReps IS NOT NULL THEN i.customReps
+                       ELSE 0
+                   END
+               ), 0) as totalReps
+        FROM daily_sessions s
+        LEFT JOIN daily_session_items i ON s.sessionId = i.sessionId
+        WHERE s.date >= :startOfDay AND s.date <= :endOfDay
+        GROUP BY s.date
+    """)
+    fun getDailySessionSummariesInRange(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<List<DailySessionDaySummary>>
+
+    /**
+     * Get total reps for a specific exercise (by exerciseId) within a specific day.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN i.actualReps IS NOT NULL THEN i.actualReps
+                WHEN i.customReps IS NOT NULL THEN i.customReps
+                ELSE 0
+            END
+        ), 0)
+        FROM daily_sessions s
+        JOIN daily_session_items i ON s.sessionId = i.sessionId
+        WHERE s.date >= :dayStart AND s.date <= :dayEnd
+        AND i.exerciseId = :exerciseId
+    """)
+    suspend fun getTotalRepsForExerciseInDay(dayStart: Long, dayEnd: Long, exerciseId: Long): Int
     
     /**
      * Ottieni elementi di una sessione

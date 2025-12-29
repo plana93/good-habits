@@ -120,7 +120,7 @@ class NewMainActivity : ComponentActivity() {
     private val exerciseSelectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        Log.d("TODAY_DEBUG", "🔄 exerciseSelectionLauncher ricevuto result: resultCode=${result.resultCode}")
+    com.programminghut.pose_detection.util.todayDebug("🔄 exerciseSelectionLauncher ricevuto result: resultCode=${result.resultCode}")
         println("🔄 exerciseSelectionLauncher ricevuto result: resultCode=${result.resultCode}")
         
         if (result.resultCode == RESULT_OK) {
@@ -134,19 +134,19 @@ class NewMainActivity : ComponentActivity() {
                 } else null
                 
                 if (exerciseId != -1L) {
-                    Log.d("TODAY_DEBUG", "✅ Esercizio selezionato: $exerciseId, reps=$customReps, time=$customTime")
+                    com.programminghut.pose_detection.util.todayDebug("✅ Esercizio selezionato: $exerciseId, reps=$customReps, time=$customTime")
                     todayViewModel.addExerciseToToday(this, exerciseId, customReps, customTime)
                     // ✅ Naviga automaticamente alla schermata "Oggi" dopo aver aggiunto l'esercizio
                     navigateToToday()
                 } else {
-                    Log.d("TODAY_DEBUG", "❌ ExerciseId non valido: $exerciseId")
+                    com.programminghut.pose_detection.util.todayDebug("❌ ExerciseId non valido: $exerciseId")
                 }
             } ?: run {
-                Log.d("TODAY_DEBUG", "❌ Nessun data nell'intent result")
+                com.programminghut.pose_detection.util.todayDebug("❌ Nessun data nell'intent result")
                 println("❌ Nessun data nell'intent result")
             }
         } else {
-            Log.d("TODAY_DEBUG", "❌ Result non OK: ${result.resultCode}")
+            com.programminghut.pose_detection.util.todayDebug("❌ Result non OK: ${result.resultCode}")
             println("❌ Result non OK: ${result.resultCode}")
         }
     }
@@ -154,7 +154,7 @@ class NewMainActivity : ComponentActivity() {
     private val workoutSelectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        Log.d("TODAY_DEBUG", "🔄 workoutSelectionLauncher ricevuto result: resultCode=${result.resultCode}")
+    com.programminghut.pose_detection.util.todayDebug("🔄 workoutSelectionLauncher ricevuto result: resultCode=${result.resultCode}")
         println("🔄 workoutSelectionLauncher ricevuto result: resultCode=${result.resultCode}")
         
         if (result.resultCode == RESULT_OK) {
@@ -165,7 +165,7 @@ class NewMainActivity : ComponentActivity() {
                     // ✅ Naviga automaticamente alla schermata "Oggi" dopo aver aggiunto il workout
                     navigateToToday()
                 } else {
-                    Log.d("TODAY_DEBUG", "❌ WorkoutId non valido: $workoutId")
+                    com.programminghut.pose_detection.util.todayDebug("❌ WorkoutId non valido: $workoutId")
                 }
             } ?: println("❌ Nessun workoutId trovato nel result")
         } else {
@@ -177,7 +177,7 @@ class NewMainActivity : ComponentActivity() {
     private val aiSquatCameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        Log.d("TODAY_DEBUG", "🤖 aiSquatCameraLauncher ricevuto result: resultCode=${result.resultCode}")
+    com.programminghut.pose_detection.util.todayDebug("🤖 aiSquatCameraLauncher ricevuto result: resultCode=${result.resultCode}")
         
         if (result.resultCode == RESULT_OK) {
             result.data?.let { data ->
@@ -187,11 +187,11 @@ class NewMainActivity : ComponentActivity() {
                 val recoveryDate = data.getLongExtra("RECOVERY_DATE", 0L)
                 
                 if (repsCompleted > 0) {
-                    Log.d("TODAY_DEBUG", "🎯 AI Squat completato! Reps: $repsCompleted, Duration: $sessionDuration")
+                    com.programminghut.pose_detection.util.todayDebug("🎯 AI Squat completato! Reps: $repsCompleted, Duration: $sessionDuration")
                     
                     if (isRecoveryMode && recoveryDate > 0L) {
                         // ✅ Gestione del recovery
-                        Log.d("TODAY_DEBUG", "🔄 Recovery completato per data: $recoveryDate con $repsCompleted squat")
+                        com.programminghut.pose_detection.util.todayDebug("🔄 Recovery completato per data: $recoveryDate con $repsCompleted squat")
                         
                         // Verifica se ha raggiunto i 20 squat richiesti per il recovery
                         if (repsCompleted >= 20) {
@@ -200,7 +200,7 @@ class NewMainActivity : ComponentActivity() {
                                     val recoverySuccess = todayViewModel.completeRecoveryForDate(recoveryDate, repsCompleted)
                                     
                                     if (recoverySuccess) {
-                                        Log.d("TODAY_DEBUG", "🎉 Recovery completato con successo per data: $recoveryDate")
+                                        com.programminghut.pose_detection.util.todayDebug("🎉 Recovery completato con successo per data: $recoveryDate")
                                         
                         // ✅ Forza refresh di tutti i dati dopo recovery
                         todayViewModel.refreshTodayData()
@@ -210,40 +210,44 @@ class NewMainActivity : ComponentActivity() {
                             Log.w("TODAY_DEBUG", "⚠️ refreshCalendarCallback è null - calendario non aggiornato")
                         }
                         
-                        Log.d("TODAY_DEBUG", "🔄 Refresh completato per Today e Calendar")                                        // TODO: Mostrare messaggio di successo
+                        com.programminghut.pose_detection.util.todayDebug("🔄 Refresh completato per Today e Calendar")                                        // TODO: Mostrare messaggio di successo
                                     } else {
-                                        Log.d("TODAY_DEBUG", "⚠️ Recovery non riuscito - data già recuperata: $recoveryDate")
+                                        com.programminghut.pose_detection.util.todayDebug("⚠️ Recovery non riuscito - data già recuperata: $recoveryDate")
                                     }
                                 } catch (e: Exception) {
-                                    Log.e("TODAY_DEBUG", "❌ Errore durante recovery: ${e.message}", e)
+                                    if (com.programminghut.pose_detection.util.Logging.TODAY_DEBUG) {
+                                        Log.e("TODAY_DEBUG", "❌ Errore durante recovery: ${e.message}", e)
+                                    }
                                 }
                             }
                         } else {
-                            Log.d("TODAY_DEBUG", "⚠️ Squat insufficienti per recovery: $repsCompleted/20")
+                            com.programminghut.pose_detection.util.todayDebug("⚠️ Squat insufficienti per recovery: $repsCompleted/20")
                             // TODO: Mostrare messaggio che servono 20 squat
                         }
                     } else {
                         // ✅ Gestione normale degli AI squat - aggiungi come esercizio giornaliero
-                        Log.d("TODAY_DEBUG", "💪 AI Squat normale completato - aggiungendo come esercizio giornaliero")
+                        com.programminghut.pose_detection.util.todayDebug("💪 AI Squat normale completato - aggiungendo come esercizio giornaliero")
                         
                         lifecycleScope.launch {
                             try {
                                 // Aggiunge l'AI squat come esercizio nella sessione di oggi
                                 // usa l'istanza Activity come Context ("context" non è definito qui)
                                 todayViewModel.addAISquatToToday(this@NewMainActivity, targetReps = repsCompleted)
-                                Log.d("TODAY_DEBUG", "✅ AI Squat aggiunto alla sessione di oggi con $repsCompleted reps")
+                                com.programminghut.pose_detection.util.todayDebug("✅ AI Squat aggiunto alla sessione di oggi con $repsCompleted reps")
                                 
                                 // Refresh per mostrare il nuovo esercizio
                                 todayViewModel.refreshTodayData()
                             } catch (e: Exception) {
-                                Log.e("TODAY_DEBUG", "❌ Errore durante aggiunta AI squat normale: ${e.message}", e)
+                                if (com.programminghut.pose_detection.util.Logging.TODAY_DEBUG) {
+                                    Log.e("TODAY_DEBUG", "❌ Errore durante aggiunta AI squat normale: ${e.message}", e)
+                                }
                             }
                         }
                     }
                 } else {
                     Log.d("TODAY_DEBUG", "⚠️ Nessuna ripetizione completata")
                 }
-            } ?: Log.d("TODAY_DEBUG", "❌ Nessun data nell'intent result")
+                    } ?: com.programminghut.pose_detection.util.todayDebug("❌ Nessun data nell'intent result")
         } else {
             Log.d("TODAY_DEBUG", "❌ Result non OK: ${result.resultCode}")
         }
@@ -983,43 +987,26 @@ fun DaySessionContent(
     val isRecovered by produceState(initialValue = false, pageDate, isInPast) {
         if (isInPast) {
             // ✅ Log debug per tracking
-            Log.d("TODAY_DEBUG", "🔍 Observing recovery status for past date: $pageDate")
+            com.programminghut.pose_detection.util.todayDebug("🔍 Observing recovery status for past date: $pageDate")
             
             // ✅ Osserva continuamente i cambiamenti tramite il Flow del TodayViewModel
             todayViewModel.getSessionForDate(pageDate).collect { sessionData ->
                 // ✅ STRATEGIA MULTIPLA per rilevare recovery
                 val hasAnySession = sessionData != null && sessionData.items.isNotEmpty()
                 
-                // 1. Controlla AI Squat nelle sessioni
-                var hasAISquat = false
+                // 1. Controlla specifically recovery-marked items nelle sessioni (aiData='squat_recovery')
+                var hasRecoveryItem = false
+                var hasNonRecoveryItem = false
                 sessionData?.items?.let { items ->
-                    // Preferisci marker aiData
                     for (item in items) {
-                        if (item.aiData?.contains("squat_ai") == true || item.aiData?.contains("AI_SQUAT") == true || item.aiData?.contains("recovery") == true) {
-                            hasAISquat = true
-                            break
+                        val isRecoveryMarker = item.aiData?.contains("squat_recovery") == true || item.aiData?.contains("recovery") == true
+                        if (isRecoveryMarker) {
+                            hasRecoveryItem = true
+                        } else {
+                            // Any item that is not explicitly a recovery marker counts as non-recovery
+                            hasNonRecoveryItem = true
                         }
-                    }
-
-                    // Fallback: se siamo in passato, considera esercizi di tipo SQUAT
-                    if (!hasAISquat && isInPast) {
-                        for (item in items) {
-                            val exId = item.exerciseId
-                            if (exId != null) {
-                                try {
-                                    val ex = com.programminghut.pose_detection.data.database.AppDatabase
-                                        .getDatabase(context)
-                                        .exerciseDao()
-                                        .getExerciseById(exId)
-                                    if (ex?.type == com.programminghut.pose_detection.data.model.ExerciseType.SQUAT) {
-                                        hasAISquat = true
-                                        break
-                                    }
-                                } catch (e: Exception) {
-                                    // ignore lookup errors
-                                }
-                            }
-                        }
+                        if (hasRecoveryItem && hasNonRecoveryItem) break
                     }
                 }
                 
@@ -1029,15 +1016,18 @@ fun DaySessionContent(
                 // 3. Controlla se c'è una sessione per questa data (qualsiasi tipo)
                 val hasAnyActivity = hasAnySession
                 
-                // ✅ CONSIDERA RECUPERATO SE QUALSIASI CONDIZIONE È VERA
-                val newValue = hasAISquat || directRecovery || hasAnyActivity
+                // ✅ CONSIDERA RECUPERATO SOLO SE È STATO MARKATO COME RECOVERY
+                // Regola: se la sessione contiene anche esercizi non-recovery, trattiamo il giorno come COMPLETATO,
+                // quindi recovery vale solo se ci sono SOLO recovery items, o se directRecovery esiste e non ci sono items.
+                val newValue = (hasRecoveryItem && !hasNonRecoveryItem) || (directRecovery && !hasAnySession)
                 
-                Log.d("TODAY_DEBUG", "🔄 MULTI-CHECK Recovery status - Date: $pageDate")
-                Log.d("TODAY_DEBUG", "   ✅ IsRecovered: $newValue")
-                Log.d("TODAY_DEBUG", "   📊 hasAnySession: $hasAnySession (${sessionData?.items?.size ?: 0} items)")
-                Log.d("TODAY_DEBUG", "   🤖 hasAISquat: $hasAISquat") 
-                Log.d("TODAY_DEBUG", "   🎯 directRecovery: $directRecovery")
-                Log.d("TODAY_DEBUG", "   📅 hasAnyActivity: $hasAnyActivity")
+                com.programminghut.pose_detection.util.todayDebug("🔄 MULTI-CHECK Recovery status - Date: $pageDate")
+                com.programminghut.pose_detection.util.todayDebug("   ✅ IsRecovered: $newValue")
+                com.programminghut.pose_detection.util.todayDebug("   📊 hasAnySession: $hasAnySession (${sessionData?.items?.size ?: 0} items)")
+                com.programminghut.pose_detection.util.todayDebug("   🤖 hasRecoveryItem: $hasRecoveryItem, hasNonRecoveryItem: $hasNonRecoveryItem")
+                com.programminghut.pose_detection.util.todayDebug("   🎯 directRecovery: $directRecovery")
+                com.programminghut.pose_detection.util.todayDebug("   📅 hasAnyActivity (daily session items present): $hasAnyActivity")
+                com.programminghut.pose_detection.util.todayDebug("   ✅ final isRecovered evaluation: $newValue")
                 
                 value = newValue
             }
@@ -1064,9 +1054,9 @@ fun DaySessionContent(
             // ✅ Raggruppa elementi per gerarchia: Workout -> Esercizi
             val groupedItems = remember(sessionWithItems.items) {
                 // ✅ Debug log per vedere tutti gli item
-                Log.d("TODAY_DEBUG", "📋 Processing ${sessionWithItems.items.size} items for Today screen:")
+                com.programminghut.pose_detection.util.todayDebug("📋 Processing ${sessionWithItems.items.size} items for Today screen:")
                 sessionWithItems.items.forEachIndexed { index, item ->
-                    Log.d("TODAY_DEBUG", "  $index: itemId=${item.itemId}, type=${item.itemType}, exerciseId=${item.exerciseId}, aiData=${item.aiData}, customReps=${item.customReps}")
+                    com.programminghut.pose_detection.util.todayDebug("  $index: itemId=${item.itemId}, type=${item.itemType}, exerciseId=${item.exerciseId}, aiData=${item.aiData}, customReps=${item.customReps}")
                 }
                 
                 // Raggruppa per gerarchia
@@ -1134,21 +1124,52 @@ fun DaySessionContent(
             } else {
                 // ✅ Se la sessione ha items ma è un recovery, mostra il messaggio di recuperato
                 val hasRecoveryItems = sessionWithItems.items.any { item ->
-                    // ✅ STRATEGIA PRIMARIA: Recovery esplicito tramite aiData
-                    item.aiData?.contains("recovery") == true || 
-                    item.aiData?.contains("squat_ai") == true ||
-                    item.aiData?.contains("AI_SQUAT") == true
+                    // Recovery only if explicitly marked (aiData contains 'squat_recovery' or 'recovery')
+                    item.aiData?.contains("squat_recovery") == true || item.aiData?.contains("recovery") == true
                 }
-                
-                Log.d("TODAY_DEBUG", "📝 Checking hasRecoveryItems for date $pageDate: $hasRecoveryItems")
-                Log.d("TODAY_DEBUG", "📋 Items in session: ${sessionWithItems.items.size}")
+
+                // Local check: are there any non-recovery items in this session? If yes, prefer showing the completed session UI.
+                val hasNonRecoveryLocal = sessionWithItems.items.any { item ->
+                    !(item.aiData?.contains("squat_recovery") == true || item.aiData?.contains("recovery") == true)
+                }
+
+                com.programminghut.pose_detection.util.todayDebug("📝 Checking hasRecoveryItems for date $pageDate: $hasRecoveryItems")
+                com.programminghut.pose_detection.util.todayDebug("📋 Items in session: ${sessionWithItems.items.size}")
                 sessionWithItems.items.forEach { item ->
-                    Log.d("TODAY_DEBUG", "   📌 Item: exerciseId=${item.exerciseId}, aiData=${item.aiData}")
+                    com.programminghut.pose_detection.util.todayDebug("   📌 Item: exerciseId=${item.exerciseId}, aiData=${item.aiData}")
                 }
-                
-                if (isInPast && (hasRecoveryItems || isRecovered)) {
-                    // ✅ Mostra messaggio di "Giorno recuperato" E la lista degli esercizi
-                    Log.d("TODAY_DEBUG", "🎉 Showing RECOVERED day with exercises for date $pageDate")
+
+                // Avoid transient UI when isRecovered state from produceState lags behind session emission.
+                // Compute a local recovered state together with a 'determined' flag so we only show RECOVERED
+                // after we've recomputed using fresh data (including a directRecovery check).
+                var isRecoveredLocal by remember(pageDate, sessionWithItems) { mutableStateOf(false) }
+                var recoveryDetermined by remember(pageDate, sessionWithItems) { mutableStateOf(false) }
+
+                LaunchedEffect(pageDate, sessionWithItems) {
+                    recoveryDetermined = false
+                    val hasAnySession = sessionWithItems.items.isNotEmpty()
+
+                    // Re-evaluate local markers
+                    var hasRecoveryItemLocal = false
+                    var hasNonRecoveryItemLocal = false
+                    for (item in sessionWithItems.items) {
+                        val isRecoveryMarker = item.aiData?.contains("squat_recovery") == true || item.aiData?.contains("recovery") == true
+                        if (isRecoveryMarker) hasRecoveryItemLocal = true else hasNonRecoveryItemLocal = true
+                        if (hasRecoveryItemLocal && hasNonRecoveryItemLocal) break
+                    }
+
+                    // Query repository for directRecovery synchronously here to avoid ordering issues
+                    val directRecovery = todayViewModel.isDateRecovered(pageDate)
+
+                    val newValue = (hasRecoveryItemLocal && !hasNonRecoveryItemLocal) || (directRecovery && !hasAnySession)
+                    isRecoveredLocal = newValue
+                    recoveryDetermined = true
+                    com.programminghut.pose_detection.util.todayDebug("🔁 Local recovery re-eval for date $pageDate -> isRecoveredLocal=$isRecoveredLocal (directRecovery=$directRecovery, hasRecoveryItemLocal=$hasRecoveryItemLocal, hasNonRecoveryItemLocal=$hasNonRecoveryItemLocal)")
+                }
+
+                if (isInPast && recoveryDetermined && isRecoveredLocal && !hasNonRecoveryLocal) {
+                    // ✅ Mostra messaggio di "Giorno recuperato" solo se effettivamente recuperato
+                    com.programminghut.pose_detection.util.todayDebug("🎉 Showing RECOVERED day with exercises for date $pageDate (isRecoveredLocal=$isRecoveredLocal, hasNonRecoveryLocal=$hasNonRecoveryLocal)")
                     
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1217,29 +1238,37 @@ fun DaySessionContent(
                         contentPadding = PaddingValues(bottom = 80.dp) // ✅ Spazio per il FAB
                     ) {
                         item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = if (canAddExercises) "Sessione di allenamento" else "Sessione completata",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = if (canAddExercises) 
-                                        MaterialTheme.colorScheme.onSurface 
-                                    else 
-                                        MaterialTheme.colorScheme.onSurfaceVariant
+                            if (isInPast && !isRecovered) {
+                                // Show a positive EmptyHistoryCard for completed past days
+                                EmptyHistoryCard(
+                                    isInPast = true,
+                                    pageDate = pageDate,
+                                    isRecovered = false,
+                                    isCompleted = true,
+                                    aiSquatCameraLauncher = aiSquatCameraLauncher
                                 )
-                                
-                                // ✅ Indicatore visivo per sessioni passate/future
-                                if (!canAddExercises) {
-                                    Icon(
-                                        Icons.Default.History,
-                                        contentDescription = "Sessione non modificabile",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(20.dp)
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = if (canAddExercises) "Sessione di allenamento" else "Sessione completata",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (canAddExercises) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+
+                                    // ✅ Indicatore visivo per sessioni passate/future
+                                    if (!canAddExercises) {
+                                        Icon(
+                                            Icons.Default.History,
+                                            contentDescription = "Sessione non modificabile",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1877,7 +1906,7 @@ fun DashboardScreen(
     val calendarViewModel: CalendarViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return CalendarViewModel(sessionRepository) as T
+                return CalendarViewModel(sessionRepository, dailySessionRepository) as T
             }
         }
     )
@@ -2196,6 +2225,7 @@ fun EmptyHistoryCard(
     isInPast: Boolean, 
     pageDate: Long, 
     isRecovered: Boolean = false,
+    isCompleted: Boolean = false,
     aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
 ) {
     val context = LocalContext.current
@@ -2210,14 +2240,11 @@ fun EmptyHistoryCard(
             .fillMaxWidth()
             .padding(vertical = 16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isInPast && !isRecovered) {
-                // ✅ Sfondo rosso per giorni passati vuoti (non recuperati)
-                MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
-            } else if (isInPast && isRecovered) {
-                // ✅ Sfondo verde per giorni recuperati
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = when {
+                isInPast && isCompleted -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                isInPast && isRecovered -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                isInPast && !isRecovered -> MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             }
         )
     ) {
@@ -2228,41 +2255,37 @@ fun EmptyHistoryCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector = if (isInPast && !isRecovered) {
-                    Icons.Default.SentimentVeryDissatisfied
-                } else if (isInPast && isRecovered) {
-                    Icons.Default.SentimentVerySatisfied
-                } else {
-                    Icons.Default.History
+                imageVector = when {
+                    isInPast && isCompleted -> Icons.Default.SentimentVerySatisfied
+                    isInPast && isRecovered -> Icons.Default.SentimentVerySatisfied
+                    isInPast && !isRecovered -> Icons.Default.SentimentVeryDissatisfied
+                    else -> Icons.Default.History
                 },
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = if (isInPast && !isRecovered) {
-                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                } else if (isInPast && isRecovered) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                tint = when {
+                    isInPast && isCompleted -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                    isInPast && isRecovered -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                    isInPast && !isRecovered -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = if (isInPast && !isRecovered) {
-                    "Giorno perso"
-                } else if (isInPast && isRecovered) {
-                    "Giorno recuperato"
-                } else {
-                    "Nessun allenamento"
+                text = when {
+                    isInPast && isCompleted -> "Giorno completo"
+                    isInPast && isRecovered -> "Giorno recuperato"
+                    isInPast && !isRecovered -> "Giorno perso"
+                    else -> "Nessun allenamento"
                 },
                 style = MaterialTheme.typography.titleMedium,
-                color = if (isInPast && !isRecovered) {
-                    MaterialTheme.colorScheme.error
-                } else if (isInPast && isRecovered) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                color = when {
+                    isInPast && isCompleted -> MaterialTheme.colorScheme.primary
+                    isInPast && isRecovered -> MaterialTheme.colorScheme.primary
+                    isInPast && !isRecovered -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold
@@ -2270,84 +2293,96 @@ fun EmptyHistoryCard(
             
             Spacer(modifier = Modifier.height(8.dp))
             
-            if (isInPast && !isRecovered) {
-                // ✅ Giorno passato NON recuperato - mostra frase motivazionale e pulsante recupero
-                Text(
-                    text = motivationalQuote,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    lineHeight = 18.sp
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // ✅ Pulsante per recuperare il giorno
-                Button(
-                    onClick = {
-                        // ✅ Avvia procedura di recupero con 20 squat AI tramite launcher
-                        val intent = Intent(context, CameraSelectionActivity::class.java).apply {
-                            putExtra("MODE", "RECOVERY")
-                            putExtra("RECOVERY_DATE", pageDate)
-                            putExtra("RECOVERY_TARGET_SQUAT", 20)
-                        }
-                        aiSquatCameraLauncher.launch(intent)
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Recupera Giorno (20 Squat AI)")
-                }
-            } else if (isInPast && isRecovered) {
-                // ✅ Giorno passato RECUPERATO - mostra messaggio positivo con emoticon
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // ✅ Emoticon felice grande
-                    Text(
-                        text = "🎉",
-                        style = MaterialTheme.typography.displayMedium,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                    
-                    Text(
-                        text = "Hai recuperato questo giorno completando 20 squat con l'IA!",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Medium,
-                        lineHeight = 18.sp
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    // ✅ Mostra anche la frase motivazionale per continuità
+            when {
+                isInPast && !isRecovered && !isCompleted -> {
+                    // Giorno passato NON recuperato - mostra frase motivazionale e pulsante recupero
                     Text(
                         text = motivationalQuote,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                        lineHeight = 16.sp
+                        lineHeight = 18.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Pulsante per recuperare il giorno
+                    Button(
+                        onClick = {
+                            val intent = Intent(context, CameraSelectionActivity::class.java).apply {
+                                putExtra("MODE", "RECOVERY")
+                                putExtra("RECOVERY_DATE", pageDate)
+                                putExtra("RECOVERY_TARGET_SQUAT", 20)
+                            }
+                            aiSquatCameraLauncher.launch(intent)
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Recupera Giorno (20 Squat AI)")
+                    }
+                }
+
+                isInPast && isCompleted -> {
+                    // Completed past day - show motivational quote, no recovery button
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = motivationalQuote,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        lineHeight = 18.sp
                     )
                 }
-            } else {
-                // ✅ Giorno attuale - nessun allenamento
-                Text(
-                    text = "Gli esercizi possono essere aggiunti solo oggi",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center
-                )
+
+                isInPast && isRecovered -> {
+                    // Giorno passato RECUPERATO - mostra messaggio positivo con emoticon
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "🎉",
+                            style = MaterialTheme.typography.displayMedium,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+
+                        Text(
+                            text = "Hai recuperato questo giorno completando 20 squat con l'IA!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Medium,
+                            lineHeight = 18.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = motivationalQuote,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+
+                else -> {
+                    // Giorno attuale - nessun allenamento
+                    Text(
+                        text = "Gli esercizi possono essere aggiunti solo oggi",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }

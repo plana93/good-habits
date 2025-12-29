@@ -39,8 +39,16 @@ class StreakCalendarActivity : ComponentActivity() {
             repDao = database.repDao()
         )
         
-        // Initialize ViewModel
-        val factory = CalendarViewModelFactory(repository)
+        // Initialize DailySessionRepository (needed to detect in-progress days)
+        val dailySessionRepository = com.programminghut.pose_detection.data.repository.DailySessionRepository(
+            dailySessionDao = database.dailySessionDao(),
+            dailySessionRelationDao = database.dailySessionRelationDao(),
+            exerciseDao = database.exerciseDao(),
+            workoutDao = database.workoutDao()
+        )
+
+        // Initialize ViewModel with both repositories
+        val factory = CalendarViewModelFactory(repository, dailySessionRepository)
         viewModel = ViewModelProvider(this, factory)[CalendarViewModel::class.java]
         
         setContent {
@@ -56,9 +64,16 @@ class StreakCalendarActivity : ComponentActivity() {
                             // Handle day selection
                             Log.d("CALENDAR_DEBUG", "🗓️ Day clicked: $timestamp, status: $status")
                             when (status) {
-                                DayStatus.COMPLETED, DayStatus.COMPLETED_MANUAL -> {
+                                DayStatus.COMPLETED, DayStatus.COMPLETED_MANUAL, DayStatus.COMPLETED_DAILY -> {
                                     Log.d("CALENDAR_DEBUG", "✅ Completed day clicked - navigating to Today screen")
-                                    // ✅ Per giorni completati, vai alla schermata Oggi per quella data
+                                    // Per giorni completati, vai alla schermata Oggi per quella data
+                                    val intent = Intent(this, NewMainActivity::class.java).apply {
+                                        putExtra("NAVIGATE_TO_DATE", timestamp)
+                                    }
+                                    startActivity(intent)
+                                }
+                                DayStatus.IN_PROGRESS -> {
+                                    Log.d("CALENDAR_DEBUG", "⏳ In-progress day clicked - navigating to Today screen")
                                     val intent = Intent(this, NewMainActivity::class.java).apply {
                                         putExtra("NAVIGATE_TO_DATE", timestamp)
                                     }
@@ -66,16 +81,16 @@ class StreakCalendarActivity : ComponentActivity() {
                                 }
                                 DayStatus.RECOVERED -> {
                                     Log.d("CALENDAR_DEBUG", "🎉 Recovered day clicked - navigating to Today screen")
-                                    // ✅ Per giorni recuperati, vai alla schermata Oggi per quella data
+                                    // Per giorni recuperati, vai alla schermata Oggi per quella data
                                     val intent = Intent(this, NewMainActivity::class.java).apply {
                                         putExtra("NAVIGATE_TO_DATE", timestamp)
                                     }
                                     startActivity(intent)
                                 }
                                 DayStatus.MISSED -> {
-                                    Log.d("CALENDAR_DEBUG", "❌ Missed day clicked - starting recovery directly")
-                                    // ✅ Per giorni persi, avvia direttamente la procedura di recupero
-                                    val intent = Intent(this, CameraSelectionActivity::class.java).apply {
+                                    Log.d("CALENDAR_DEBUG", "❌ Missed day clicked - launching Today in RECOVERY mode")
+                                    // Avvia la Main/Today activity in modalità RECOVERY per permettere procedura AI Squat
+                                    val intent = Intent(this, NewMainActivity::class.java).apply {
                                         putExtra("MODE", "RECOVERY")
                                         putExtra("RECOVERED_DATE", timestamp)
                                         putExtra("MIN_REPS_REQUIRED", 50)

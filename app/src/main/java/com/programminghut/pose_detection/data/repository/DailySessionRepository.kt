@@ -15,6 +15,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
+import com.programminghut.pose_detection.util.todayDebug
 import java.util.*
 
 /**
@@ -27,6 +32,10 @@ class DailySessionRepository(
     private val exerciseDao: ExerciseDao,
     private val workoutDao: WorkoutDao
 ) {
+
+    // Trigger to force re-emit summaries when repository-level updates occur
+    private val sessionUpdates = MutableSharedFlow<Unit>(extraBufferCapacity = 16)
+
     
     // ============================================================================
     // GESTIONE SESSIONI GIORNALIERE
@@ -110,8 +119,8 @@ class DailySessionRepository(
      * NON crea automaticamente sessioni per giorni passati vuoti
      */
     fun getSessionWithItemsForDate(dateMillis: Long): Flow<DailySessionWithItems?> = flow {
-        android.util.Log.d("TODAY_DEBUG", "🌊🌊🌊 === INIZIO getSessionWithItemsForDate ===")
-        android.util.Log.d("TODAY_DEBUG", "🌊 Input dateMillis: $dateMillis (${formatDate(dateMillis)})")
+    todayDebug("🌊🌊🌊 === INIZIO getSessionWithItemsForDate ===")
+    todayDebug("🌊 Input dateMillis: $dateMillis (${formatDate(dateMillis)})")
         
         val calendar = Calendar.getInstance().apply { timeInMillis = dateMillis }
         val startOfDay = calendar.apply {
@@ -128,36 +137,36 @@ class DailySessionRepository(
             set(Calendar.MILLISECOND, 999)
         }.timeInMillis
         
-        android.util.Log.d("TODAY_DEBUG", "🌊 Range calcolato: startOfDay=$startOfDay, endOfDay=$endOfDay")
+    todayDebug("🌊 Range calcolato: startOfDay=$startOfDay, endOfDay=$endOfDay")
         
         // ✅ Controlla se è oggi - solo per oggi creiamo automaticamente la sessione
         val isToday = isDateToday(dateMillis)
-        android.util.Log.d("TODAY_DEBUG", "🌊 isToday check: $isToday")
+    todayDebug("🌊 isToday check: $isToday")
         
         if (isToday) {
             // 🎯 CRITICA: NON creare nuove sessioni per oggi - usa quella esistente se disponibile
-            android.util.Log.d("TODAY_DEBUG", "🌊 È oggi - controllando sessioni esistenti...")
+            todayDebug("🌊 È oggi - controllando sessioni esistenti...")
             try {
                 val existingSession = dailySessionDao.getSessionForDate(startOfDay, endOfDay)
                 if (existingSession != null) {
-                    android.util.Log.d("TODAY_DEBUG", "🌊 ✅ Sessione esistente trovata: ID=${existingSession.sessionId}")
+                    todayDebug("🌊 ✅ Sessione esistente trovata: ID=${existingSession.sessionId}")
                 } else {
-                    android.util.Log.d("TODAY_DEBUG", "🌊 ❌ Nessuna sessione per oggi - sarà creata automaticamente se necessario")
+                    todayDebug("🌊 ❌ Nessuna sessione per oggi - sarà creata automaticamente se necessario")
                     // Non creare automaticamente - lascia che venga creata al bisogno
                 }
             } catch (e: Exception) {
-                android.util.Log.d("TODAY_DEBUG", "🌊 ❌ ERRORE check sessione esistente: ${e.message}")
+                todayDebug("🌊 ❌ ERRORE check sessione esistente: ${e.message}")
             }
         }
         
         // ✅ Ora ottieni il Flow che osserva la sessione con items
-        android.util.Log.d("TODAY_DEBUG", "🌊 Chiamando dailySessionRelationDao.getSessionWithItemsForDate...")
+        todayDebug("🌊 Chiamando dailySessionRelationDao.getSessionWithItemsForDate...")
         dailySessionRelationDao.getSessionWithItemsForDate(startOfDay, endOfDay).collect { sessionWithItems ->
-            android.util.Log.d("TODAY_DEBUG", "🌊 Flow emitted: $sessionWithItems")
+            todayDebug("🌊 Flow emitted: $sessionWithItems")
             if (sessionWithItems != null) {
-                android.util.Log.d("TODAY_DEBUG", "🌊 Sessione trovata: ID=${sessionWithItems.session.sessionId}, items=${sessionWithItems.items.size}")
+                todayDebug("🌊 Sessione trovata: ID=${sessionWithItems.session.sessionId}, items=${sessionWithItems.items.size}")
             } else {
-                android.util.Log.d("TODAY_DEBUG", "🌊 Nessuna sessione trovata per questo range di date")
+                todayDebug("🌊 Nessuna sessione trovata per questo range di date")
             }
             emit(sessionWithItems)
         }
@@ -698,6 +707,43 @@ class DailySessionRepository(
             return emptyList()
         }
     }
+
+    /**
+     * Ottieni le date che hanno sessioni giornaliere con items in un intervallo
+     * Restituisce i timestamp normalizzati all'inizio del giorno (00:00)
+     */
+    suspend fun getDaysWithSessionsInRange(startOfRange: Long, endOfRange: Long): List<Long> {
+        val rawDates = dailySessionDao.getSessionDatesWithItemsInRange(startOfRange, endOfRange)
+        val normalized = rawDates.map { dateMillis ->
+            val cal = Calendar.getInstance().apply { timeInMillis = dateMillis }
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            cal.timeInMillis
+        }
+        return normalized.distinct()
+    }
+
+    /**
+     * Flow of per-day summaries for daily sessions in a range
+     */
+    fun getDailySessionSummariesInRange(startOfRange: Long, endOfRange: Long): kotlinx.coroutines.flow.Flow<List<com.programminghut.pose_detection.data.dao.DailySessionDaySummary>> {
+        // Merge the DAO flow with an explicit update trigger so repository-level changes (deletes/updates)
+        // always cause an immediate re-query and emission even if Room's query invalidation behaves differently
+        return merge(
+            dailySessionDao.getDailySessionSummariesInRange(startOfRange, endOfRange),
+            sessionUpdates.flatMapLatest { dailySessionDao.getDailySessionSummariesInRange(startOfRange, endOfRange) }
+        ).onEach { list -> android.util.Log.d("CALENDAR_DEBUG", "[DailySessionRepo] Emitting ${list.size} summaries (range=$startOfRange..$endOfRange): $list") }
+    }
+
+    /**
+     * Get total reps for an exercise (by name) on a specific day
+     */
+    suspend fun getTotalRepsForExerciseOnDayByName(exerciseName: String, dayStart: Long, dayEnd: Long): Int {
+        val exercise = exerciseDao.getExerciseByName(exerciseName) ?: return 0
+        return dailySessionDao.getTotalRepsForExerciseInDay(dayStart, dayEnd, exercise.exerciseId)
+    }
     
     /**
      * Crea sessione da template allenamento
@@ -745,6 +791,7 @@ class DailySessionRepository(
         notes: String = ""
     ) {
         val completedAt = if (isCompleted) System.currentTimeMillis() else null
+        android.util.Log.d("TODAY_DEBUG", "🔄 updateItemCompletion called: itemId=$itemId isCompleted=$isCompleted actualReps=$actualReps actualTime=$actualTime notes=$notes")
         dailySessionDao.updateItemCompletion(
             itemId = itemId,
             isCompleted = isCompleted,
@@ -753,6 +800,35 @@ class DailySessionRepository(
             completedAt = completedAt,
             notes = notes
         )
+
+        // Debug: after updating completion, emit snapshot of counts for the affected session
+        try {
+            val item = dailySessionDao.getSessionItemById(itemId)
+            val sessionId = item?.sessionId
+            if (sessionId != null) {
+                val total = dailySessionDao.getTotalItemsCount(sessionId)
+                val completed = dailySessionDao.getCompletedItemsCount(sessionId)
+                android.util.Log.d("TODAY_DEBUG", "🔎 Post-update counts for session $sessionId: total=$total completed=$completed")
+
+                val session = dailySessionDao.getSessionById(sessionId)
+                session?.let {
+                    val start = Calendar.getInstance().apply { timeInMillis = it.date; set(Calendar.HOUR_OF_DAY,0); set(Calendar.MINUTE,0); set(Calendar.SECOND,0); set(Calendar.MILLISECOND,0) }.timeInMillis
+                    val end = Calendar.getInstance().apply { timeInMillis = it.date; set(Calendar.HOUR_OF_DAY,23); set(Calendar.MINUTE,59); set(Calendar.SECOND,59); set(Calendar.MILLISECOND,999) }.timeInMillis
+                    val summaries = dailySessionDao.getDailySessionSummariesInRange(start, end).first()
+                    android.util.Log.d("TODAY_DEBUG", "🔎 Post-update daily summaries for ${formatDate(it.date)}: $summaries")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.d("TODAY_DEBUG", "⚠️ Error in post-update debug snapshot: ${e.message}")
+        }
+
+        // Trigger updates so Calendar can refresh immediately
+        try {
+            sessionUpdates.tryEmit(Unit)
+            android.util.Log.d("TODAY_DEBUG", "🔔 sessionUpdates emitted after updateItemCompletion")
+        } catch (e: Exception) {
+            android.util.Log.d("TODAY_DEBUG", "⚠️ Error emitting sessionUpdates: ${e.message}")
+        }
     }
     
     /**
@@ -863,6 +939,30 @@ class DailySessionRepository(
         dailySessionDao.deleteSessionItem(itemId)
         
         android.util.Log.d("TODAY_DEBUG", "✅ Item eliminato dal database. ID: $itemId")
+
+        // Debug: log updated counts and summaries for the session
+        try {
+            val total = dailySessionDao.getTotalItemsCount(itemToRemove?.sessionId ?: -1L)
+            val completed = dailySessionDao.getCompletedItemsCount(itemToRemove?.sessionId ?: -1L)
+            android.util.Log.d("TODAY_DEBUG", "🔎 Post-delete counts for session ${itemToRemove?.sessionId}: total=$total completed=$completed")
+
+            val session = itemToRemove?.sessionId?.let { dailySessionDao.getSessionById(it) }
+            session?.let {
+                val start = Calendar.getInstance().apply { timeInMillis = it.date; set(Calendar.HOUR_OF_DAY,0); set(Calendar.MINUTE,0); set(Calendar.SECOND,0); set(Calendar.MILLISECOND,0) }.timeInMillis
+                val end = Calendar.getInstance().apply { timeInMillis = it.date; set(Calendar.HOUR_OF_DAY,23); set(Calendar.MINUTE,59); set(Calendar.SECOND,59); set(Calendar.MILLISECOND,999) }.timeInMillis
+                val summaries = dailySessionDao.getDailySessionSummariesInRange(start, end).first()
+                android.util.Log.d("TODAY_DEBUG", "🔎 Post-delete daily summaries for ${formatDate(it.date)}: $summaries")
+            }
+        } catch (e: Exception) {
+            android.util.Log.d("TODAY_DEBUG", "⚠️ Error in post-delete debug snapshot: ${e.message}")
+        }
+        // Also trigger update after item removal
+        try {
+            sessionUpdates.tryEmit(Unit)
+            android.util.Log.d("TODAY_DEBUG", "🔔 sessionUpdates emitted after removeItemFromSession")
+        } catch (e: Exception) {
+            android.util.Log.d("TODAY_DEBUG", "⚠️ Error emitting sessionUpdates: ${e.message}")
+        }
         
         // Forza l'invalidazione della cache per tutti gli exerciseId impactati
         if (affectedExerciseIds.isNotEmpty()) {
@@ -874,6 +974,14 @@ class DailySessionRepository(
             } catch (e: Exception) {
                 android.util.Log.d("TODAY_DEBUG", "⚠️ Errore invalidazione cache: ${e.message}")
             }
+        }
+
+        // Notify listeners that sessions have changed so flows can re-emit (helps Calendar refresh)
+        try {
+            sessionUpdates.tryEmit(Unit)
+            android.util.Log.d("TODAY_DEBUG", "🔔 sessionUpdates emitted after delete")
+        } catch (e: Exception) {
+            android.util.Log.d("TODAY_DEBUG", "⚠️ Error emitting sessionUpdates: ${e.message}")
         }
     }
     

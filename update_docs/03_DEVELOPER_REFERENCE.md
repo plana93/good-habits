@@ -152,6 +152,16 @@ rm -rf .gradle && ./gradlew build
 // Check session creation
 adb logcat | grep "TODAY_DEBUG"
 
+Logging flags
+-------------
+Per evitare log pesanti in produzione, i log principali possono essere attivati/disattivati a runtime tramite l'oggetto `com.programminghut.pose_detection.util.Logging`.
+Di default i flag sono abilitati solo in build DEBUG (`BuildConfig.DEBUG`). Esempio:
+
+    // Abilita i log Today anche in release (solo per debug locale)
+    com.programminghut.pose_detection.util.Logging.TODAY_DEBUG = true
+
+Usa `todayDebug(...)`, `calendarDebug(...)` e `recoveryDebug(...)` per i messaggi controllati dai flag.
+
 // Clear app data for fresh start
 adb shell pm clear com.programminghut.pose_detection
 ```

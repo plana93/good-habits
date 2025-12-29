@@ -1,6 +1,7 @@
 package com.programminghut.pose_detection.ui.viewmodel
 
 import android.util.Log
+import com.programminghut.pose_detection.util.todayDebug
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -24,6 +25,9 @@ class TodayViewModel(
     private val dailySessionRepository: DailySessionRepository,
     private val sessionRepository: SessionRepository
 ) : ViewModel() {
+
+    // Recovery checker centralizes the final recovered logic
+    private val recoveryChecker = com.programminghut.pose_detection.data.repository.RecoveryChecker(sessionRepository, dailySessionRepository)
 
     // Stato della UI per Today
     private val _uiState = MutableStateFlow<TodayUiState>(TodayUiState.Loading)
@@ -64,7 +68,7 @@ class TodayViewModel(
     private fun loadSessionForSelectedDate() {
         viewModelScope.launch {
             try {
-                Log.d("TODAY_DEBUG", "🔄 loadSessionForSelectedDate() iniziato per data: ${_selectedDate.value}")
+                todayDebug("🔄 loadSessionForSelectedDate() iniziato per data: ${_selectedDate.value}")
                 _uiState.value = TodayUiState.Loading
                 
                 // Ottieni o crea la sessione per la data selezionata
@@ -72,17 +76,17 @@ class TodayViewModel(
                 
                 // Collect dal Flow per aggiornamenti automatici
                 dailySessionRepository.getSessionWithItemsForDate(_selectedDate.value).collect { sessionWithItems ->
-                    Log.d("TODAY_DEBUG", "📊 Flow sessionWithItems ricevuto: $sessionWithItems")
+                    todayDebug("📊 Flow sessionWithItems ricevuto: $sessionWithItems")
                     
                     // ✅ SIMPLIFIED: Just store the DailySessionWithItems directly
                     _todaySession.value = sessionWithItems
                     
                     if (sessionWithItems != null) {
-                        Log.d("TODAY_DEBUG", "✅ Sessione trovata: ID=${sessionWithItems.session.sessionId}, Items=${sessionWithItems.items.size}")
+                        todayDebug("✅ Sessione trovata: ID=${sessionWithItems.session.sessionId}, Items=${sessionWithItems.items.size}")
                         // Update UI state to Success with the session
                         _uiState.value = TodayUiState.Success(sessionWithItems)
                     } else {
-                        Log.d("TODAY_DEBUG", "❌ sessionWithItems è null!")
+                    todayDebug("❌ sessionWithItems è null!")
                         _uiState.value = TodayUiState.Empty
                     }
                     
@@ -93,7 +97,7 @@ class TodayViewModel(
                 }
                 
             } catch (e: Exception) {
-                Log.d("TODAY_DEBUG", "💥 Errore in loadSessionForSelectedDate(): ${e.message}")
+                todayDebug("💥 Errore in loadSessionForSelectedDate(): ${e.message}")
                 _uiState.value = TodayUiState.Error("Errore caricamento sessione: ${e.message}")
             }
         }
@@ -140,7 +144,7 @@ class TodayViewModel(
      * ✅ Ricarica i dati per la data selezionata (utile dopo completamento esercizi AI)
      */
     fun refreshTodayData() {
-        Log.d("TODAY_DEBUG", "🔄 refreshTodayData() chiamato per aggiornare UI dopo completamento esercizio AI")
+                com.programminghut.pose_detection.util.todayDebug("🔄 refreshTodayData() chiamato per aggiornare UI dopo completamento esercizio AI")
         loadSessionForSelectedDate()
     }
     
@@ -258,7 +262,7 @@ class TodayViewModel(
      */
     suspend fun isSelectedDateRecovered(): Boolean {
         val startOfDay = getStartOfDay(_selectedDate.value)
-        return sessionRepository.isDateRecovered(startOfDay)
+        return recoveryChecker.isDateRecoveredFinal(startOfDay)
     }
     
     /**
@@ -267,7 +271,8 @@ class TodayViewModel(
      */
     suspend fun isDateRecovered(dateTimestamp: Long): Boolean {
         val startOfDay = getStartOfDay(dateTimestamp)
-        return sessionRepository.isDateRecovered(startOfDay)
+        // Delegate to centralized checker which considers both RECOVERY sessions and daily session items
+        return recoveryChecker.isDateRecoveredFinal(startOfDay)
     }
     
     /**
@@ -327,14 +332,14 @@ class TodayViewModel(
     fun addExerciseToToday(context: android.content.Context, exerciseId: Long, customReps: Int? = null, customTime: Int? = null) {
         viewModelScope.launch {
             try {
-                Log.d("TODAY_DEBUG", "🚀 TodayViewModel.addExerciseToToday() chiamato con exerciseId: $exerciseId, reps: $customReps, time: $customTime")
+                com.programminghut.pose_detection.util.todayDebug("🚀 TodayViewModel.addExerciseToToday() chiamato con exerciseId: $exerciseId, reps: $customReps, time: $customTime")
                 println("🚀 TodayViewModel.addExerciseToToday() chiamato con exerciseId: $exerciseId, reps: $customReps, time: $customTime")
                 
                 // ✅ SOLUZIONE: Usa direttamente addExerciseToTodaySession che gestisce la creazione automatica della sessione
                 val newItem = dailySessionRepository.addExerciseToTodaySession(context, exerciseId, customReps, customTime)
                 
                 if (newItem != null) {
-                    Log.d("TODAY_DEBUG", "✅ Esercizio aggiunto con successo: ${newItem.itemId}")
+                    com.programminghut.pose_detection.util.todayDebug("✅ Esercizio aggiunto con successo: ${newItem.itemId}")
                     println("✅ Esercizio aggiunto con successo: ${newItem.itemId}")
                     
                     // ✅ Traccia l'ultimo elemento aggiunto per espansione automatica
@@ -343,10 +348,10 @@ class TodayViewModel(
                     // Ricarica la sessione aggiornata
                     loadSessionForSelectedDate()
                     
-                    Log.d("TODAY_DEBUG", "📱 Refresh UI completato")
+                    com.programminghut.pose_detection.util.todayDebug("📱 Refresh UI completato")
                     println("📱 Refresh UI completato")
                 } else {
-                    Log.d("TODAY_DEBUG", "❌ Errore nell'aggiungere l'esercizio")
+                    com.programminghut.pose_detection.util.todayDebug("❌ Errore nell'aggiungere l'esercizio")
                     println("❌ Errore nell'aggiungere l'esercizio")
                 }
                 

@@ -391,6 +391,13 @@ class SessionRepository(
     suspend fun getSessionsForDateRange(startTime: Long, endTime: Long): List<WorkoutSession> {
         return sessionDao.getSessionsForCalendar(startTime, endTime)
     }
+
+    /**
+     * Reactive flow of sessions for a specific date range
+     */
+    fun getSessionsForDateRangeFlow(startTime: Long, endTime: Long): kotlinx.coroutines.flow.Flow<List<WorkoutSession>> {
+        return sessionDao.getSessionsByDateRange(startTime, endTime)
+    }
     
     /**
      * Get missed days within a date range
