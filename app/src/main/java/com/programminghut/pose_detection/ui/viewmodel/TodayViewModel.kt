@@ -1,6 +1,7 @@
 package com.programminghut.pose_detection.ui.viewmodel
 
 import android.util.Log
+import android.widget.Toast
 import com.programminghut.pose_detection.util.todayDebug
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -341,6 +342,14 @@ class TodayViewModel(
                 if (newItem != null) {
                     com.programminghut.pose_detection.util.todayDebug("✅ Esercizio aggiunto con successo: ${newItem.itemId}")
                     println("✅ Esercizio aggiunto con successo: ${newItem.itemId}")
+                    // Show a quick toast informing which exercise and reps were added
+                    try {
+                        val exerciseName = newItem.exerciseId?.let { dailySessionRepository.getExerciseNameById(it) } ?: (newItem.aiData?.let { "AI Squat" } ?: "Esercizio")
+                        val reps = newItem.customReps ?: newItem.actualReps ?: 0
+                        Toast.makeText(context, "Aggiunto: $exerciseName — $reps reps", Toast.LENGTH_SHORT).show()
+                    } catch (e: Exception) {
+                        Log.d("TODAY_DEBUG", "⚠️ Toast / exercise name lookup failed: ${e.message}")
+                    }
                     
                     // ✅ Traccia l'ultimo elemento aggiunto per espansione automatica
                     _lastAddedItemId.value = newItem.itemId
@@ -641,13 +650,15 @@ class TodayViewModel(
             aiData = "{\"type\":\"squat_detection\",\"created_at\":${System.currentTimeMillis()}}"
         )
         
-        // Use repository to insert (need to add this method to repository)
-        // For now, return mock - in real implementation would call:
-        // return dailySessionRepository.insertCustomSessionItem(squatItem)
-        
-        // Mock for now - shows that the concept works
-        println("🤖 Quick Squat AI item created: $squatItem")
-        return System.currentTimeMillis() // Mock ID
+        // Persist the item using repository
+        return try {
+            val id = dailySessionRepository.insertCustomSessionItem(squatItem)
+            android.util.Log.d("TODAY_DEBUG", "🤖 Quick Squat AI item persisted with ID: $id")
+            id
+        } catch (e: Exception) {
+            android.util.Log.d("TODAY_DEBUG", "❌ Errore persistenza Quick Squat AI: ${e.message}")
+            null
+        }
     }
     
     /**

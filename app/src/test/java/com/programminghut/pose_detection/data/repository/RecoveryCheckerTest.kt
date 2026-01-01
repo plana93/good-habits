@@ -111,6 +111,7 @@ class RecoveryCheckerTest {
         override fun getTotalCountForExercise(exerciseId: Long): Flow<Int> = flowOf(0)
         override suspend fun invalidateCountCacheForExercise(exerciseId: Long): Int = 0
         override suspend fun getItemsByParentWorkout(workoutItemId: Long): List<DailySessionItem> = emptyList()
+        override suspend fun deleteItemsByParentWorkout(parentWorkoutItemId: Long) {}
     }
 
     private class FakeDailySessionRelationDao(private val emitted: DailySessionWithItems?) : com.programminghut.pose_detection.data.dao.DailySessionRelationDao {

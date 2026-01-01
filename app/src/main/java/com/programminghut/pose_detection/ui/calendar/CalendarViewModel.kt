@@ -93,6 +93,8 @@ class CalendarViewModel(
 
                 // Collect daily summaries reactively so UI stays in sync with Today changes
                 dailySessionRepository.getDailySessionSummariesInRange(monthStart, monthEnd).collect { dailySummariesList ->
+                    // Test debug: print to stdout so unit tests can observe when ViewModel receives summaries
+                    println("[CalendarViewModel] Received ${dailySummariesList.size} daily summaries for range [$monthStart..$monthEnd]: $dailySummariesList")
                     if (Logging.CALENDAR_DEBUG) calendarDebug("🔁 Received ${dailySummariesList.size} daily summaries for range [$monthStart..$monthEnd]")
                     // Get sessions and missed days fresh for each emission
                     val sessions = repository.getSessionsForDateRange(monthStart, monthEnd)

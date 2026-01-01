@@ -1453,39 +1453,47 @@ class MainActivity : AppCompatActivity() {
                     
                     Log.d("MainActivity", "🎯 Sessione salvata con successo! ID=$sessionId, Reps=${reps.size}")
                     
-                    // ✅ Bridge: Aggiungi l'AI Squat alla sessione giornaliera Today
-                    if (!isRecoveryMode) {  // Solo per sessioni normali, non recovery
-                        try {
-                            android.util.Log.d("BRIDGE_DEBUG", "🎯🎯🎯 AVVIO BRIDGE LOGIC per aggiungere AI squat alla Today session")
-                            android.util.Log.d("BRIDGE_DEBUG", "🔧 Reps totali: ${reps.size}")
-                            
-                            // ✅ Step 1: Crea AI Squat item con default 0 reps
-                            val aiSquatAdded = dailySessionRepository.addAISquatToTodaySession(this@MainActivity, 0)
-                            
-                            if (aiSquatAdded != null) {
-                                android.util.Log.d("BRIDGE_DEBUG", "✅ AI Squat item creato con ID: ${aiSquatAdded.itemId}")
-                                
-                                // ✅ Step 2: Aggiorna con reps reali dal conteggio AI
-                                val updateSuccess = dailySessionRepository.updateAISquatWithRealCount(
-                                    aiSquatAdded.itemId, 
-                                    reps.size
-                                )
-                                
-                                if (updateSuccess) {
-                                    android.util.Log.d("BRIDGE_DEBUG", "✅✅✅ AI Squat completato! ItemID: ${aiSquatAdded.itemId}, Reps: ${reps.size}")
-                                } else {
-                                    android.util.Log.e("BRIDGE_DEBUG", "❌ Errore aggiornamento AI Squat con reps reali")
-                                }
-                            } else {
-                                android.util.Log.e("BRIDGE_DEBUG", "❌❌❌ Fallimento addAISquatToTodaySession - risultato null")
-                            }
-                            
-                        } catch (e: Exception) {
-                            android.util.Log.e("BRIDGE_DEBUG", "❌❌❌ ERRORE CRITICO nel bridge logic AI->Today: ${e.message}")
-                            e.printStackTrace()
+                    // ✅ Bridge: Aggiungi l'AI Squat alla sessione (sia oggi che recovery)
+                    try {
+                        val dateForAISquat = if (isRecoveryMode && recoveredDate > 0) {
+                            recoveredDate  // Usa la data della recovery
+                        } else {
+                            System.currentTimeMillis()  // Usa oggi
                         }
-                    } else {
-                        android.util.Log.d("BRIDGE_DEBUG", "⏭️ Modalità recovery - bridge logic skippato")
+                        
+                        android.util.Log.d("BRIDGE_DEBUG", "🎯🎯🎯 AVVIO BRIDGE LOGIC per aggiungere AI squat ${if (isRecoveryMode) "a recovery" else "a oggi"}")
+                        android.util.Log.d("BRIDGE_DEBUG", "🔧 Reps totali: ${reps.size}, Data: $dateForAISquat")
+                        
+                        // ✅ Step 1: Crea AI Squat item e impostalo subito con il conteggio rilevato
+                        // Passiamo direttamente `reps.size` così il conteggio nella Dashboard
+                        // aumenta immediatamente senza dipendere dall'update successivo.
+                        val aiSquatAdded = dailySessionRepository.addAISquatToTodaySession(
+                            this@MainActivity, 
+                            reps.size,
+                            dateForAISquat  // ✅ Passa la data corretta
+                        )
+                        
+                        if (aiSquatAdded != null) {
+                            android.util.Log.d("BRIDGE_DEBUG", "✅ AI Squat item creato con ID: ${aiSquatAdded.itemId}")
+                            
+                            // ✅ Step 2: Aggiorna con reps reali dal conteggio AI
+                            val updateSuccess = dailySessionRepository.updateAISquatWithRealCount(
+                                aiSquatAdded.itemId, 
+                                reps.size
+                            )
+                            
+                            if (updateSuccess) {
+                                android.util.Log.d("BRIDGE_DEBUG", "✅✅✅ AI Squat completato! ItemID: ${aiSquatAdded.itemId}, Reps: ${reps.size}")
+                            } else {
+                                android.util.Log.e("BRIDGE_DEBUG", "❌ Errore aggiornamento AI Squat con reps reali")
+                            }
+                        } else {
+                            android.util.Log.e("BRIDGE_DEBUG", "❌❌❌ Fallimento addAISquatToTodaySession - risultato null")
+                        }
+                        
+                    } catch (e: Exception) {
+                        android.util.Log.e("BRIDGE_DEBUG", "❌❌❌ ERRORE CRITICO nel bridge logic AI->Today: ${e.message}")
+                        e.printStackTrace()
                     }
                     
                     // ✅ Imposta il risultato e termina l'activity nella UI thread

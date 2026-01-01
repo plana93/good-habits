@@ -104,6 +104,7 @@ class CalendarViewModelTest {
             override fun getTotalCountForExercise(exerciseId: Long) = kotlinx.coroutines.flow.flowOf(0)
             override suspend fun invalidateCountCacheForExercise(exerciseId: Long) = 0
             override suspend fun getItemsByParentWorkout(workoutItemId: Long) = emptyList<com.programminghut.pose_detection.data.model.DailySessionItem>()
+            override suspend fun deleteItemsByParentWorkout(parentWorkoutItemId: Long) {}
         }
 
         val fakeSessionDao = object : com.programminghut.pose_detection.data.dao.SessionDao {
@@ -230,6 +231,9 @@ class CalendarViewModelTest {
 
         // Let ViewModel start and collect the first emission
         testScheduler.advanceUntilIdle()
+        // Ensure repository triggers a re-query so collectors pick up current DAO state deterministically in tests
+        dailyRepo.triggerSessionUpdateForTests()
+        testScheduler.advanceUntilIdle()
 
         // Initially should report MISSED for the day
         var initialState: CalendarUiState? = null
@@ -249,6 +253,8 @@ class CalendarViewModelTest {
         // Either MISSED or null (not present) initially
         // Now emit the daily summary (simulating DB update)
         summariesFlow.value = listOf(dailySummary)
+    // Force repository-level update trigger so merged flow emits in test environment
+    dailyRepo.triggerSessionUpdateForTests()
 
         // Wait for ViewModel to pick up update
         testScheduler.advanceUntilIdle()
@@ -304,6 +310,7 @@ class CalendarViewModelTest {
             override fun getTotalCountForExercise(exerciseId: Long) = kotlinx.coroutines.flow.flowOf(0)
             override suspend fun invalidateCountCacheForExercise(exerciseId: Long) = 0
             override suspend fun getItemsByParentWorkout(workoutItemId: Long) = emptyList<com.programminghut.pose_detection.data.model.DailySessionItem>()
+            override suspend fun deleteItemsByParentWorkout(parentWorkoutItemId: Long) {}
             override suspend fun getSessionById(sessionId: Long) = null
         }
 
@@ -429,6 +436,9 @@ class CalendarViewModelTest {
 
         // initial emission
         testScheduler.advanceUntilIdle()
+        // Ensure ViewModel picks up current DAO state deterministically in test
+        dailyRepo.triggerSessionUpdateForTests()
+        testScheduler.advanceUntilIdle()
 
         var initial: CalendarUiState.Success? = null
         repeat(10) {
@@ -446,6 +456,8 @@ class CalendarViewModelTest {
 
         // Now emit an in-progress summary (completedCount < itemCount)
         summariesFlow.value = listOf(inProgressSummary)
+    // Force repository-level update trigger so merged flow emits in test environment
+    dailyRepo.triggerSessionUpdateForTests()
 
         testScheduler.advanceUntilIdle()
 

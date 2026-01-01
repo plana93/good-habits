@@ -9,9 +9,10 @@ import com.programminghut.pose_detection.BuildConfig
  */
 object Logging {
     // Toggleable flags - default to BuildConfig.DEBUG so production is quiet
-    var TODAY_DEBUG: Boolean = BuildConfig.DEBUG
-    var CALENDAR_DEBUG: Boolean = BuildConfig.DEBUG
-    var RECOVERY_DEBUG: Boolean = BuildConfig.DEBUG
+    // 🔇 DISABILITATI PER PERFORMANCE durante sviluppo
+    var TODAY_DEBUG: Boolean = false // BuildConfig.DEBUG
+    var CALENDAR_DEBUG: Boolean = false // BuildConfig.DEBUG
+    var RECOVERY_DEBUG: Boolean = false // BuildConfig.DEBUG
 }
 
 fun todayDebug(message: String) {

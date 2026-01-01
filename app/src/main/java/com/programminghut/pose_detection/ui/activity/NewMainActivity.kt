@@ -1341,20 +1341,23 @@ fun SessionItemCard(
         }
     }
     
-    // Get exercise name from templates
-    val exerciseName = remember(sessionItem.exerciseId, sessionItem.aiData) {
-        when {
+    // Get exercise name from JSON templates (use exerciseId as template.id)
+    var exerciseName by remember(sessionItem.exerciseId, sessionItem.aiData) { 
+        mutableStateOf(when {
             // ✅ AI Squat detection by aiData marker
             sessionItem.aiData?.contains("squat_ai") == true -> "🤖 AI Squat"
-            // Normal exercise
+            // Normal exercise: exerciseId = template.id, find in exercises list
             sessionItem.exerciseId != null -> {
                 val exercise = exercises.find { it.id == sessionItem.exerciseId }
                 exercise?.name ?: "Esercizio #${sessionItem.exerciseId}"
             }
             // Fallback
             else -> "Attività personalizzata"
-        }
+        })
     }
+    
+    // Nessun LaunchedEffect - il nome è già risolto dal JSON
+    // La lista 'exercises' contiene tutti gli esercizi dal JSON con id = template.id
     
     val workoutName = remember(sessionItem.workoutId) {
         sessionItem.workoutId?.let { 
@@ -1897,9 +1900,51 @@ fun DashboardScreen(
     
     // Stati per le statistiche
     val totalSessions by sessionRepository.getTotalSessionsCount().collectAsState(initial = 0)
-    // Conteggio squat: risolto dinamicamente dal template JSON con nome "Squat"
-    val totalSquatsFlow = remember { dailySessionRepository.getTotalCountByTemplateName(context, "Squat") }
+    
+    // ✅ Conteggio squat: usa il template JSON per trovare l'ID
+    // Squat nel JSON ha id=2, quindi cercherò esercizi con exerciseId=2
+    val exercises = remember {
+        try {
+            com.programminghut.pose_detection.util.ExerciseTemplateFileManager.loadExerciseTemplates(context)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    val squatExerciseId = remember(exercises) {
+        val squatTemplate = exercises.find { it.name == "Squat" }
+        squatTemplate?.id
+    }
+
+    val totalSquatsFlow = remember(squatExerciseId) {
+        if (squatExerciseId != null) {
+            dailySessionRepository.getTotalSquatAggregateCount(squatExerciseId!!)
+        } else {
+            // Fallback: se non trovi il template, usa il conteggio per nome
+            dailySessionRepository.getTotalCountByTemplateName(context, "Squat")
+        }
+    }
     val totalSquats by totalSquatsFlow.collectAsState(initial = 0)
+
+    // Debug: show which exerciseId/name the dashboard is using
+    LaunchedEffect(squatExerciseId) {
+        android.util.Log.d("DASHBOARD_DEBUG", "Dashboard resolved Squat exerciseId: $squatExerciseId")
+        // Show a quick toast so the user can see which exerciseId the dashboard is counting
+        try {
+            val name = if (squatExerciseId != null) {
+                dailySessionRepository.getExerciseNameById(squatExerciseId!!)
+            } else null
+            val toastText = if (name != null) "Dashboard counts: $name (id=${squatExerciseId})" else "Dashboard: Squat template not resolved"
+            android.widget.Toast.makeText(context, toastText, android.widget.Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            android.util.Log.d("DASHBOARD_DEBUG", "⚠️ Toast show failed: ${e.message}")
+        }
+    }
+
+    // Debug: log whenever the total squat count updates so we can trace UI changes
+    LaunchedEffect(totalSquats) {
+        android.util.Log.d("DASHBOARD_DEBUG", "totalSquats updated: $totalSquats (exerciseId=$squatExerciseId)")
+    }
     val todaySession by todayViewModel.todaySession.collectAsState()
     
     // ViewModels per Calendar e Export

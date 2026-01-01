@@ -214,6 +214,50 @@ interface DailySessionDao {
     fun getTotalCountForExercise(exerciseId: Long): Flow<Int>
 
     /**
+     * Conta rep degli AI squat che non sono già associati all'exerciseId passato.
+     * Questo permette di includere Quick Squat / AI items creati senza exerciseId
+     * nel conteggio totale degli squat senza duplicare quelli già contati per
+     * l'exerciseId (es. template "Squat").
+     * ✅ NOTA: Conta AI Squat che HANNO aiData LIKE '%squat%' ESCLUDENDO quelli associati a exerciseId
+     *          (per evitare double-counting con getTotalCountForExercise)
+     */
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN (aiData IS NOT NULL AND aiData LIKE '%squat%') AND (exerciseId IS NULL OR exerciseId != :exerciseId) THEN
+                    CASE
+                        WHEN customReps IS NOT NULL THEN customReps
+                        WHEN actualReps IS NOT NULL THEN actualReps
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ), 0)
+        FROM daily_session_items
+    """)
+    fun getTotalCountForAiSquatsExcludingExercise(exerciseId: Long): Flow<Int>
+
+    /**
+     * Conta rep di recovery items (notes LIKE 'Recovery - %') che non sono già
+     * associati all'exerciseId passato.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN (notes IS NOT NULL AND notes LIKE 'Recovery - %') AND (exerciseId IS NULL OR exerciseId != :exerciseId) THEN
+                    CASE
+                        WHEN customReps IS NOT NULL THEN customReps
+                        WHEN actualReps IS NOT NULL THEN actualReps
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ), 0)
+        FROM daily_session_items
+    """)
+    fun getTotalCountForRecoveryExcludingExercise(exerciseId: Long): Flow<Int>
+
+    /**
      * 🔄 Metodo di supporto per forzare invalidazione cache del conteggio per un esercizio
      */
     @Query("SELECT COUNT(*) FROM daily_session_items WHERE exerciseId = :exerciseId")
@@ -224,4 +268,10 @@ interface DailySessionDao {
      */
     @Query("SELECT * FROM daily_session_items WHERE parentWorkoutItemId = :workoutItemId")
     suspend fun getItemsByParentWorkout(workoutItemId: Long): List<DailySessionItem>
+
+    /**
+     * Elimina tutti gli elementi figli di un workout (usato quando si rimuove il wrapper workout)
+     */
+    @Query("DELETE FROM daily_session_items WHERE parentWorkoutItemId = :parentWorkoutItemId")
+    suspend fun deleteItemsByParentWorkout(parentWorkoutItemId: Long)
 }
