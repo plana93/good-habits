@@ -104,8 +104,9 @@ class CalendarViewModel(
 
                     val dailySummariesMap = dailySummariesList.associateBy { it.date }
 
-                    // Calculate current streak
-                    val currentStreak = repository.calculateStreakWithRecovery()
+                    // 🔥 Calculate current streak using BOTH WorkoutSession AND DailySession data
+                    // This ensures all visible days in calendar are counted in the streak
+                    val currentStreak = repository.calculateStreakWithDailySessions(dailySummariesMap)
 
                     // Build day data map using daily summaries so days with only DailySession items are shown as completed
                     val dayDataMap = buildDayDataMapWithDailySummaries(sessions, missedDays, dailySummariesMap).toMutableMap()

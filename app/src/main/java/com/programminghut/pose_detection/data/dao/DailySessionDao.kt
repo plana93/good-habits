@@ -274,4 +274,20 @@ interface DailySessionDao {
      */
     @Query("DELETE FROM daily_session_items WHERE parentWorkoutItemId = :parentWorkoutItemId")
     suspend fun deleteItemsByParentWorkout(parentWorkoutItemId: Long)
+
+    /**
+     * 🔄 Controlla se una data è stata recuperata (ha Recovery items)
+     * Una data è considerata "recuperata" se ha almeno un item con notes LIKE 'Recovery - %'
+     */
+    @Query("""
+        SELECT EXISTS(
+            SELECT 1 FROM daily_session_items
+            WHERE sessionId IN (
+                SELECT sessionId FROM daily_sessions 
+                WHERE date >= :startOfDay AND date < :endOfDay
+            )
+            AND notes IS NOT NULL AND notes LIKE 'Recovery - %'
+        )
+    """)
+    suspend fun isDateAlreadyRecovered(startOfDay: Long, endOfDay: Long): Boolean
 }

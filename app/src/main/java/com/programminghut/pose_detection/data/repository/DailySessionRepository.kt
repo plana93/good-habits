@@ -1137,5 +1137,23 @@ class DailySessionRepository(
      */
     fun getTotalCountForExerciseId(exerciseId: Long): Flow<Int> = dailySessionDao.getTotalCountForExercise(exerciseId)
 
+    /**
+     * 🔥 CALCOLA STREAK - Giorni consecutivi con esercizi o recovery
+     * Usa lo stesso metodo del calendario: conta WorkoutSession con sessionType RECOVERY o REAL_TIME
+     * 
+     * Logica:
+     * - Se OGGI ha esercizi/recovery → conta OGGI e va indietro
+     * - Se OGGI è vuoto → OGGI rimane in forse, inizia dal giorno PRIMA
+     * - Va indietro giorno per giorno finché trova giorni con esercizi/recovery
+     * - Si ferma al primo giorno vuoto/non-recuperato
+     * 
+     * @return Current streak count (consecutive days with exercises or recovery)
+     */
+    suspend fun calculateStreakWithDailySession(): Int {
+        // ❌ NON USARE - Usa SessionRepository.calculateStreakWithRecovery() invece!
+        // Questo metodo è qui solo per compatibility, ma il vero calcolo è nel SessionRepository
+        return 0  // Placeholder
+    }
+
 // End of DailySessionRepository
 }

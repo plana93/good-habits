@@ -377,31 +377,20 @@ class TodayViewModel(
     fun addAISquatToToday(context: android.content.Context, targetReps: Int = 20) {
         viewModelScope.launch {
             try {
-                Log.d("TODAY_DEBUG", "🤖 TodayViewModel.addAISquatToToday() chiamato con targetReps: $targetReps")
-                
                 if (!canAddExercisesToSelectedDate()) {
-                    Log.d("TODAY_DEBUG", "❌ Non si può aggiungere AI squat nel passato")
                     _uiState.value = TodayUiState.Error("Non puoi aggiungere esercizi nel passato")
                     return@launch
                 }
                 
-                // Aggiungi AI squat alla sessione
                 val newItem = dailySessionRepository.addAISquatToTodaySession(context, targetReps)
                 
                 if (newItem != null) {
-                    // Ricarica la sessione aggiornata
                     loadSessionForSelectedDate()
-                    
-                    // Log per debugging
-                    Log.d("TODAY_DEBUG", "✅ AI Squat aggiunto alla sessione: ItemID=${newItem.itemId}")
                 } else {
-                    Log.d("TODAY_DEBUG", "❌ Errore: newItem è null")
                     _uiState.value = TodayUiState.Error("Impossibile aggiungere AI Squat")
                 }
                 
             } catch (e: Exception) {
-                Log.d("TODAY_DEBUG", "💥 Errore in addAISquatToToday: ${e.message}")
-                e.printStackTrace()
                 _uiState.value = TodayUiState.Error("Errore aggiunta AI Squat: ${e.message}")
             }
         }
@@ -422,33 +411,19 @@ class TodayViewModel(
      * SROTOLA il workout in singoli esercizi
      */
     fun addWorkoutToToday(context: android.content.Context, workoutId: Long) {
-        android.util.Log.d("TODAY_DEBUG", "🚀 TodayViewModel.addWorkoutToToday() chiamato con workoutId: $workoutId")
-        
         viewModelScope.launch {
             try {
-                // La repository addWorkoutToTodaySession gestisce automaticamente la creazione della sessione
-                android.util.Log.d("TODAY_DEBUG", "⚡ Chiamando addWorkoutToTodaySession...")
                 val newItems = dailySessionRepository.addWorkoutToTodaySession(context, workoutId)
-                android.util.Log.d("TODAY_DEBUG", "🔄 addWorkoutToTodaySession completato, items: ${newItems.size}")
                 
                 if (newItems.isNotEmpty()) {
                     // ✅ Traccia il primo elemento del workout aggiunto per espansione automatica
                     _lastAddedItemId.value = newItems.first().itemId
-                    
-                    // Ricarica la sessione aggiornata
-                    android.util.Log.d("TODAY_DEBUG", "🔄 Ricaricando sessione...")
                     loadSessionForSelectedDate()
-                    
-                    // Log per debugging  
-                    android.util.Log.d("TODAY_DEBUG", "✅ Workout aggiunto alla sessione: ID=$workoutId, Items=${newItems.size}")
                 } else {
-                    android.util.Log.d("TODAY_DEBUG", "❌ Errore: newItems è vuota")
                     _uiState.value = TodayUiState.Error("Impossibile aggiungere workout")
                 }
                 
             } catch (e: Exception) {
-                android.util.Log.d("TODAY_DEBUG", "❌ ERRORE TodayViewModel.addWorkoutToToday: ${e.message}")
-                android.util.Log.d("TODAY_DEBUG", "❌ Stack trace: ${e.stackTraceToString()}")
                 _uiState.value = TodayUiState.Error("Errore aggiunta workout: ${e.message}")
             }
         }
@@ -460,22 +435,14 @@ class TodayViewModel(
     fun removeExerciseFromToday(itemId: Long) {
         viewModelScope.launch {
             try {
-                android.util.Log.d("TODAY_DEBUG", "🗑️ Rimozione item con ID: $itemId")
-                
                 dailySessionRepository.removeItemFromSession(itemId)
                 loadSessionForSelectedDate() // Ricarica la sessione
-                
-                // 🦵 Forza refresh del conteggio squat dopo eliminazione
-                android.util.Log.d("TODAY_DEBUG", "🔄 Forzando refresh conteggio squat dopo eliminazione")
                 
                 // Il Flow degli squat dovrebbe aggiornarsi automaticamente, ma forziamo un piccolo delay
                 // per assicurarci che la transazione del database sia completata
                 kotlinx.coroutines.delay(100)
                 
-                android.util.Log.d("TODAY_DEBUG", "✅ Item rimosso e conteggio squat aggiornato")
-                
             } catch (e: Exception) {
-                android.util.Log.d("TODAY_DEBUG", "❌ Errore rimozione item: ${e.message}")
                 _uiState.value = TodayUiState.Error("Errore rimozione: ${e.message}")
             }
         }

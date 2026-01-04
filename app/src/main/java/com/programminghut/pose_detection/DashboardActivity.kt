@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import com.programminghut.pose_detection.data.database.AppDatabase
 import com.programminghut.pose_detection.data.repository.SessionRepository
+import com.programminghut.pose_detection.data.repository.DailySessionRepository
 import com.programminghut.pose_detection.ui.dashboard.DashboardScreen
 import com.programminghut.pose_detection.ui.dashboard.DashboardViewModel
 import com.programminghut.pose_detection.ui.dashboard.DashboardViewModelFactory
@@ -30,16 +31,28 @@ class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Setup database and repository
+        android.util.Log.d("DASH_Activity", "🚀 DashboardActivity.onCreate() called")
+        
+        // Setup database and repositories
         val database = AppDatabase.getDatabase(applicationContext)
-        val repository = SessionRepository(
+        val sessionRepository = SessionRepository(
             sessionDao = database.sessionDao(),
             repDao = database.repDao()
         )
+        val dailySessionRepository = DailySessionRepository(
+            dailySessionDao = database.dailySessionDao(),
+            dailySessionRelationDao = database.dailySessionRelationDao(),
+            exerciseDao = database.exerciseDao(),
+            workoutDao = database.workoutDao()
+        )
+        
+        android.util.Log.d("DASH_Activity", "✅ Repositories created")
         
         // Initialize ViewModel
-        val factory = DashboardViewModelFactory(repository)
+        val factory = DashboardViewModelFactory(sessionRepository, dailySessionRepository)
         viewModel = ViewModelProvider(this, factory)[DashboardViewModel::class.java]
+        
+        android.util.Log.d("DASH_Activity", "✅ ViewModel created")
         
         setContent {
             MaterialTheme {

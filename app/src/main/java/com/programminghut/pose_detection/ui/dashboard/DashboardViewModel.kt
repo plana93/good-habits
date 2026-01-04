@@ -3,6 +3,7 @@ package com.programminghut.pose_detection.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.programminghut.pose_detection.data.repository.DailySessionRepository
 import com.programminghut.pose_detection.data.repository.SessionRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -15,7 +16,8 @@ import java.util.*
  * Phase 2: Dashboard Core implementation.
  */
 class DashboardViewModel(
-    private val repository: SessionRepository
+    private val repository: SessionRepository,
+    private val dailySessionRepository: DailySessionRepository
 ) : ViewModel() {
     
     // UI State
@@ -32,6 +34,23 @@ class DashboardViewModel(
     fun loadDashboardData() {
         viewModelScope.launch {
             try {
+                // Get date range for the last 90 days to ensure we capture all recent data
+                val calendar = Calendar.getInstance()
+                calendar.add(Calendar.DAY_OF_MONTH, -90)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                val rangeStart = calendar.timeInMillis
+
+                // Reset to today and set to end of day
+                calendar.timeInMillis = System.currentTimeMillis()
+                calendar.set(Calendar.HOUR_OF_DAY, 23)
+                calendar.set(Calendar.MINUTE, 59)
+                calendar.set(Calendar.SECOND, 59)
+                calendar.set(Calendar.MILLISECOND, 999)
+                val rangeEnd = calendar.timeInMillis
+
                 // Combine multiple flows
                 combine(
                     repository.getTotalSessionsCount(),
@@ -40,19 +59,26 @@ class DashboardViewModel(
                     repository.getTotalWorkoutTimeSeconds(),
                     repository.getAllSessions()
                 ) { totalSessions, totalReps, avgForm, totalTime, allSessions ->
+                    Tuple5(totalSessions, totalReps, avgForm, totalTime, allSessions)
+                }.combine(
+                    dailySessionRepository.getDailySessionSummariesInRange(rangeStart, rangeEnd)
+                ) { data, dailySummaries ->
+                    // Calculate current streak using both WorkoutSession AND DailySession data
+                    val dailySummariesMap = dailySummaries.associateBy { it.date }
+                    val currentStreak = repository.calculateStreakWithDailySessions(dailySummariesMap)
                     
                     // Calculate KPIs
                     val kpiData = KpiData(
-                        totalSessions = totalSessions,
-                        totalReps = totalReps,
-                        avgFormScore = avgForm,
-                        totalWorkoutTimeSeconds = totalTime,
-                        currentStreak = calculateStreak(allSessions),
-                        bestSession = allSessions.maxByOrNull { it.avgFormScore }
+                        totalSessions = data.a,
+                        totalReps = data.b,
+                        avgFormScore = data.c,
+                        totalWorkoutTimeSeconds = data.d,
+                        currentStreak = currentStreak,
+                        bestSession = data.e.maxByOrNull { it.avgFormScore }
                     )
                     
                     // Prepare chart data
-                    val chartData = prepareChartData(allSessions)
+                    val chartData = prepareChartData(data.e)
                     
                     DashboardUiState.Success(
                         kpiData = kpiData,
@@ -68,60 +94,8 @@ class DashboardViewModel(
         }
     }
     
-    /**
-     * Calculate current workout streak (consecutive days with workouts)
-     */
-    private fun calculateStreak(sessions: List<com.programminghut.pose_detection.data.model.WorkoutSession>): Int {
-        if (sessions.isEmpty()) return 0
-        
-        val calendar = Calendar.getInstance()
-        val today = calendar.apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-        
-        // Group sessions by date
-        val sessionsByDate = sessions
-            .groupBy { session ->
-                Calendar.getInstance().apply {
-                    timeInMillis = session.startTime
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
-            }
-            .keys
-            .sorted()
-            .reversed() // Most recent first
-        
-        if (sessionsByDate.isEmpty()) return 0
-        
-        // Check if there's a session today or yesterday
-        val yesterday = today - (24 * 60 * 60 * 1000)
-        val mostRecentDay = sessionsByDate.first()
-        
-        if (mostRecentDay != today && mostRecentDay != yesterday) {
-            return 0 // Streak broken
-        }
-        
-        // Count consecutive days
-        var streak = 0
-        var currentDay = if (mostRecentDay == today) today else yesterday
-        
-        for (day in sessionsByDate) {
-            if (day == currentDay) {
-                streak++
-                currentDay -= (24 * 60 * 60 * 1000) // Go back one day
-            } else {
-                break
-            }
-        }
-        
-        return streak
-    }
+    // Tuple class for holding 5 values
+    data class Tuple5<A, B, C, D, E>(val a: A, val b: B, val c: C, val d: D, val e: E)
     
     /**
      * Prepare data for charts
@@ -223,12 +197,13 @@ data class ChartData(
  * Factory for DashboardViewModel
  */
 class DashboardViewModelFactory(
-    private val repository: SessionRepository
+    private val repository: SessionRepository,
+    private val dailySessionRepository: DailySessionRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DashboardViewModel::class.java)) {
-            return DashboardViewModel(repository) as T
+            return DashboardViewModel(repository, dailySessionRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

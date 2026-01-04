@@ -44,6 +44,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.programminghut.pose_detection.ui.calendar.CalendarViewModel
+import com.programminghut.pose_detection.ui.calendar.CalendarUiState
 import com.programminghut.pose_detection.ui.calendar.StreakCalendarScreen
 import com.programminghut.pose_detection.ui.export.ExportViewModel
 import com.programminghut.pose_detection.ui.export.ExportScreen
@@ -467,75 +468,69 @@ fun MainContent(
         },
         floatingActionButton = {
             // ✅ FAB centrale che cambia funzione in base alla data e schermata
-            FloatingActionButton(
-                onClick = {
-                    when (currentRoute) {
-                        "today" -> {
-                            // Controlla se la data selezionata è nel passato
+            // Mostra solo nelle schermate che lo usano
+            if (currentRoute in screensWithAddFAB) {
+                FloatingActionButton(
+                    onClick = {
+                        when (currentRoute) {
+                            "today" -> {
+                                // Controlla se la data selezionata è nel passato
+                                val today = Calendar.getInstance()
+                                val selected = Calendar.getInstance().apply { timeInMillis = selectedDate }
+                                val isToday = today.get(Calendar.YEAR) == selected.get(Calendar.YEAR) &&
+                                        today.get(Calendar.DAY_OF_YEAR) == selected.get(Calendar.DAY_OF_YEAR)
+                                val isPast = selected.before(today) && !isToday
+                                
+                                if (isPast) {
+                                    // ⚠️ DEPRECATO: Per date passate: avvia procedura di recupero (meglio usare il pulsante nella TodayScreen)
+                                    val intent = Intent(context, CameraSelectionActivity::class.java).apply {
+                                        putExtra("MODE", "RECOVERY")
+                                        putExtra("RECOVERY_DATE", selectedDate)
+                                        putExtra("RECOVERY_TARGET_SQUAT", 20)
+                                    }
+                                    context.startActivity(intent)
+                                } else {
+                                    // Per data odierna o future: mostra menu aggiunta
+                                    showBottomSheet = true
+                                }
+                            }
+                            "exercises" -> {
+                                val intent = Intent(context, ExerciseLibraryActivity::class.java).apply {
+                                    putExtra("SELECTION_MODE", true)
+                                }
+                                exerciseSelectionLauncher.launch(intent)
+                            }
+                            "workouts" -> {
+                                val intent = Intent(context, WorkoutLibraryActivity::class.java).apply {
+                                    putExtra("SELECTION_MODE", true)
+                                }
+                                workoutSelectionLauncher.launch(intent)
+                            }
+                        }
+                    }
+                ) {
+                    // Cambia icona in base alla data e schermata
+                    val isSelectedDatePast = remember(selectedDate, currentRoute) {
+                        if (currentRoute == "today") {
                             val today = Calendar.getInstance()
                             val selected = Calendar.getInstance().apply { timeInMillis = selectedDate }
                             val isToday = today.get(Calendar.YEAR) == selected.get(Calendar.YEAR) &&
                                     today.get(Calendar.DAY_OF_YEAR) == selected.get(Calendar.DAY_OF_YEAR)
-                            val isPast = selected.before(today) && !isToday
-                            
-                            if (isPast) {
-                                // ⚠️ DEPRECATO: Per date passate: avvia procedura di recupero (meglio usare il pulsante nella TodayScreen)
-                                val intent = Intent(context, CameraSelectionActivity::class.java).apply {
-                                    putExtra("MODE", "RECOVERY")
-                                    putExtra("RECOVERY_DATE", selectedDate)
-                                    putExtra("RECOVERY_TARGET_SQUAT", 20)
-                                }
-                                context.startActivity(intent)
-                            } else {
-                                // Per data odierna o future: mostra menu aggiunta
-                                showBottomSheet = true
-                            }
-                        }
-                        "exercises" -> {
-                            Log.d("🚀 LAUNCHER", "FAB click 'exercises' - avviando ExerciseLibraryActivity")
-                            val intent = Intent(context, ExerciseLibraryActivity::class.java).apply {
-                                putExtra("SELECTION_MODE", true)
-                                Log.d("🚀 LAUNCHER", "FAB Intent creato con SELECTION_MODE=true")
-                            }
-                            exerciseSelectionLauncher.launch(intent)
-                            Log.d("🚀 LAUNCHER", "FAB Launcher avviato per ExerciseLibraryActivity")
-                        }
-                        "workouts" -> {
-                            val intent = Intent(context, WorkoutLibraryActivity::class.java).apply {
-                                putExtra("SELECTION_MODE", true)
-                            }
-                            workoutSelectionLauncher.launch(intent)
-                        }
-                        else -> {
-                            // Menu impostazioni per altre schermate
-                            // TODO: Implementare menu impostazioni
-                        }
+                            selected.before(today) && !isToday
+                        } else false
                     }
+                    
+                    Icon(
+                        imageVector = when {
+                            currentRoute == "today" && isSelectedDatePast -> Icons.Default.Refresh // Icona recupera
+                            else -> Icons.Default.Add
+                        },
+                        contentDescription = when {
+                            currentRoute == "today" && isSelectedDatePast -> "Recupera Giorno"
+                            else -> "Aggiungi"
+                        }
+                    )
                 }
-            ) {
-                // Cambia icona in base alla data e schermata
-                val isSelectedDatePast = remember(selectedDate, currentRoute) {
-                    if (currentRoute == "today") {
-                        val today = Calendar.getInstance()
-                        val selected = Calendar.getInstance().apply { timeInMillis = selectedDate }
-                        val isToday = today.get(Calendar.YEAR) == selected.get(Calendar.YEAR) &&
-                                today.get(Calendar.DAY_OF_YEAR) == selected.get(Calendar.DAY_OF_YEAR)
-                        selected.before(today) && !isToday
-                    } else false
-                }
-                
-                Icon(
-                    imageVector = when {
-                        currentRoute == "today" && isSelectedDatePast -> Icons.Default.Refresh // Icona recupera
-                        currentRoute in screensWithAddFAB -> Icons.Default.Add
-                        else -> Icons.Default.Settings
-                    },
-                    contentDescription = when {
-                        currentRoute == "today" && isSelectedDatePast -> "Recupera Giorno"
-                        currentRoute in screensWithAddFAB -> "Aggiungi"
-                        else -> "Impostazioni"
-                    }
-                )
             }
         },
         floatingActionButtonPosition = FabPosition.Center
@@ -629,10 +624,7 @@ fun TodayScreen(
                 timeInMillis = baseDate
                 add(Calendar.DAY_OF_YEAR, currentPageOffset) // ✅ FIXED: Use DAY_OF_YEAR instead of DAY_OF_MONTH
             }
-            Log.d("TODAY_DEBUG", "📄 Pager page changed to ${pagerState.currentPage}, offset: $currentPageOffset, setting date: ${calendar.timeInMillis}")
             todayViewModel.setSelectedDate(calendar.timeInMillis)
-        } else {
-            Log.d("TODAY_DEBUG", "📄 Pager page changed to ${pagerState.currentPage} (from calendar navigation - skipping ViewModel update)")
         }
     }
     
@@ -660,11 +652,8 @@ fun TodayScreen(
             // Calcola l'indice del pager (today = initialPage = maxPastDays)
             val targetPage = initialPage + diffInDays
             
-            Log.d("TODAY_DEBUG", "🧭 Calendar navigation - selectedDate: $selectedDate, baseDate: $baseDate, diffDays: $diffInDays, targetPage: $targetPage")
-            
             // ✅ Naviga al pager solo se è una pagina valida e diversa da quella attuale
             if (targetPage in 0 until (maxPastDays + 1) && targetPage != pagerState.currentPage) {
-                Log.d("TODAY_DEBUG", "🧭 Navigating to page $targetPage for date $selectedDate")
                 // ✅ Imposta flag per BLOCCARE la sincronizzazione pager->ViewModel
                 isNavigatingFromCalendar = true
                 
@@ -672,17 +661,12 @@ fun TodayScreen(
                 scope.launch {
                     try {
                         pagerState.animateScrollToPage(targetPage)
-                        Log.d("TODAY_DEBUG", "🧭 Calendar navigation animation completed successfully")
                     } catch (e: Exception) {
                         Log.e("TODAY_DEBUG", "🧭 Error during pager animation: ${e.message}")
                     }
                     // Il flag verrà resettato automaticamente dal timer dopo 3 secondi
                 }
-            } else {
-                Log.d("TODAY_DEBUG", "🧭 Navigation skipped - targetPage: $targetPage, currentPage: ${pagerState.currentPage}, valid range: 0 until ${maxPastDays + 1}")
             }
-        } else {
-            Log.d("TODAY_DEBUG", "🧭 selectedDate change during calendar navigation - skipping")
         }
     }
     
@@ -740,8 +724,6 @@ fun TodayScreen(
                         add(Calendar.DAY_OF_YEAR, pageOffset) // ✅ FIXED: Use DAY_OF_YEAR instead of DAY_OF_MONTH
                     }.timeInMillis
                     
-                    Log.d("TODAY_DEBUG", "🗓️ Page $page: offset=$pageOffset, pageDate=$pageDate (${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(pageDate))})")
-                    
                     // ✅ Crea contenuto con dati specifici per questa data
                     DayPageContent(
                         pageDate = pageDate,
@@ -758,14 +740,11 @@ fun TodayScreen(
             SimpleAddItemBottomSheet(
                 onDismiss = onBottomSheetDismiss,
                 onAddExercise = { 
-                    Log.d("🚀 LAUNCHER", "onAddExercise chiamato - avviando ExerciseLibraryActivity")
                     onBottomSheetDismiss()
                     val intent = Intent(context, ExerciseLibraryActivity::class.java).apply {
                         putExtra("SELECTION_MODE", true)
-                        Log.d("🚀 LAUNCHER", "Intent creato con SELECTION_MODE=true")
                     }
                     exerciseSelectionLauncher.launch(intent)
-                    Log.d("🚀 LAUNCHER", "Launcher avviato per ExerciseLibraryActivity")
                 },
                 onAddWorkout = { 
                     onBottomSheetDismiss()
@@ -1926,25 +1905,6 @@ fun DashboardScreen(
     }
     val totalSquats by totalSquatsFlow.collectAsState(initial = 0)
 
-    // Debug: show which exerciseId/name the dashboard is using
-    LaunchedEffect(squatExerciseId) {
-        android.util.Log.d("DASHBOARD_DEBUG", "Dashboard resolved Squat exerciseId: $squatExerciseId")
-        // Show a quick toast so the user can see which exerciseId the dashboard is counting
-        try {
-            val name = if (squatExerciseId != null) {
-                dailySessionRepository.getExerciseNameById(squatExerciseId!!)
-            } else null
-            val toastText = if (name != null) "Dashboard counts: $name (id=${squatExerciseId})" else "Dashboard: Squat template not resolved"
-            android.widget.Toast.makeText(context, toastText, android.widget.Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            android.util.Log.d("DASHBOARD_DEBUG", "⚠️ Toast show failed: ${e.message}")
-        }
-    }
-
-    // Debug: log whenever the total squat count updates so we can trace UI changes
-    LaunchedEffect(totalSquats) {
-        android.util.Log.d("DASHBOARD_DEBUG", "totalSquats updated: $totalSquats (exerciseId=$squatExerciseId)")
-    }
     val todaySession by todayViewModel.todaySession.collectAsState()
     
     // ViewModels per Calendar e Export
@@ -1955,6 +1915,13 @@ fun DashboardScreen(
             }
         }
     )
+    
+    // ✅ Ottieni lo streak dal CalendarViewModel
+    val calendarUiState by calendarViewModel.uiState.collectAsState()
+    val currentStreak = when (val state = calendarUiState) {
+        is CalendarUiState.Success -> state.currentStreak
+        else -> 0
+    }
     
     // ✅ Imposta la callback per il refresh del calendario al mount del componente
     LaunchedEffect(calendarViewModel) {
@@ -2053,48 +2020,35 @@ fun DashboardScreen(
             }
         }
         
-        // Seconda riga: Altre statistiche in griglia 2x2
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        // ✅ Statistiche rapide - una riga con 3 card
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item {
-                StatCard(
-                    title = "Oggi",
-                    value = "${todaySession?.items?.size ?: 0}",
-                    subtitle = "esercizi",
-                    icon = Icons.Default.Today,
-                    onClick = { navController.navigate("today") }
-                )
-            }
-            item {
-                StatCard(
-                    title = "Settimana",
-                    value = "0", // TODO: Implementare conteggio settimanale  
-                    subtitle = "sessioni",
-                    icon = Icons.Default.CalendarMonth,
-                    onClick = { showCalendarDialog = true }
-                )
-            }
-            item {
-                StatCard(
-                    title = "Streak",
-                    value = "0", // TODO: Implementare streak dal CalendarViewModel
-                    subtitle = "giorni",
-                    icon = Icons.Default.LocalFireDepartment,
-                    onClick = { showCalendarDialog = true }
-                )
-            }
-            item {
-                StatCard(
-                    title = "Total",
-                    value = "$totalSessions",
-                    subtitle = "allenamenti",
-                    icon = Icons.Default.FitnessCenter,
-                    onClick = { navController.navigate("history") }
-                )
-            }
+            StatCard(
+                title = "Oggi",
+                value = "${todaySession?.items?.size ?: 0}",
+                subtitle = "esercizi",
+                icon = Icons.Default.Today,
+                onClick = { navController.navigate("today") },
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "Streak",
+                value = "$currentStreak",
+                subtitle = "giorni",
+                icon = Icons.Default.LocalFireDepartment,
+                onClick = { showCalendarDialog = true },
+                modifier = Modifier.weight(1f)
+            )
+            StatCard(
+                title = "Calendario",
+                value = "📅",
+                subtitle = "costanza",
+                icon = Icons.Default.CalendarMonth,
+                onClick = { showCalendarDialog = true },
+                modifier = Modifier.weight(1f)
+            )
         }
         
         // ✅ Azioni rapide
@@ -2115,17 +2069,8 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { showCalendarDialog = true },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Calendario")
-                    }
-                    
-                    OutlinedButton(
                         onClick = { showExportDialog = true },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
@@ -2224,10 +2169,11 @@ fun StatCard(
     value: String,
     subtitle: String,
     icon: ImageVector,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(

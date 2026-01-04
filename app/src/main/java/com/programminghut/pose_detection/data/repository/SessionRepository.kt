@@ -467,19 +467,55 @@ class SessionRepository(
     suspend fun calculateStreakWithRecovery(): Int {
         val oneDayMillis = 24 * 60 * 60 * 1000L
         var streak = 0
-        var currentDay = getStartOfDay(System.currentTimeMillis())
+        var currentDay = getStartOfDay(System.currentTimeMillis()) - oneDayMillis
         
         // Go backwards day by day
         while (true) {
             val dayEnd = currentDay + oneDayMillis
             val hasSessions = sessionDao.hasSessionsForDay(currentDay, dayEnd)
-            val isRecovered = sessionDao.isDateAlreadyRecovered(currentDay)
+            val allSessionsForDay = sessionDao.getSessionsForDay(currentDay, dayEnd)
+            val hasRecoveryByType = allSessionsForDay.any { it.sessionType == "RECOVERY" }
             
-            if (hasSessions || isRecovered) {
+            if (hasSessions || hasRecoveryByType) {
                 streak++
-                currentDay -= oneDayMillis // Move to previous day
+                currentDay -= oneDayMillis
             } else {
-                break // Streak broken
+                break
+            }
+        }
+        
+        return streak
+    }
+    
+    /**
+     * Calculate streak using both WorkoutSession AND DailySession data
+     * This is used by CalendarViewModel which has access to both data sources
+     */
+    suspend fun calculateStreakWithDailySessions(
+        dailySummaries: Map<Long, com.programminghut.pose_detection.data.dao.DailySessionDaySummary>
+    ): Int {
+        val oneDayMillis = 24 * 60 * 60 * 1000L
+        var streak = 0
+        var currentDay = getStartOfDay(System.currentTimeMillis()) // 🔥 INIZIA DA OGGI, NON DA IERI!
+        
+        // Go backwards day by day
+        while (true) {
+            val dayEnd = currentDay + oneDayMillis
+            
+            // Check WorkoutSession
+            val hasSessions = sessionDao.hasSessionsForDay(currentDay, dayEnd)
+            val allSessionsForDay = sessionDao.getSessionsForDay(currentDay, dayEnd)
+            val hasRecoveryByType = allSessionsForDay.any { it.sessionType == "RECOVERY" }
+            
+            // Check DailySession summary
+            val hasDailySession = dailySummaries.containsKey(currentDay)
+            
+            // Count if either WorkoutSession OR DailySession has data
+            if (hasSessions || hasRecoveryByType || hasDailySession) {
+                streak++
+                currentDay -= oneDayMillis
+            } else {
+                break
             }
         }
         
