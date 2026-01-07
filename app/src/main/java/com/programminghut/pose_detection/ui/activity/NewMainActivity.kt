@@ -434,6 +434,11 @@ fun MainContent(
     val screensWithAddFAB = setOf("today", "exercises", "workouts")
     
     var showBottomSheet by remember { mutableStateOf(false) }
+    var showWellnessPickerDialog by remember { mutableStateOf(false) }
+    var showWellnessEntryDialog by remember { mutableStateOf(false) }
+    var selectedWellnessTracker by remember { mutableStateOf<com.programminghut.pose_detection.data.model.WellnessTrackerTemplate?>(null) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var wellnessItemToDelete by remember { mutableStateOf<DailySessionItemWithDetails?>(null) }
     
     Scaffold(
         bottomBar = {
@@ -544,7 +549,25 @@ fun MainContent(
                     DashboardScreen(navController, todayViewModel, onStartRecovery)
                 }
                 composable("today") { 
-                    TodayScreen(showBottomSheet, exercises, exerciseSelectionLauncher, workoutSelectionLauncher, aiSquatCameraLauncher, todayViewModel) { showBottomSheet = false }
+                    TodayScreen(
+                        showBottomSheet = showBottomSheet,
+                        exercises = exercises,
+                        exerciseSelectionLauncher = exerciseSelectionLauncher,
+                        workoutSelectionLauncher = workoutSelectionLauncher,
+                        aiSquatCameraLauncher = aiSquatCameraLauncher,
+                        todayViewModel = todayViewModel,
+                        onBottomSheetDismiss = { showBottomSheet = false },
+                        showWellnessPickerDialog = showWellnessPickerDialog,
+                        showWellnessEntryDialog = showWellnessEntryDialog,
+                        selectedWellnessTracker = selectedWellnessTracker,
+                        onShowWellnessPickerDialog = { showWellnessPickerDialog = it },
+                        onShowWellnessEntryDialog = { showWellnessEntryDialog = it },
+                        onSelectedWellnessTracker = { selectedWellnessTracker = it },
+                        showDeleteConfirmDialog = showDeleteConfirmDialog,
+                        wellnessItemToDelete = wellnessItemToDelete,
+                        onShowDeleteConfirmDialog = { showDeleteConfirmDialog = it },
+                        onWellnessItemToDelete = { wellnessItemToDelete = it }
+                    )
                 }
                 composable("exercises") { 
                     ExerciseLibraryScreen()
@@ -574,7 +597,17 @@ fun TodayScreen(
     workoutSelectionLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
     aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
     todayViewModel: TodayViewModel,
-    onBottomSheetDismiss: () -> Unit
+    onBottomSheetDismiss: () -> Unit,
+    showWellnessPickerDialog: Boolean,
+    showWellnessEntryDialog: Boolean,
+    selectedWellnessTracker: com.programminghut.pose_detection.data.model.WellnessTrackerTemplate?,
+    onShowWellnessPickerDialog: (Boolean) -> Unit,
+    onShowWellnessEntryDialog: (Boolean) -> Unit,
+    onSelectedWellnessTracker: (com.programminghut.pose_detection.data.model.WellnessTrackerTemplate?) -> Unit,
+    showDeleteConfirmDialog: Boolean,
+    wellnessItemToDelete: DailySessionItemWithDetails?,
+    onShowDeleteConfirmDialog: (Boolean) -> Unit,
+    onWellnessItemToDelete: (DailySessionItemWithDetails?) -> Unit
 ) {
     val context = LocalContext.current
     
@@ -730,7 +763,16 @@ fun TodayScreen(
                         exercises = exercises,
                         onAddClick = { /* Non usato - FAB ora è nel MainContent */ },
                         todayViewModel = todayViewModel,
-                        aiSquatCameraLauncher = aiSquatCameraLauncher
+                        aiSquatCameraLauncher = aiSquatCameraLauncher,
+                        onShowWellnessPicker = { onShowWellnessPickerDialog(true) },
+                        onShowWellnessEntry = { tracker ->
+                            onSelectedWellnessTracker(tracker)
+                            onShowWellnessEntryDialog(true)
+                        },
+                        onDeleteWellnessItem = { itemDetails ->
+                            onWellnessItemToDelete(itemDetails)
+                            onShowDeleteConfirmDialog(true)
+                        }
                     )
                 }
             }
@@ -761,6 +803,88 @@ fun TodayScreen(
                         putExtra("RECOVERY_TARGET_SQUAT", 20)
                     }
                     aiSquatCameraLauncher.launch(intent)
+                },
+                onAddWellness = {
+                    onBottomSheetDismiss()
+                    onShowWellnessPickerDialog(true)
+                }
+            )
+        }
+        
+        // ✅ Wellness Tracker Picker Dialog
+        if (showWellnessPickerDialog) {
+            val fileManager = remember { com.programminghut.pose_detection.data.manager.WellnessTrackerFileManager(context) }
+            val wellnessTrackers = remember { fileManager.getAllTrackers() }
+            val wellnessCategories = remember { fileManager.getAllCategories() }
+            
+            com.programminghut.pose_detection.ui.components.WellnessTrackerPickerDialog(
+                trackers = wellnessTrackers,
+                categories = wellnessCategories,
+                onDismiss = { onShowWellnessPickerDialog(false) },
+                onTrackerSelected = { tracker ->
+                    onSelectedWellnessTracker(tracker)
+                    onShowWellnessPickerDialog(false)
+                    onShowWellnessEntryDialog(true)
+                }
+            )
+        }
+        
+        // ✅ Wellness Tracker Entry Dialog
+        if (showWellnessEntryDialog && selectedWellnessTracker != null) {
+            com.programminghut.pose_detection.ui.components.WellnessTrackerEntryDialog(
+                tracker = selectedWellnessTracker,
+                onDismiss = {
+                    onShowWellnessEntryDialog(false)
+                    onSelectedWellnessTracker(null)
+                },
+                onSave = { trackerResponse ->
+                    // Aggiungi il wellness tracker alla sessione
+                    todayViewModel.addWellnessTrackerToToday(
+                        context = context,
+                        trackerTemplateId = selectedWellnessTracker.id,
+                        trackerResponse = trackerResponse
+                    )
+                    onShowWellnessEntryDialog(false)
+                    onSelectedWellnessTracker(null)
+                }
+            )
+        }
+        
+        // ✅ Delete Confirmation Dialog
+        if (showDeleteConfirmDialog && wellnessItemToDelete != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    onShowDeleteConfirmDialog(false)
+                    onWellnessItemToDelete(null)
+                },
+                icon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                title = { Text("Delete wellness tracker?") },
+                text = { Text("This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            wellnessItemToDelete?.let { item ->
+                                todayViewModel.removeExerciseFromToday(item.itemId)
+                            }
+                            onShowDeleteConfirmDialog(false)
+                            onWellnessItemToDelete(null)
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            onShowDeleteConfirmDialog(false)
+                            onWellnessItemToDelete(null)
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
                 }
             )
         }
@@ -892,7 +1016,10 @@ fun DayPageContent(
     exercises: List<ExerciseTemplate>, // ✅ Aggiunto parametro esercizi
     onAddClick: () -> Unit,
     todayViewModel: TodayViewModel,
-    aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
+    aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
+    onShowWellnessPicker: () -> Unit = {}, // ✅ Callback per mostrare wellness picker
+    onShowWellnessEntry: (com.programminghut.pose_detection.data.model.WellnessTrackerTemplate) -> Unit = {}, // ✅ Callback per mostrare wellness entry
+    onDeleteWellnessItem: (DailySessionItemWithDetails) -> Unit = {} // ✅ Callback per eliminare wellness item
 ) {
     // ✅ Ottieni i dati per questa specifica data
     val sessionData by todayViewModel.getSessionForDate(pageDate).collectAsState(initial = null)
@@ -941,7 +1068,10 @@ fun DayPageContent(
         isInPast = isInPast,
         pageDate = pageDate,
         todayViewModel = todayViewModel,
-        aiSquatCameraLauncher = aiSquatCameraLauncher
+        aiSquatCameraLauncher = aiSquatCameraLauncher,
+        onShowWellnessPicker = onShowWellnessPicker,
+        onShowWellnessEntry = onShowWellnessEntry,
+        onDeleteWellnessItem = onDeleteWellnessItem
     )
 }
 
@@ -954,7 +1084,10 @@ fun DaySessionContent(
     isInPast: Boolean,
     pageDate: Long,
     todayViewModel: TodayViewModel,
-    aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>
+    aiSquatCameraLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
+    onShowWellnessPicker: () -> Unit = {}, // ✅ Callback per mostrare wellness picker
+    onShowWellnessEntry: (com.programminghut.pose_detection.data.model.WellnessTrackerTemplate) -> Unit = {}, // ✅ Callback per mostrare wellness entry
+    onDeleteWellnessItem: (DailySessionItemWithDetails) -> Unit = {} // ✅ Callback per eliminare wellness item
 ) {
     // ✅ Determina se questo è un giorno passato vuoto per il background rosso
     val isEmpty = sessionData?.items?.isEmpty() ?: true
@@ -1030,6 +1163,16 @@ fun DaySessionContent(
             )
     ) {
         sessionData?.let { sessionWithItems ->
+            // ✅ Check if there are items that count as physical activity (exercises/workouts, not just wellness trackers)
+            val hasActivityItems = sessionWithItems.items.any { item ->
+                item.countsAsActivity
+            }
+            
+            // ✅ Filtra i wellness trackers separatamente per usarli nella UI
+            val wellnessTrackers = remember(sessionWithItems.items) {
+                sessionWithItems.items.filter { it.itemType == SessionItemType.WELLNESS_TRACKER }
+            }
+            
             // ✅ Raggruppa elementi per gerarchia: Workout -> Esercizi
             val groupedItems = remember(sessionWithItems.items) {
                 // ✅ Debug log per vedere tutti gli item
@@ -1044,10 +1187,13 @@ fun DaySessionContent(
                     it.itemType == SessionItemType.EXERCISE && it.parentWorkoutItemId == null 
                     // ✅ Includi tutti gli esercizi (normali e AI squats)
                 }
+                val wellnessTrackers = sessionWithItems.items.filter { it.itemType == SessionItemType.WELLNESS_TRACKER }
                 
                 // ✅ Debug log per vedere il filtro
                 Log.d("TODAY_DEBUG", "📊 Filtered results:")
                 Log.d("TODAY_DEBUG", "  - Workouts: ${workouts.size}")
+                Log.d("TODAY_DEBUG", "  - Standalone exercises: ${standaloneExercises.size}")
+                Log.d("TODAY_DEBUG", "  - Wellness trackers: ${wellnessTrackers.size}")
                 Log.d("TODAY_DEBUG", "  - Standalone exercises: ${standaloneExercises.size}")
                 standaloneExercises.forEachIndexed { index, item ->
                     Log.d("TODAY_DEBUG", "    $index: ${item.itemId} (exerciseId=${item.exerciseId}, aiData=${item.aiData})")
@@ -1114,8 +1260,9 @@ fun DaySessionContent(
 
                 com.programminghut.pose_detection.util.todayDebug("📝 Checking hasRecoveryItems for date $pageDate: $hasRecoveryItems")
                 com.programminghut.pose_detection.util.todayDebug("📋 Items in session: ${sessionWithItems.items.size}")
+                com.programminghut.pose_detection.util.todayDebug("💪 Has activity items: $hasActivityItems")
                 sessionWithItems.items.forEach { item ->
-                    com.programminghut.pose_detection.util.todayDebug("   📌 Item: exerciseId=${item.exerciseId}, aiData=${item.aiData}")
+                    com.programminghut.pose_detection.util.todayDebug("   📌 Item: exerciseId=${item.exerciseId}, aiData=${item.aiData}, countsAsActivity=${item.countsAsActivity}")
                 }
 
                 // Avoid transient UI when isRecovered state from produceState lags behind session emission.
@@ -1208,6 +1355,51 @@ fun DaySessionContent(
                                 }
                             }
                         }
+                        
+                        // ✅ Wellness Tracker Section (read-only for recovered days)
+                        item {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            val wellnessItemsWithDetails = remember(sessionWithItems) {
+                                wellnessTrackers.map { wellnessItem ->
+                                    DailySessionItemWithDetails(
+                                        itemId = wellnessItem.itemId,
+                                        sessionId = wellnessItem.sessionId,
+                                        exerciseId = null,
+                                        workoutId = null,
+                                        type = SessionItemType.WELLNESS_TRACKER.name,
+                                        order = wellnessItem.order,
+                                        targetReps = null,
+                                        targetTime = null,
+                                        actualReps = null,
+                                        actualTime = null,
+                                        isCompleted = wellnessItem.isCompleted,
+                                        completedAt = wellnessItem.completedAt,
+                                        notes = wellnessItem.notes ?: "",
+                                        aiData = null,
+                                        countsAsActivity = wellnessItem.countsAsActivity,
+                                        trackerTemplateId = wellnessItem.trackerTemplateId,
+                                        trackerResponseJson = wellnessItem.trackerResponseJson,
+                                        name = "",
+                                        description = null,
+                                        parentWorkoutItemId = null,
+                                        exerciseName = null,
+                                        exerciseDescription = null,
+                                        exerciseImagePath = null,
+                                        exerciseType = null,
+                                        exerciseMode = null,
+                                        workoutName = null,
+                                        workoutDescription = null,
+                                        workoutImagePath = null
+                                    )
+                                }
+                            }
+                            com.programminghut.pose_detection.ui.components.WellnessSection(
+                                wellnessItems = wellnessItemsWithDetails,
+                                onAddWellnessClick = { },
+                                onItemClick = { },
+                                onItemDelete = { }
+                            )
+                        }
                     }
                 } else {
                     // ✅ Mostra la lista normale degli esercizi
@@ -1219,11 +1411,12 @@ fun DaySessionContent(
                         item {
                             if (isInPast && !isRecovered) {
                                 // Show a positive EmptyHistoryCard for completed past days
+                                // ✅ Only mark as completed if there are actual activity items (not just wellness trackers)
                                 EmptyHistoryCard(
                                     isInPast = true,
                                     pageDate = pageDate,
                                     isRecovered = false,
-                                    isCompleted = true,
+                                    isCompleted = hasActivityItems,  // ✅ TRUE only if has exercises/workouts
                                     aiSquatCameraLauncher = aiSquatCameraLauncher
                                 )
                             } else {
@@ -1272,6 +1465,70 @@ fun DaySessionContent(
                                     )
                                 }
                             }
+                        }
+                        
+                        // ✅ Wellness Tracker Section
+                        item {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            val wellnessItemsWithDetails = remember(sessionWithItems) {
+                                wellnessTrackers.map { wellnessItem ->
+                                    DailySessionItemWithDetails(
+                                        itemId = wellnessItem.itemId,
+                                        sessionId = wellnessItem.sessionId,
+                                        exerciseId = null,
+                                        workoutId = null,
+                                        type = SessionItemType.WELLNESS_TRACKER.name,
+                                        order = wellnessItem.order,
+                                        targetReps = null,
+                                        targetTime = null,
+                                        actualReps = null,
+                                        actualTime = null,
+                                        isCompleted = wellnessItem.isCompleted,
+                                        completedAt = wellnessItem.completedAt,
+                                        notes = wellnessItem.notes ?: "",
+                                        aiData = null,
+                                        countsAsActivity = wellnessItem.countsAsActivity,
+                                        trackerTemplateId = wellnessItem.trackerTemplateId,
+                                        trackerResponseJson = wellnessItem.trackerResponseJson,
+                                        name = "",
+                                        description = null,
+                                        parentWorkoutItemId = null,
+                                        exerciseName = null,
+                                        exerciseDescription = null,
+                                        exerciseImagePath = null,
+                                        exerciseType = null,
+                                        exerciseMode = null,
+                                        workoutName = null,
+                                        workoutDescription = null,
+                                        workoutImagePath = null
+                                    )
+                                }
+                            }
+                            com.programminghut.pose_detection.ui.components.WellnessSection(
+                                wellnessItems = wellnessItemsWithDetails,
+                                onAddWellnessClick = {
+                                    if (canAddExercises) {
+                                        onShowWellnessPicker()
+                                    }
+                                },
+                                onItemClick = { itemDetails ->
+                                    if (canAddExercises) {
+                                        // Carica il template e mostra il dialog di modifica
+                                        val fileManager = com.programminghut.pose_detection.data.manager.WellnessTrackerFileManager(context)
+                                        itemDetails.trackerTemplateId?.let { templateId ->
+                                            val tracker = fileManager.getTrackerById(templateId)
+                                            if (tracker != null) {
+                                                onShowWellnessEntry(tracker)
+                                            }
+                                        }
+                                    }
+                                },
+                                onItemDelete = { itemDetails ->
+                                    if (canAddExercises) {
+                                        onDeleteWellnessItem(itemDetails)
+                                    }
+                                }
+                            )
                         }
                         
                     }
@@ -1692,7 +1949,8 @@ fun SimpleAddItemBottomSheet(
     onDismiss: () -> Unit,
     onAddExercise: () -> Unit,
     onAddWorkout: () -> Unit,
-    onAddAISquat: () -> Unit = { } // ✅ Nuovo callback per AI Squat
+    onAddAISquat: () -> Unit = { }, // ✅ Nuovo callback per AI Squat
+    onAddWellness: () -> Unit = { } // ✅ Nuovo callback per Wellness Tracker
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss
@@ -1770,6 +2028,19 @@ fun SimpleAddItemBottomSheet(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Aggiungi Allenamento")
+            }
+            
+            Button(
+                onClick = onAddWellness,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Aggiungi Wellness Tracker")
             }
             
             Spacer(modifier = Modifier.height(16.dp))

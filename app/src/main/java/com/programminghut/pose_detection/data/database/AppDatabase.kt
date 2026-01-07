@@ -34,6 +34,10 @@ import com.programminghut.pose_detection.data.model.WorkoutSession
  * Version 4: Phase 6 - Added exerciseName field to WorkoutSession
  * Version 5: Semplificazione - Rimossi keypoints/rules da Exercise, aggiunte Workout entities
  * Version 6: Modularità - Aggiunte DailySession entities per sessioni giornaliere flessibili
+ * Version 7: Ottimizzazioni varie
+ * Version 8: Aggiunto countsAsActivity flag per filtrare item di tracking
+ * Version 9: Aggiunto supporto WellnessTracker (trackerTemplateId, trackerResponseJson)
+ * Version 10: Fix countsAsActivity per wellness tracker esistenti
  */
 @Database(
     entities = [
@@ -45,7 +49,7 @@ import com.programminghut.pose_detection.data.model.WorkoutSession
         DailySession::class,    // Nuova: sessioni giornaliere
         DailySessionItem::class // Nuova: elementi nelle sessioni
     ],
-    version = 7,
+    version = 10,
     exportSchema = true
 )
 @TypeConverters(ExerciseTypeConverters::class)
@@ -108,7 +112,14 @@ abstract class AppDatabase : RoomDatabase() {
                     DATABASE_NAME
                 )
                     // Add migrations
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)  // Phase 6: Add migration 3->4
+                    .addMigrations(
+                        MIGRATION_1_2, 
+                        MIGRATION_2_3, 
+                        MIGRATION_3_4,
+                        MIGRATION_7_8,  // ✅ Migrazione per countsAsActivity
+                        MIGRATION_8_9,  // ✅ Migrazione per WellnessTracker
+                        MIGRATION_9_10  // ✅ Fix countsAsActivity per wellness tracker esistenti
+                    )
                     
                     // For development only - destroys and rebuilds database on version changes
                     // Remove this in production and use proper migrations
@@ -212,6 +223,75 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL(
                     "UPDATE workout_sessions SET exerciseName = exerciseType WHERE exerciseName = ''"
                 )
+            }
+        }
+        
+        /**
+         * Migration from version 7 to 8
+         * Adds countsAsActivity flag to DailySessionItem table
+         * 
+         * This flag allows filtering items that should be counted as physical activity
+         * for streak calculation and statistics, vs other types of items (notes, reminders, etc)
+         */
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add countsAsActivity column with default value TRUE for backward compatibility
+                // All existing items will be counted as activities
+                database.execSQL(
+                    "ALTER TABLE daily_session_items ADD COLUMN countsAsActivity INTEGER NOT NULL DEFAULT 1"
+                )
+            }
+        }
+        
+        /**
+         * Migration from version 8 to 9
+         * Adds Wellness Tracker support to DailySessionItem table
+         * 
+         * New fields:
+         * - trackerTemplateId: ID of the wellness tracker template (from JSON)
+         * - trackerResponseJson: JSON string containing TrackerResponse data
+         * 
+         * These fields enable mood/wellness tracking separately from physical activities.
+         * Items with itemType=WELLNESS_TRACKER have countsAsActivity=false by default.
+         */
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add trackerTemplateId column (nullable, only for WELLNESS_TRACKER items)
+                database.execSQL(
+                    "ALTER TABLE daily_session_items ADD COLUMN trackerTemplateId INTEGER"
+                )
+                
+                // Add trackerResponseJson column (nullable, stores JSON response data)
+                database.execSQL(
+                    "ALTER TABLE daily_session_items ADD COLUMN trackerResponseJson TEXT"
+                )
+            }
+        }
+        
+        /**
+         * Migration from version 9 to 10
+         * Fix countsAsActivity for existing wellness tracker items
+         * 
+         * Problem: Wellness trackers created before this fix had countsAsActivity=true (default)
+         * Solution: Set countsAsActivity=false for all WELLNESS_TRACKER items
+         * 
+         * This ensures that:
+         * - Only exercises and workouts count for streak calculation
+         * - Wellness tracking is separate from physical activity tracking
+         * - Calendar and dashboard show correct "completed" days
+         */
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Update all wellness tracker items to NOT count as activity
+                database.execSQL(
+                    """
+                    UPDATE daily_session_items 
+                    SET countsAsActivity = 0 
+                    WHERE itemType = 'WELLNESS_TRACKER'
+                    """.trimIndent()
+                )
+                
+                android.util.Log.d("DB_MIGRATION", "✅ Migration 9→10: Updated wellness trackers to countsAsActivity=false")
             }
         }
     }

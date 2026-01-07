@@ -67,21 +67,29 @@ interface DailySessionDao {
     /**
      * Ottieni le date (startOfDay equivalenti) delle sessioni che hanno items in un range
      */
+    /**
+     * ✅ Ottieni le date con items - SOLO item che contano come attività
+     */
     @Query("""
         SELECT DISTINCT date FROM daily_sessions s
         JOIN daily_session_items i ON s.sessionId = i.sessionId
         WHERE s.date >= :startOfDay AND s.date <= :endOfDay
+        AND i.countsAsActivity = 1
     """)
     suspend fun getSessionDatesWithItemsInRange(startOfDay: Long, endOfDay: Long): List<Long>
 
+    /**
+     * ✅ Ottieni riepiloghi giornalieri - CONTA SOLO item con countsAsActivity = true
+     * Questo assicura che la streak e le statistiche considerino solo attività fisiche reali
+     */
     @Query("""
         SELECT s.date as date,
-               COUNT(i.itemId) as itemCount,
-               SUM(CASE WHEN i.isCompleted = 1 THEN 1 ELSE 0 END) as completedCount,
+               COUNT(CASE WHEN i.countsAsActivity = 1 THEN i.itemId END) as itemCount,
+               SUM(CASE WHEN i.isCompleted = 1 AND i.countsAsActivity = 1 THEN 1 ELSE 0 END) as completedCount,
                COALESCE(SUM(
                    CASE
-                       WHEN i.actualReps IS NOT NULL THEN i.actualReps
-                       WHEN i.customReps IS NOT NULL THEN i.customReps
+                       WHEN i.countsAsActivity = 1 AND i.actualReps IS NOT NULL THEN i.actualReps
+                       WHEN i.countsAsActivity = 1 AND i.customReps IS NOT NULL THEN i.customReps
                        ELSE 0
                    END
                ), 0) as totalReps
@@ -89,6 +97,7 @@ interface DailySessionDao {
         LEFT JOIN daily_session_items i ON s.sessionId = i.sessionId
         WHERE s.date >= :startOfDay AND s.date <= :endOfDay
         GROUP BY s.date
+        HAVING COUNT(CASE WHEN i.countsAsActivity = 1 THEN i.itemId END) > 0
     """)
     fun getDailySessionSummariesInRange(startOfDay: Long, endOfDay: Long): kotlinx.coroutines.flow.Flow<List<DailySessionDaySummary>>
 

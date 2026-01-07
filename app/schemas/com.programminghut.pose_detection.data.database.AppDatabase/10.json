@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 8,
-    "identityHash": "a372a31d5b11c3108927bdd578b661a4",
+    "version": 10,
+    "identityHash": "6cf8b5a6df106007e9bdd9afa1002373",
     "entities": [
       {
         "tableName": "workout_sessions",
@@ -510,7 +510,7 @@
       },
       {
         "tableName": "daily_session_items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`itemId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sessionId` INTEGER NOT NULL, `order` INTEGER NOT NULL, `itemType` TEXT NOT NULL, `exerciseId` INTEGER, `workoutId` INTEGER, `customReps` INTEGER, `customTime` INTEGER, `customSets` INTEGER, `customRest` INTEGER, `isCompleted` INTEGER NOT NULL, `actualReps` INTEGER, `actualTime` INTEGER, `completedAt` INTEGER, `notes` TEXT NOT NULL, `parentWorkoutItemId` INTEGER, `aiData` TEXT, `countsAsActivity` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`itemId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sessionId` INTEGER NOT NULL, `order` INTEGER NOT NULL, `itemType` TEXT NOT NULL, `exerciseId` INTEGER, `workoutId` INTEGER, `trackerTemplateId` INTEGER, `trackerResponseJson` TEXT, `customReps` INTEGER, `customTime` INTEGER, `customSets` INTEGER, `customRest` INTEGER, `isCompleted` INTEGER NOT NULL, `actualReps` INTEGER, `actualTime` INTEGER, `completedAt` INTEGER, `notes` TEXT NOT NULL, `parentWorkoutItemId` INTEGER, `aiData` TEXT, `countsAsActivity` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "itemId",
@@ -546,6 +546,18 @@
             "fieldPath": "workoutId",
             "columnName": "workoutId",
             "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "trackerTemplateId",
+            "columnName": "trackerTemplateId",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "trackerResponseJson",
+            "columnName": "trackerResponseJson",
+            "affinity": "TEXT",
             "notNull": false
           },
           {
@@ -634,7 +646,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a372a31d5b11c3108927bdd578b661a4')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6cf8b5a6df106007e9bdd9afa1002373')"
     ]
   }
 }

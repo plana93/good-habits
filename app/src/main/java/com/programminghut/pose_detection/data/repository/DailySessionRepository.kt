@@ -1155,5 +1155,89 @@ class DailySessionRepository(
         return 0  // Placeholder
     }
 
+    // ============================================================================
+    // WELLNESS TRACKER MANAGEMENT
+    // ============================================================================
+    
+    /**
+     * Aggiunge un wellness tracker alla sessione giornaliera
+     */
+    @Transaction
+    suspend fun addWellnessTrackerToTodaySession(
+        context: Context,
+        trackerTemplateId: Int,
+        trackerResponse: TrackerResponse
+    ): DailySessionItem? {
+        try {
+            val session = getTodaySession()
+            todayDebug("🧘 Adding wellness tracker to session ${session.sessionId}")
+            
+            // Trova prossimo ordine
+            val currentItems = dailySessionDao.getSessionItems(session.sessionId)
+            val nextOrder = (currentItems.maxOfOrNull { it.order } ?: -1) + 1
+            
+            // Crea l'item con il trackerResponse serializzato
+            val gson = com.google.gson.Gson()
+            val item = DailySessionItem(
+                sessionId = session.sessionId,
+                order = nextOrder,
+                itemType = SessionItemType.WELLNESS_TRACKER,
+                exerciseId = null,
+                workoutId = null,
+                trackerTemplateId = trackerTemplateId,
+                trackerResponseJson = gson.toJson(trackerResponse),
+                countsAsActivity = false  // ✅ Wellness tracker NON conta come attività fisica
+            )
+            
+            val itemId = dailySessionDao.insertSessionItem(item)
+            todayDebug("✅ Wellness tracker added with itemId: $itemId, countsAsActivity: ${item.countsAsActivity}")
+            
+            // Notifica gli observer
+            sessionUpdates.tryEmit(Unit)
+            
+            return item.copy(itemId = itemId)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("TODAY_DEBUG", "💥 Error adding wellness tracker: ${e.message}", e)
+            return null
+        }
+    }
+    
+    /**
+     * Completa o aggiorna un wellness tracker esistente
+     */
+    @Transaction
+    suspend fun completeWellnessTracker(
+        itemId: Long,
+        trackerResponse: TrackerResponse
+    ) {
+        try {
+            val item = dailySessionDao.getSessionItemById(itemId)
+            if (item == null) {
+                todayDebug("❌ Item not found: $itemId")
+                return
+            }
+            
+            if (item.itemType != SessionItemType.WELLNESS_TRACKER) {
+                todayDebug("❌ Item is not a wellness tracker: $itemId")
+                return
+            }
+            
+            val gson = com.google.gson.Gson()
+            val updatedItem = item.copy(
+                trackerResponseJson = gson.toJson(trackerResponse)
+            )
+            
+            dailySessionDao.updateSessionItem(updatedItem)
+            todayDebug("✅ Wellness tracker updated: $itemId")
+            
+            // Notifica gli observer
+            sessionUpdates.tryEmit(Unit)
+            
+        } catch (e: Exception) {
+            android.util.Log.e("TODAY_DEBUG", "💥 Error completing wellness tracker: ${e.message}", e)
+        }
+    }
+
 // End of DailySessionRepository
 }

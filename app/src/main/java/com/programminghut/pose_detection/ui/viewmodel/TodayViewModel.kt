@@ -663,7 +663,64 @@ class TodayViewModel(
         return targetDate.before(now)
     }
     
+    // ========================================
+    // WELLNESS TRACKER FUNCTIONS
+    // ========================================
+    
+    /**
+     * Aggiunge un wellness tracker alla sessione corrente
+     */
+    fun addWellnessTrackerToToday(
+        context: android.content.Context,
+        trackerTemplateId: Int,
+        trackerResponse: com.programminghut.pose_detection.data.model.TrackerResponse
+    ) {
+        viewModelScope.launch {
+            try {
+                todayDebug("🧘 Adding wellness tracker: $trackerTemplateId")
+                
+                val newItem = dailySessionRepository.addWellnessTrackerToTodaySession(
+                    context = context,
+                    trackerTemplateId = trackerTemplateId,
+                    trackerResponse = trackerResponse
+                )
+                
+                if (newItem != null) {
+                    todayDebug("✅ Wellness tracker added successfully: ${newItem.itemId}")
+                    _lastAddedItemId.value = newItem.itemId
+                    loadSessionForSelectedDate()
+                } else {
+                    todayDebug("❌ Failed to add wellness tracker")
+                    _uiState.value = TodayUiState.Error("Failed to add wellness tracker")
+                }
+                
+            } catch (e: Exception) {
+                Log.e("TODAY_DEBUG", "💥 Error adding wellness tracker: ${e.message}", e)
+                _uiState.value = TodayUiState.Error("Error: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Completa o aggiorna un wellness tracker esistente
+     */
+    fun completeWellnessTracker(
+        itemId: Long,
+        trackerResponse: com.programminghut.pose_detection.data.model.TrackerResponse
+    ) {
+        viewModelScope.launch {
+            try {
+                dailySessionRepository.completeWellnessTracker(itemId, trackerResponse)
+                loadSessionForSelectedDate()
+            } catch (e: Exception) {
+                Log.e("TODAY_DEBUG", "💥 Error completing wellness tracker: ${e.message}", e)
+                _uiState.value = TodayUiState.Error("Error: ${e.message}")
+            }
+        }
+    }
+    
 }
+
 
 /**
  * Stati della UI per Today

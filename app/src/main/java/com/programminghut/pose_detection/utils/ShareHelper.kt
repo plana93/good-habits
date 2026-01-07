@@ -341,4 +341,64 @@ object ShareHelper {
                 "Ottimo inizio! Ogni sessione ti avvicina ai tuoi obiettivi."
         }
     }
+    
+    /**
+     * Generate CSV export for Wellness Tracker data
+     * 
+     * Exports wellness/mood tracking data with timestamps for external analysis.
+     * Each row represents a single tracker entry with its response and metadata.
+     * 
+     * IMPORTANT: Includes both entry date (when added) and reference date (what day it refers to)
+     * This allows tracking emotions/events retroactively while maintaining data integrity.
+     * 
+     * @param trackerEntries List of DailySessionItemWithDetails filtered for WELLNESS_TRACKER type
+     * @return CSV formatted string with wellness tracker data
+     */
+    fun generateWellnessTrackerCSV(
+        trackerEntries: List<com.programminghut.pose_detection.data.model.DailySessionItemWithDetails>
+    ): String {
+        val header = "Entry Date,Entry Time,Reference Date,Days Ago,Tracker ID,Tracker Name,Response Type,Value,Rating (0-5),Boolean,Emotion,Notes\n"
+        
+        val rows = trackerEntries.mapNotNull { entry ->
+            // Parse the TrackerResponse JSON
+            val response = entry.trackerResponseJson?.let { json ->
+                com.programminghut.pose_detection.data.model.TrackerResponse.fromJson(json)
+            } ?: return@mapNotNull null
+            
+            // Entry timestamp (when user added this)
+            val entryTimestamp = entry.completedAt ?: System.currentTimeMillis()
+            val entryDate = formatDate(entryTimestamp)
+            val entryTime = formatTime(entryTimestamp)
+            
+            // Reference date (what day this refers to)
+            val referenceDate = formatDate(response.referenceDate)
+            val daysAgo = response.getDaysAgo()
+            
+            val trackerId = entry.trackerTemplateId ?: 0
+            val trackerName = entry.name
+            val responseType = response.responseType.name
+            
+            // Extract the actual value based on response type
+            val ratingValue = response.ratingValue?.toString() ?: ""
+            val booleanValue = response.booleanValue?.toString() ?: ""
+            val emotionValue = response.selectedEmotion ?: ""
+            val notesValue = (response.textNote ?: "").replace(",", ";").replace("\n", " ")
+            
+            // Determine main value for "Value" column
+            val mainValue = when (response.responseType) {
+                com.programminghut.pose_detection.data.model.TrackerResponseType.RATING_5 -> 
+                    response.ratingValue?.toString() ?: ""
+                com.programminghut.pose_detection.data.model.TrackerResponseType.BOOLEAN -> 
+                    response.booleanValue?.toString() ?: ""
+                com.programminghut.pose_detection.data.model.TrackerResponseType.EMOTION_SET -> 
+                    response.selectedEmotion ?: ""
+                com.programminghut.pose_detection.data.model.TrackerResponseType.TEXT_NOTE -> 
+                    notesValue.take(50) // Truncate for preview
+            }
+            
+            "$entryDate,$entryTime,$referenceDate,$daysAgo,$trackerId,\"$trackerName\",$responseType,\"$mainValue\",$ratingValue,$booleanValue,\"$emotionValue\",\"$notesValue\""
+        }
+        
+        return header + rows.joinToString("\n")
+    }
 }

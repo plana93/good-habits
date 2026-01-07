@@ -43,9 +43,11 @@ data class DailySessionItem(
     val order: Int,                      // Ordine di esecuzione nella sessione
     
     // Tipo di elemento
-    val itemType: SessionItemType,       // EXERCISE o WORKOUT
+    val itemType: SessionItemType,       // EXERCISE, WORKOUT, o WELLNESS_TRACKER
     val exerciseId: Long? = null,        // FK verso Exercise (se EXERCISE)
     val workoutId: Long? = null,         // FK verso Workout (se WORKOUT)
+    val trackerTemplateId: Int? = null,  // ID del template tracker (se WELLNESS_TRACKER)
+    val trackerResponseJson: String? = null, // JSON TrackerResponse (se WELLNESS_TRACKER)
     
     // Parametri temporanei per questa sessione (sovrascrivono i default)
     val customReps: Int? = null,         // Ripetizioni custom per questa sessione
@@ -66,15 +68,28 @@ data class DailySessionItem(
     val parentWorkoutItemId: Long? = null, // FK verso l'elemento workout parent (se applicabile)
     
     // Dati AI (solo per esercizi automatici come squat)
-    val aiData: String? = null           // JSON con dati pose detection se applicabile
+    val aiData: String? = null,          // JSON con dati pose detection se applicabile
+    
+    /**
+     * ✅ Flag per tracking attività fisica
+     * Indica se questo item deve essere contato come attività fisica (esercizio/allenamento)
+     * per streak, calendario e statistiche.
+     * 
+     * - true: Esercizio o allenamento (conta per streak)
+     * - false: Altro tipo di elemento (note, promemoria, ecc - NON conta per streak)
+     * 
+     * Default: true per compatibilità con dati esistenti
+     */
+    val countsAsActivity: Boolean = true
 )
 
 /**
  * Tipo di elemento nella sessione giornaliera
  */
 enum class SessionItemType {
-    EXERCISE,   // Singolo esercizio
-    WORKOUT     // Circuito completo
+    EXERCISE,           // Singolo esercizio
+    WORKOUT,            // Circuito completo
+    WELLNESS_TRACKER    // Wellness/mood tracker (non conta come attività fisica)
 }
 
 /**
@@ -108,7 +123,10 @@ data class DailySessionItemWithDetails(
     val isCompleted: Boolean,
     val completedAt: Long?,
     val notes: String,
-    val aiData: String?,  // ✅ Aggiungo campo AI data
+    val aiData: String?,  // Campo AI data
+    val countsAsActivity: Boolean,  // Flag per tracking attività
+    val trackerTemplateId: Int?,  // ✅ ID template wellness tracker
+    val trackerResponseJson: String?,  // ✅ JSON response wellness tracker
     val name: String,
     val description: String?,
     val parentWorkoutItemId: Long?,
