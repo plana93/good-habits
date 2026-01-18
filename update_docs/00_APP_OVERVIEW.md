@@ -10,36 +10,52 @@
 
 ## 📱 App Description
 
-**Good Habits** è un'applicazione moderna per il fitness che combina intelligenza artificiale, pose detection e gestione completa degli allenamenti. L'app offre un'esperienza completamente personalizzabile per tracciare progressi, gestire sessioni di allenamento e mantenere costanza negli esercizi.
+**Good Habits** è un'applicazione moderna per il fitness e benessere che combina intelligenza artificiale, pose detection e gestione completa degli allenamenti. L'app offre un'esperienza completamente personalizzabile per tracciare progressi fisici, gestire sessioni di allenamento, monitorare il proprio stato emotivo e mantenere costanza nelle abitudini positive.
 
 ### 🎯 Caratteristiche Principali
 
 #### 🤖 AI-Powered Squat Detection
 - **MoveNet TensorFlow Lite**: Riconoscimento posture in tempo reale
-- **Conteggio automatico**: Squat detection con feedback visivo
+- **Conteggio automatico**: Squat AI detection con feedback visivo
+- **Conteggio manuale**: eserici posso essere tracciati inserendo manualmente le ripetizioni o i secondi di tenuta
 - **Camera front/back**: Supporto entrambe le fotocamere
-- **Calibrazione automatica**: Auto-adattamento alla postura dell'utente
+- **Calibrazione automatica**: Auto-adattamento alla postura dell'utente (SquatAI)
 
 #### 📅 Sistema Sessioni Modulari
 - **Sessioni giornaliere**: Organizzazione automatica per data
 - **Multi-esercizi**: Supporto esercizi personalizzati e AI squat
-- **Multi-allenamenti**: Template di workout completi
+- **Multi-allenamenti**: Template di workout completi (più esercizi raggruppati)
 - **Navigazione temporale**: Scroll orizzontale tra giorni passati/presente
 
 #### 📊 Dashboard & Analytics
-- **Dashboard moderna**: Overview statistiche con Material3 design
-- **Calendario integrato**: Visualizzazione streak e giorni mancati
+- **Dashboard moderna**: Overview statistiche
+- **Calendario integrato**: Visualizzazione streak di continuità e giorni mancati
 - **Export CSV**: Dati completi per analisi esterne
-- **Statistiche real-time**: Conteggi aggiornati istantaneamente
+- **Statistiche real-time**: Conteggi aggiornati istantaneamente, ogni volta che aggiungo un esercizio o un allamento si deve adattare il calendario con la streak e il conteggio dei squat totati che deve essere l'esercizio core. 
 
 #### 💡 Motivazione & Gamification
-- **Frasi motivazionali**: 30+ quote per giorni vuoti
-- **Streak tracking**: Conteggio giorni consecutivi
+- **Frasi motivazionali**: 30+ quote per giorni vuoti 
+- **Streak tracking**: Conteggio giorni consecutivi (per gli esercizi o allenamentei)
 - **Recovery system**: Sistema recupero sessioni mancate tramite 20 AI squat
 - **Recovery execution**: Eseguito nel giorno corrente, segna giorno passato come recuperato
 - **Streak contribution**: Recovery contribuisce alla streak e ai totali squat
 - **Calendar integration**: Toccare giorni mancati avvia direttamente procedura recovery
 - **Visual feedback**: Codifica colori per stato giorni (normale/mancato/recuperato)
+
+#### 🧘 Wellness Tracking System
+- **18 Tracker predefiniti**: Mood, energia, sonno, stress, relazioni, gratitudine e altro
+- **Sezione separata**: Dedicata al benessere mentale/emotivo (non fisica)
+- **Flessibilità giornaliera**: Possibilità di tracciare più volte al giorno
+- **Multiple response types**: 
+  - Rating 0-5 con emoticon e label descrittive
+  - Boolean (Sì/No)
+  - Emotion Sets (selezione emozioni specifiche)
+  - Note testuali libere
+- **Template JSON**: 18 tracker in inglese modificabili senza rebuild app
+- **Export dedicato**: CSV separato per analisi dati benessere
+- **Privacy-first**: Note opzionali, nessun obbligo, nessuna pressione
+- **Non impatta calendario**: `countsAsActivity = false` - separazione netta da attività fisica
+- **No streak pressure**: Benessere mentale senza gamification forzata
 
 ---
 
@@ -56,6 +72,7 @@
    - Gestione sessione giornaliera
    - HorizontalPager per navigazione giorni
    - Add esercizi/workout (solo per oggi)
+   - Sezione Wellness separata per tracking emotivo/mentale
 
 3. **Exercises & Workouts**
    - Librerie template esercizi e workout
@@ -75,6 +92,8 @@
 - **AI**: TensorFlow Lite + MoveNet pose detection
 - **Architecture**: MVVM + Repository pattern
 - **Async**: Kotlin Coroutines + StateFlow/Flow
+- **Data Management**: JSON templates per wellness trackers
+- **Export**: CSV generation per analytics esterni
 
 ---
 
@@ -98,6 +117,18 @@
 - ✅ Calendar-recovery integration (tap giorni mancati)
 - ✅ Calendar-dashboard integration
 - ✅ Multi-camera support (front/back)
+
+### Wellness Tracking Features (Backend Complete 100% | UI Pending)
+- ✅ Database schema v9 con supporto wellness trackers
+- ✅ 18 tracker predefiniti in JSON (mood, energia, stress, relazioni, etc.)
+- ✅ WellnessTrackerFileManager per gestione templates
+- ✅ Multiple response types (Rating 0-5, Boolean, Emotion Set, Text Note)
+- ✅ CSV export dedicato per wellness data
+- ✅ Separazione netta da attività fisica (`countsAsActivity = false`)
+- ✅ Support multiple entries per day (flessibilità tracking)
+- ⏳ UI Components (WellnessSection, TrackerCard, RatingBarInput)
+- ⏳ TrackerEntryDialog con response inputs
+- ⏳ Integration nella Today screen
 
 ### UI/UX Enhancements (100% Complete)
 - ✅ Conditional bottom bar (hide in exercises/workouts)
@@ -147,6 +178,7 @@
 
 L'app traccia le seguenti metriche:
 
+### Physical Activity Metrics
 - **Sessioni totali**: Conteggio allenamenti completati
 - **Esercizi per giorno**: Numero elementi sessione odierna
 - **Streak giorni**: Giorni consecutivi con attività (include recovery)
@@ -154,18 +186,13 @@ L'app traccia le seguenti metriche:
 - **Recovery sessions**: Sessioni recuperate tramite 20 AI squat vs perse
 - **Recovery tracking**: Giorni passati marcati come recuperati
 
----
-
-## 🔮 Roadmap Future
-
-Funzionalità pronte per future implementazioni:
-
-1. **Expanded Exercise Library**: Altri esercizi AI-powered
-2. **Social Features**: Condivisione progress e sfide
-3. **Wearable Integration**: Smartwatch support
-4. **Advanced Analytics**: Grafici trend e insights
-5. **Workout Programs**: Piani allenamento strutturati
+### Wellness Metrics (Backend Ready)
+- **Tracker entries**: Numero totale tracciamenti wellness completati
+- **Daily wellness check-ins**: Frequenza utilizzo tracker giornalieri
+- **Response distribution**: Distribuzione valori per tipo (rating, emotion, etc.)
+- **Note richness**: Percentuale entries con note testuali
+- **Tracker variety**: Diversità tracker utilizzati
+- **Timestamp analysis**: Pattern orari di utilizzo (mattina/sera)
 
 ---
 
-*L'app Good Habits rappresenta una soluzione completa e moderna per il fitness tracking, combinando AI, design eccellente e funzionalità avanzate in un'esperienza utente fluida e motivante.*

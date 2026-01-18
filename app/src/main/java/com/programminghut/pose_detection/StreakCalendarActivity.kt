@@ -34,10 +34,6 @@ class StreakCalendarActivity : ComponentActivity() {
         
         // Setup database and repository
         val database = AppDatabase.getDatabase(applicationContext)
-        val repository = SessionRepository(
-            sessionDao = database.sessionDao(),
-            repDao = database.repDao()
-        )
         
         // Initialize DailySessionRepository (needed to detect in-progress days)
         val dailySessionRepository = com.programminghut.pose_detection.data.repository.DailySessionRepository(
@@ -45,6 +41,13 @@ class StreakCalendarActivity : ComponentActivity() {
             dailySessionRelationDao = database.dailySessionRelationDao(),
             exerciseDao = database.exerciseDao(),
             workoutDao = database.workoutDao()
+        )
+        
+        // ✅ CALENDAR BUG FIX: Pass dailySessionDao for correct missed days calculation
+        val repository = SessionRepository(
+            sessionDao = database.sessionDao(),
+            repDao = database.repDao(),
+            dailySessionDao = database.dailySessionDao()
         )
 
         // Initialize ViewModel with both repositories

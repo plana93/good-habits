@@ -79,6 +79,19 @@ interface DailySessionDao {
     suspend fun getSessionDatesWithItemsInRange(startOfDay: Long, endOfDay: Long): List<Long>
 
     /**
+     * ✅ Controlla se un giorno ha attività fisiche (countsAsActivity = true)
+     * Usato per calcolare giorni mancati nel calendario
+     */
+    @Query("""
+        SELECT COUNT(*) > 0
+        FROM daily_sessions s
+        JOIN daily_session_items i ON s.sessionId = i.sessionId
+        WHERE s.date >= :dayStart AND s.date < :dayEnd
+        AND i.countsAsActivity = 1
+    """)
+    suspend fun hasPhysicalActivityForDay(dayStart: Long, dayEnd: Long): Boolean
+
+    /**
      * ✅ Ottieni riepiloghi giornalieri - CONTA SOLO item con countsAsActivity = true
      * Questo assicura che la streak e le statistiche considerino solo attività fisiche reali
      */

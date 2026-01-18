@@ -340,9 +340,11 @@ class NewMainActivity : ComponentActivity() {
             database.workoutDao()
         )
         
+        // ✅ CALENDAR BUG FIX: Pass dailySessionDao to SessionRepository for missed days calculation
         sessionRepository = SessionRepository(
             database.sessionDao(),
-            database.repDao()
+            database.repDao(),
+            database.dailySessionDao()  // Now checks both workout_sessions AND daily_session_items
         )
         
         val factory = TodayViewModelFactory(dailySessionRepository, sessionRepository)
@@ -2135,18 +2137,20 @@ fun DashboardScreen(
     
     // Database per statistiche 
     val database = remember { com.programminghut.pose_detection.data.database.AppDatabase.getDatabase(context) }
-    val sessionRepository = remember { 
-        SessionRepository(
-            database.sessionDao(),
-            database.repDao()
-        )
-    }
     val dailySessionRepository = remember {
         DailySessionRepository(
             database.dailySessionDao(),
             database.dailySessionRelationDao(),
             database.exerciseDao(),
             database.workoutDao()
+        )
+    }
+    // ✅ CALENDAR BUG FIX: Pass dailySessionDao for missed days calculation
+    val sessionRepository = remember { 
+        SessionRepository(
+            database.sessionDao(),
+            database.repDao(),
+            database.dailySessionDao()
         )
     }
     

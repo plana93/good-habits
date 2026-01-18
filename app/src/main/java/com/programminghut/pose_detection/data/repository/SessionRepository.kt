@@ -2,6 +2,7 @@ package com.programminghut.pose_detection.data.repository
 
 import com.programminghut.pose_detection.data.dao.RepDao
 import com.programminghut.pose_detection.data.dao.SessionDao
+import com.programminghut.pose_detection.data.dao.DailySessionDao
 import com.programminghut.pose_detection.data.model.RepData
 import com.programminghut.pose_detection.data.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +18,8 @@ import kotlinx.coroutines.flow.map
  */
 class SessionRepository(
     private val sessionDao: SessionDao,
-    private val repDao: RepDao
+    private val repDao: RepDao,
+    private val dailySessionDao: DailySessionDao? = null  // ✅ Added for calendar missed days calculation
 ) {
     
     // ============================================================
@@ -402,6 +404,7 @@ class SessionRepository(
     /**
      * Get missed days within a date range
      * A day is "missed" if it has no streak-affecting sessions
+     * ✅ UPDATED: Now checks BOTH workout_sessions AND daily_session_items (with countsAsActivity = true)
      * 
      * @param startDate Start of range (start of day timestamp)
      * @param endDate End of range (start of day timestamp)
@@ -414,7 +417,16 @@ class SessionRepository(
         var currentDay = startDate
         while (currentDay <= endDate) {
             val dayEnd = currentDay + oneDayMillis
-            val hasSessions = sessionDao.hasSessionsForDay(currentDay, dayEnd)
+            
+            // ✅ Check BOTH systems:
+            // 1. Old system: workout_sessions
+            val hasWorkoutSessions = sessionDao.hasSessionsForDay(currentDay, dayEnd)
+            
+            // 2. New system: daily_session_items (only physical activities, not wellness trackers)
+            val hasDailyActivities = dailySessionDao?.hasPhysicalActivityForDay(currentDay, dayEnd) ?: false
+            
+            // Day is NOT missed if it has activity in EITHER system
+            val hasSessions = hasWorkoutSessions || hasDailyActivities
             
             // Don't count future days as missed
             if (!hasSessions && currentDay < System.currentTimeMillis()) {
