@@ -1,171 +1,475 @@
-# 🏋️ Good Habits - AI Fitness Tracker
+# 🏋️ Good Habits - AI-Powered Fitness Tracker
 
-**Modern Android fitness app with AI-powered pose detection for automatic squat counting**
+<div align="center">
 
----
+![Platform](https://img.shields.io/badge/Platform-Android-green.svg)
+![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)
+![Language](https://img.shields.io/badge/Language-Kotlin-purple.svg)
+![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-blue.svg)
+![AI](https://img.shields.io/badge/AI-TensorFlow%20Lite-orange.svg)
 
-## 📱 Overview
+**Un'app moderna per il fitness che combina intelligenza artificiale, pose detection e gestione completa degli allenamenti**
 
-Good Habits is a production-ready Android application that combines artificial intelligence, modern UI design, and comprehensive workout tracking. Using Google's MoveNet pose detection model, the app automatically counts squat repetitions through your device camera while providing a complete fitness management system.
+[Screenshots](#-screenshots) • [Features](#-features) • [Download](#-download) • [Tech Stack](#-tech-stack) • [Documentazione](#-documentazione)
 
-### 🎯 Key Features
-
-- **🤖 AI Squat Detection**: Automatic counting using TensorFlow Lite MoveNet
-- **📅 Smart Sessions**: Daily workout tracking with temporal navigation
-- **📊 Analytics Dashboard**: Real-time statistics with calendar integration
-- **💾 Data Export**: Complete CSV export for external analysis
-- **🎨 Material3 Design**: Modern UI with conditional navigation
+</div>
 
 ---
 
-## 🚀 Quick Start
+## 📱 Screenshots
 
-### Prerequisites
-- Android device (API 24+)
-- Camera permissions
-- Android Studio (for development)
+### Dashboard & Today Screen
+<div align="center">
+<table>
+  <tr>
+    <td><img src="screenshots/dashboard.png" width="250" alt="Dashboard"/></td>
+    <td><img src="screenshots/today_screen.png" width="250" alt="Today Screen"/></td>
+    <td><img src="screenshots/calendar.png" width="250" alt="Calendar"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Dashboard</b><br/>Statistiche e KPIs</td>
+    <td align="center"><b>Today Screen</b><br/>Sessione giornaliera</td>
+    <td align="center"><b>Calendar</b><br/>Streak tracking</td>
+  </tr>
+</table>
+</div>
 
-### Installation
+### AI Squat Detection
+<div align="center">
+<table>
+  <tr>
+    <td><img src="screenshots/ai_squat_detection.png" width="250" alt="AI Detection"/></td>
+    <td><img src="screenshots/exercise_library.png" width="250" alt="Exercise Library"/></td>
+    <td><img src="screenshots/workout_builder.png" width="250" alt="Workout Builder"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>AI Detection</b><br/>Real-time squat counting</td>
+    <td align="center"><b>Exercise Library</b><br/>Template personalizzabili</td>
+    <td align="center"><b>Workout Builder</b><br/>Crea allenamenti completi</td>
+  </tr>
+</table>
+</div>
+
+### Wellness Tracking
+<div align="center">
+<table>
+  <tr>
+    <td><img src="screenshots/wellness_tracking.png" width="250" alt="Wellness Tracking"/></td>
+    <td><img src="screenshots/export_data.png" width="250" alt="Export Data"/></td>
+    <td><img src="screenshots/recovery_system.png" width="250" alt="Recovery System"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Wellness Tracking</b><br/>Mood & benessere</td>
+    <td align="center"><b>Export Data</b><br/>CSV/JSON/TXT</td>
+    <td align="center"><b>Recovery System</b><br/>Recupera giorni persi</td>
+  </tr>
+</table>
+</div>
+
+> **Nota**: Aggiungi i tuoi screenshot nella cartella `/screenshots/` per visualizzarli qui sopra
+
+---
+
+## ✨ Features
+
+### 🤖 AI-Powered Squat Detection
+- **MoveNet TensorFlow Lite**: Riconoscimento posture in tempo reale
+- **Conteggio automatico**: AI squat detection con feedback visivo
+- **Camera front/back**: Supporto entrambe le fotocamere
+- **Calibrazione automatica**: Auto-adattamento alla postura dell'utente
+
+### 📅 Sistema Sessioni Modulari
+- **Sessioni giornaliere**: Organizzazione automatica per data
+- **Multi-esercizi**: Aggiungi esercizi personalizzati o AI squat
+- **Multi-allenamenti**: Template di workout completi
+- **Navigazione temporale**: Scroll orizzontale tra giorni passati/presente
+
+### 📊 Dashboard & Analytics
+- **Dashboard moderna**: Overview statistiche real-time
+- **Calendario integrato**: Visualizzazione streak di continuità
+- **Export completo**: CSV/JSON/TXT per analisi esterne
+- **Statistiche live**: Conteggi aggiornati istantaneamente
+
+### 🧘 Wellness Tracking (NEW!)
+- **18 tracker predefiniti**: Mood, energia, sonno, stress, relazioni, gratitudine
+- **Tracking emotivo**: Rating 0-5, emoticon sets, note testuali
+- **Reference date**: Traccia retroattivamente eventi passati
+- **Separazione fisica/mentale**: Non influenza calendar e streak
+- **CSV dedicato**: Export separato per analisi benessere
+
+### 💪 Motivazione & Gamification
+- **Streak tracking**: Conteggio giorni consecutivi
+- **Recovery system**: Recupera sessioni mancate con 20 AI squat
+- **Frasi motivazionali**: 30+ quote per giorni vuoti
+- **Visual feedback**: Codifica colori per stato giorni
+
+### 🎨 Modern UI/UX
+- **Material3 Design**: Design system moderno
+- **Jetpack Compose**: UI reattiva e fluida
+- **Dark/Light theme**: Supporto temi dinamici
+- **Conditional navigation**: UI context-sensitive
+
+---
+
+## 🚀 Download
+
+### Requisiti
+- **Android**: 7.0 (API 24) o superiore
+- **Spazio**: ~50 MB
+- **Permessi**: Camera (per AI detection)
+
+### Installazione
+
+#### Da Release (Consigliato)
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd realtime_pose_detection_android-main
+# Scarica l'APK dalla pagina Releases
+# https://github.com/plana93/good-habits/releases
 
-# Build and install
+# Installa via ADB
+adb install good-habits-v3.0.apk
+```
+
+#### Build da Sorgente
+```bash
+# Clona repository
+git clone https://github.com/plana93/good-habits.git
+cd good-habits
+
+# Build debug APK
 ./gradlew assembleDebug
+
+# Installa
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
-### First Run
-1. Grant camera permissions when prompted
-2. Open the app and navigate to Dashboard
-3. Tap the central + button and select "AI Squat"
-4. Choose camera (front/back) and start squatting!
-
 ---
 
-## 🏗️ Architecture
+## 🛠️ Tech Stack
 
-**Clean Architecture** with **MVVM** pattern:
-- **UI Layer**: Jetpack Compose with Material3
-- **Domain Layer**: ViewModels with business logic
-- **Data Layer**: Room database with repositories
+### Core Technologies
+- **Language**: Kotlin 100%
+- **Min SDK**: API 24 (Android 7.0)
+- **Target SDK**: API 32 (Android 12L)
 
-**Key Technologies**:
-- Kotlin 100%
-- Jetpack Compose
-- TensorFlow Lite + MoveNet
-- Room Database
-- Navigation Compose
+### Architecture
+- **Pattern**: MVVM + Clean Architecture
+- **DI**: Manual Dependency Injection with Factory Pattern
+- **Async**: Kotlin Coroutines + Flow/StateFlow
+- **Navigation**: Jetpack Navigation Compose
 
----
+### UI Layer
+- **Framework**: Jetpack Compose
+- **Design**: Material3 Design System
+- **Components**: Card, FAB, Dialog, LazyVerticalGrid, HorizontalPager
 
-## 📖 Documentation
+### Data Layer
+- **Database**: Room SQLite (v10)
+- **Tables**: 7 tables with complex relations
+- **Migrations**: Full migration path 1→10
 
-Complete documentation is available in the [`update_docs/`](update_docs/) folder:
+### AI & ML
+- **Framework**: TensorFlow Lite
+- **Model**: MoveNet Lightning (optimized for mobile)
+- **Processing**: GPU-accelerated when available
+- **Performance**: ~30 FPS real-time detection
 
-- **[📋 Overview](update_docs/00_APP_OVERVIEW.md)** - App features and user experience
-- **[🔧 Technical Architecture](update_docs/01_TECHNICAL_ARCHITECTURE.md)** - Detailed technical implementation
-- **[📈 Development Roadmap](update_docs/02_DEVELOPMENT_ROADMAP.md)** - Current status and future opportunities
-- **[👨‍💻 Developer Reference](update_docs/03_DEVELOPER_REFERENCE.md)** - Quick development guide
-- **[🚀 Build Guide](update_docs/05_BUILD_DEPLOY_GUIDE.md)** - Build and deployment instructions
+### Key Libraries
+```gradle
+// UI
+implementation "androidx.compose.ui:ui:1.5.0"
+implementation "androidx.compose.material3:material3:1.1.0"
 
----
+// Database
+implementation "androidx.room:room-runtime:2.5.2"
+implementation "androidx.room:room-ktx:2.5.2"
 
-## ✅ Current Status
+// AI
+implementation "org.tensorflow:tensorflow-lite:2.12.0"
+implementation "org.tensorflow:tensorflow-lite-gpu:2.12.0"
 
-**Version 3.0 - Production Ready**
+// Navigation
+implementation "androidx.navigation:navigation-compose:2.7.0"
 
-All core features are complete and fully functional:
-- ✅ AI pose detection with MoveNet
-- ✅ Session management system  
-- ✅ Dashboard with statistics
-- ✅ Calendar with streak tracking
-- ✅ CSV export functionality
-- ✅ Material3 design implementation
-
----
-
-## 🧪 Testing
-
-### Core Features Test
-```bash
-# Install and test key functionality
-./gradlew assembleDebug && adb install -r app/build/outputs/apk/debug/app-debug.apk
-
-# Open app and verify:
-# 1. Dashboard loads with statistics
-# 2. AI Squat detection works
-# 3. Calendar shows activity
-# 4. Export generates CSV
+// Camera
+implementation "androidx.camera:camera-camera2:1.2.3"
+implementation "androidx.camera:camera-lifecycle:1.2.3"
 ```
 
-### Development Testing
+---
+
+## 📐 Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────┐
+│              GOOD HABITS APP                         │
+│           (Clean Architecture + MVVM)                │
+└───────────────────┬──────────────────────────────────┘
+                    │
+    ┌───────────────┼───────────────┐
+    │               │               │
+┌───▼────┐    ┌─────▼──────┐   ┌───▼────┐
+│   UI   │    │   DOMAIN   │   │  DATA  │
+│ Layer  │    │   Layer    │   │ Layer  │
+└───┬────┘    └─────┬──────┘   └───┬────┘
+    │               │               │
+Compose         ViewModels     Repository
+Screens         + Factory      + Database
+```
+
+### Key Components
+
+**4 Repository principali**:
+- `SessionRepository` - Workout sessions (AI squat)
+- `DailySessionRepository` - Daily modular sessions
+- `ExerciseRepository` - Exercise templates
+- `WorkoutRepository` - Workout templates
+
+**9+ ViewModels**:
+- `TodayViewModel` - Daily session management
+- `DashboardViewModel` - Statistics & KPIs
+- `CalendarViewModel` - Calendar & streak
+- `ExportViewModel` - Data export
+- E altri...
+
+**Database Schema**:
+- 7 tables con relazioni complesse
+- Dual system: Legacy (workout_sessions) + Modern (daily_sessions)
+- Wellness tracking integration
+- Migration completa 1→10
+
+---
+
+## 📚 Documentazione
+
+### Per Utenti
+- **[App Overview](update_docs/00_APP_OVERVIEW.md)** - Descrizione completa features
+- **[Roadmap](update_docs/02_DEVELOPMENT_ROADMAP.md)** - Sviluppi futuri
+
+### Per Sviluppatori
+- **[Technical Guide](update_docs/TECHNICAL_GUIDE.md)** - Architettura & development
+- **[Build Guide](update_docs/05_BUILD_DEPLOY_GUIDE.md)** - Setup & deployment
+- **[Features Reference](update_docs/FEATURES_REFERENCE.md)** - Feature implementation (coming soon)
+- **[Wellness Tracking](update_docs/WELLNESS_TRACKING.md)** - Wellness system (coming soon)
+
+### Quick Links
 ```bash
-# Run with detailed logging
-adb logcat | grep -E "(TODAY_DEBUG|AI|DATABASE)"
+# Documentazione completa
+cd update_docs/
+
+# Guide principali
+00_APP_OVERVIEW.md          # Overview app
+TECHNICAL_GUIDE.md          # Architecture & dev
+02_DEVELOPMENT_ROADMAP.md   # Roadmap
+05_BUILD_DEPLOY_GUIDE.md    # Build guide
+```
+
+---
+
+## 🎯 Use Cases
+
+### Scenario 1: Allenamento AI Squat
+```
+1. Apri app → Dashboard
+2. Tap FAB centrale (icona fitness)
+3. Seleziona camera (front/back)
+4. Start AI detection
+5. Esegui squat → Conteggio automatico
+6. Salva nella sessione odierna
+```
+
+### Scenario 2: Workout Personalizzato
+```
+1. Today Screen → Tap "+"
+2. Seleziona "Add Workout"
+3. Scegli template (es. "Upper Body")
+4. Completa esercizi uno per uno
+5. Statistiche aggiornate real-time
+```
+
+### Scenario 3: Wellness Tracking
+```
+1. Today Screen → Sezione Wellness
+2. Tap tracker (es. "How are you feeling?")
+3. Seleziona rating emoticon (0-5)
+4. Aggiungi note opzionali
+5. Salva → Non influenza calendario
+```
+
+### Scenario 4: Recovery Giorno Perso
+```
+1. Dashboard → Tap calendario
+2. Tap giorno mancato (rosso)
+3. Conferma recovery
+4. Completa 20 AI squat
+5. Giorno marcato come recuperato
 ```
 
 ---
 
 ## 🔧 Development
 
-### Setup Environment
-1. Install Android Studio
-2. Install Kotlin plugin
-3. Set JDK 11+ for project
-4. Sync Gradle dependencies
+### Setup Ambiente
 
-### Project Structure
-```
-app/src/main/java/com/programminghut/pose_detection/
-├── ui/activity/           # Main activities and screens
-├── ui/viewmodel/         # ViewModels and business logic
-├── data/repository/      # Data access layer
-├── data/dao/            # Database access objects
-├── data/model/          # Data models and entities
-└── SquatCounter.kt      # AI pose detection engine
+```bash
+# Requisiti
+- Android Studio Flamingo o superiore
+- JDK 11+
+- Android SDK 24+
+- Gradle 8.0
+
+# Setup
+git clone https://github.com/plana93/good-habits.git
+cd good-habits
+./gradlew assembleDebug
 ```
 
-### Key Entry Points
-- `NewMainActivity.kt` - Main app navigation and UI
-- `TodayViewModel.kt` - Session management logic  
-- `DailySessionRepository.kt` - Core business operations
-- `SquatCounter.kt` - AI pose detection implementation
+### Struttura Progetto
 
----
+```
+app/src/main/
+├── java/com/programminghut/pose_detection/
+│   ├── data/
+│   │   ├── dao/              # Room DAOs
+│   │   ├── model/            # Data entities
+│   │   ├── repository/       # Repository pattern
+│   │   └── database/         # Database & migrations
+│   ├── ui/
+│   │   ├── activity/         # Main activities
+│   │   ├── components/       # Compose components
+│   │   ├── viewmodel/        # ViewModels
+│   │   └── */                # Feature screens
+│   ├── ml/                   # TensorFlow models
+│   ├── util/                 # Utilities
+│   └── SquatCounter.kt       # AI detection logic
+└── assets/
+    ├── exercise_templates.json
+    ├── workout_templates.json
+    ├── wellness_tracker_templates.json
+    └── motivational_quotes.json
+```
 
-## 📊 Performance
+### Testing
 
-- **App Size**: ~15MB (includes AI model)
-- **Memory Usage**: ~150MB during AI detection
-- **Battery**: Optimized for extended workout sessions
-- **AI Performance**: 30+ FPS pose detection on modern devices
+```bash
+# Unit tests
+./gradlew test
+
+# Instrumentation tests
+./gradlew connectedAndroidTest
+
+# Lint
+./gradlew lint
+```
 
 ---
 
 ## 🤝 Contributing
 
-1. Review the [Technical Architecture](update_docs/01_TECHNICAL_ARCHITECTURE.md)
-2. Check [Development Roadmap](update_docs/02_DEVELOPMENT_ROADMAP.md) for enhancement opportunities
-3. Follow existing code patterns and architecture
-4. Test thoroughly before submitting changes
+Contributi sono benvenuti! Per contribuire:
+
+1. **Fork** il repository
+2. **Crea** un branch per la tua feature (`git checkout -b feature/AmazingFeature`)
+3. **Commit** le modifiche (`git commit -m 'Add some AmazingFeature'`)
+4. **Push** al branch (`git push origin feature/AmazingFeature`)
+5. **Apri** una Pull Request
+
+### Guidelines
+
+- Segui lo stile Kotlin esistente
+- Scrivi test per nuove feature
+- Aggiorna la documentazione
+- Usa commit messages descrittivi
+
+---
+
+## 📊 Project Status
+
+### Versione Corrente: 3.0 (Production Ready)
+
+**Completato** ✅:
+- AI Squat Detection
+- Daily Sessions System
+- Dashboard & Analytics
+- Calendar & Streak Tracking
+- Recovery System
+- Wellness Tracking (Backend)
+- Export CSV/JSON/TXT
+- Material3 UI
+
+**In Sviluppo** 🚧:
+- Wellness Tracking UI
+- Advanced Charts
+- Social Features
+
+**Planned** 📋:
+- Wearable Integration
+- Cloud Sync
+- Custom Trackers
+- Workout Programs
 
 ---
 
 ## 📄 License
 
-This project demonstrates modern Android development practices with AI integration. Feel free to use as a reference or starting point for similar applications.
+Questo progetto è distribuito sotto licenza **MIT License**.
+
+```
+MIT License
+
+Copyright (c) 2026 Mirco
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ---
 
-## 🌟 Recognition
+## 👨‍💻 Author
 
-This app showcases:
-- Production-quality Android architecture
-- AI/ML integration on mobile devices
-- Modern Jetpack Compose UI patterns
-- Comprehensive fitness tracking features
-- Clean, maintainable codebase
+**Mirco**
+- GitHub: [@plana93](https://github.com/plana93)
+- Repository: [good-habits](https://github.com/plana93/good-habits)
 
-*Good Habits represents a complete, modern Android application ready for production use or further development.*
+---
+
+## 🙏 Acknowledgments
+
+- **TensorFlow**: Per il framework ML
+- **Google**: Per MoveNet e Jetpack Compose
+- **Android Community**: Per le librerie open source
+- **Material Design**: Per le guidelines UI/UX
+
+---
+
+## 📞 Support
+
+Hai domande o problemi?
+
+- 🐛 [Apri un Issue](https://github.com/plana93/good-habits/issues)
+- 📧 Contatta via GitHub
+- 📖 Leggi la [documentazione completa](update_docs/)
+
+---
+
+<div align="center">
+
+**⭐ Se questo progetto ti è utile, lascia una stella! ⭐**
+
+Made with ❤️ and 💪 by Mirco
+
+</div>
