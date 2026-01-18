@@ -48,6 +48,7 @@ import com.programminghut.pose_detection.ui.calendar.CalendarUiState
 import com.programminghut.pose_detection.ui.calendar.StreakCalendarScreen
 import com.programminghut.pose_detection.ui.export.ExportViewModel
 import com.programminghut.pose_detection.ui.export.ExportScreen
+import com.programminghut.pose_detection.utils.FileExportHelper
 import com.programminghut.pose_detection.data.repository.SessionRepository
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -2126,6 +2127,7 @@ fun DashboardScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope() // ✅ Aggiungi scope per navigazione
     var showExportDialog by remember { mutableStateOf(false) }
+    var showExportSettings by remember { mutableStateOf(false) }
     var showCalendarDialog by remember { mutableStateOf(false) }
     
     // ✅ Ottieni riferimento all'Activity per impostare la callback
@@ -2213,7 +2215,7 @@ fun DashboardScreen(
     val exportViewModel: ExportViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ExportViewModel(sessionRepository) as T
+                return ExportViewModel(sessionRepository, dailySessionRepository) as T
             }
         }
     )
@@ -2424,10 +2426,44 @@ fun DashboardScreen(
                 ExportScreen(
                     viewModel = exportViewModel,
                     onBackClick = { showExportDialog = false },
+                    onSettingsClick = { 
+                        showExportDialog = false
+                        showExportSettings = true
+                    },
                     onExportClick = { content, fileName, mimeType ->
-                        // TODO: Implementare il salvataggio del file
+                        // Get user context from preferences
+                        val userContext = FileExportHelper.getPersonalizedUserContext(context)
+                        
+                        // Export and share the file
+                        FileExportHelper.exportAndShare(
+                            context = context,
+                            content = content,
+                            fileName = fileName,
+                            mimeType = mimeType,
+                            userContext = userContext
+                        )
+                        
                         showExportDialog = false
                     }
+                )
+            }
+        }
+    }
+    
+    // Export Settings Dialog
+    if (showExportSettings) {
+        Dialog(
+            onDismissRequest = { showExportSettings = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                com.programminghut.pose_detection.ui.export.ExportSettingsScreen(
+                    onBackClick = { showExportSettings = false }
                 )
             }
         }

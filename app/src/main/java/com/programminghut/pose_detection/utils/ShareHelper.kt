@@ -111,6 +111,303 @@ object ShareHelper {
         """.trimIndent()
     }
     
+    /**
+     * Generate comprehensive daily diary TXT export
+     * 
+     * Creates a day-by-day transcription with:
+     * - Exercises with quantity and time
+     * - Wellness tracker responses with scores
+     * - Legend at the beginning
+     * - Manual offset section for user context
+     * 
+     * @param allDailyItems All daily session items grouped by date
+     * @return Formatted text diary
+     */
+    fun generateDailyDiaryTXT(allDailyItems: Map<String, List<com.programminghut.pose_detection.data.model.DailySessionItemWithDetails>>): String {
+        val dateFormat = SimpleDateFormat("EEEE dd MMMM yyyy", Locale.ITALIAN)
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.ITALIAN)
+        val exportDate = SimpleDateFormat("dd MMMM yyyy 'alle' HH:mm", Locale.ITALIAN).format(Date())
+        
+        return buildString {
+            // Header
+            appendLine("=".repeat(70))
+            appendLine("GOOD HABITS - DIARIO ALLENAMENTI")
+            appendLine("Trascrizione Completa Database")
+            appendLine("=".repeat(70))
+            appendLine()
+            appendLine("Data Export: $exportDate")
+            appendLine()
+            appendLine()
+            
+            // Sort dates chronologically (most recent first)
+            val sortedDates = allDailyItems.keys.sortedByDescending { 
+                SimpleDateFormat("yyyy-MM-dd", Locale.ITALIAN).parse(it)?.time ?: 0
+            }
+            
+            var totalExercises = 0
+            var totalWellness = 0
+            var totalDays = sortedDates.size
+            
+            sortedDates.forEach { dateKey ->
+                val items = allDailyItems[dateKey] ?: emptyList()
+                if (items.isEmpty()) return@forEach
+                
+                val date = SimpleDateFormat("yyyy-MM-dd", Locale.ITALIAN).parse(dateKey)
+                val formattedDate = date?.let { dateFormat.format(it) } ?: dateKey
+                
+                // Day header
+                appendLine("-".repeat(70))
+                appendLine("DATA: $formattedDate")
+                appendLine("-".repeat(70))
+                appendLine()
+                
+                // Separate exercises and wellness trackers
+                val exercises = items.filter { it.type == "EXERCISE" }
+                val workouts = items.filter { it.type == "WORKOUT" }
+                val wellnessTrackers = items.filter { it.type == "WELLNESS_TRACKER" }
+                
+                // EXERCISES SECTION
+                if (exercises.isNotEmpty()) {
+                    appendLine("ESERCIZI:")
+                    appendLine()
+                    
+                    exercises.forEachIndexed { index, item ->
+                        totalExercises++
+                        val status = if (item.isCompleted) "COMPLETATO" else "NON COMPLETATO"
+                        val exerciseName = item.exerciseName ?: item.name
+                        
+                        appendLine("  ${index + 1}. $exerciseName [$status]")
+                        
+                        // Orario di completamento (sempre se disponibile)
+                        item.completedAt?.let { 
+                            val completionTime = timeFormat.format(Date(it))
+                            appendLine("     Orario: $completionTime")
+                        }
+                        
+                        // Repetitions - mostra quello che hai fatto
+                        if (item.actualReps != null && item.actualReps > 0) {
+                            val target = item.targetReps
+                            if (target != null && target > 0) {
+                                appendLine("     Ripetizioni: ${item.actualReps} / $target")
+                            } else {
+                                appendLine("     Ripetizioni: ${item.actualReps}")
+                            }
+                        }
+                        
+                        // Time - mostra quello che hai fatto
+                        if (item.actualTime != null && item.actualTime > 0) {
+                            val actualMin = item.actualTime / 60
+                            val actualSec = item.actualTime % 60
+                            val target = item.targetTime
+                            
+                            if (target != null && target > 0) {
+                                val targetMin = target / 60
+                                val targetSec = target % 60
+                                appendLine("     Tempo: ${actualMin}m ${actualSec}s / ${targetMin}m ${targetSec}s")
+                            } else {
+                                appendLine("     Tempo: ${actualMin}m ${actualSec}s")
+                            }
+                        }
+                        
+                        // Notes
+                        if (item.notes.isNotBlank() && item.notes != "Nessuna nota") {
+                            appendLine("     Note: ${item.notes}")
+                        }
+                        
+                        appendLine()
+                    }
+                }
+                
+                // WORKOUTS SECTION
+                if (workouts.isNotEmpty()) {
+                    appendLine("CIRCUITI/WORKOUT:")
+                    appendLine()
+                    
+                    workouts.forEachIndexed { index, item ->
+                        val status = if (item.isCompleted) "[COMPLETATO]" else "[NON COMPLETATO]"
+                        val workoutName = item.workoutName ?: item.name
+                        val completionTime = item.completedAt?.let { timeFormat.format(Date(it)) } ?: "N/A"
+                        
+                        appendLine("  ${index + 1}. $workoutName $status")
+                        
+                        if (item.isCompleted) {
+                            appendLine("     Orario: $completionTime")
+                        }
+                        
+                        if (!item.notes.isNullOrBlank() && item.notes != "Nessuna nota") {
+                            appendLine("     Note: ${item.notes}")
+                        }
+                        
+                        appendLine()
+                    }
+                }
+                
+                // WELLNESS TRACKER SECTION
+                if (wellnessTrackers.isNotEmpty()) {
+                    appendLine("BENESSERE & WELLNESS TRACKER:")
+                    appendLine()
+                    
+                    wellnessTrackers.forEachIndexed { index, item ->
+                        totalWellness++
+                        
+                        // Get tracker name (question) and response details from JSON
+                        var trackerQuestion = "Wellness Tracker"
+                        var trackerResponse = ""
+                        var trackerTimestamp: Long? = null
+                        
+                        item.trackerResponseJson?.let { json ->
+                            val response = com.programminghut.pose_detection.data.model.TrackerResponse.fromJson(json)
+                            response?.let { resp ->
+                                // Use trackerName as the question
+                                trackerQuestion = resp.trackerName.takeIf { it.isNotBlank() } ?: trackerQuestion
+                                trackerTimestamp = resp.timestamp
+                                
+                                // Build response text based on type
+                                trackerResponse = when (resp.responseType) {
+                                    com.programminghut.pose_detection.data.model.TrackerResponseType.RATING_5 -> {
+                                        "${resp.ratingValue}/5"
+                                    }
+                                    com.programminghut.pose_detection.data.model.TrackerResponseType.BOOLEAN -> {
+                                        if (resp.booleanValue == true) "SI" else "NO"
+                                    }
+                                    com.programminghut.pose_detection.data.model.TrackerResponseType.EMOTION_SET -> {
+                                        resp.selectedEmotion ?: "Non specificata"
+                                    }
+                                    com.programminghut.pose_detection.data.model.TrackerResponseType.TEXT_NOTE -> {
+                                        resp.textNote ?: ""
+                                    }
+                                }
+                            }
+                        }
+                        
+                        appendLine("  ${index + 1}. $trackerQuestion")
+                        
+                        // Orario - usa timestamp dal JSON o completedAt
+                        val timestamp = trackerTimestamp ?: item.completedAt
+                        timestamp?.let { 
+                            val time = timeFormat.format(Date(it))
+                            appendLine("     Orario: $time")
+                        }
+                        
+                        // Risposta
+                        if (trackerResponse.isNotBlank()) {
+                            appendLine("     Risposta: $trackerResponse")
+                        }
+                        
+                        // Parse tracker response JSON for additional text notes
+                        item.trackerResponseJson?.let { json ->
+                            val response = com.programminghut.pose_detection.data.model.TrackerResponse.fromJson(json)
+                            response?.let { resp ->
+                                // Add text note if available and not already shown as main response
+                                if (!resp.textNote.isNullOrBlank() && resp.responseType != com.programminghut.pose_detection.data.model.TrackerResponseType.TEXT_NOTE) {
+                                    appendLine("     Note: ${resp.textNote}")
+                                }
+                            }
+                        }
+                        
+                        appendLine()
+                    }
+                }
+                
+                appendLine()
+            }
+            
+            // Footer with statistics
+            appendLine()
+            appendLine("=".repeat(70))
+            appendLine("RIEPILOGO TOTALE")
+            appendLine("=".repeat(70))
+            appendLine()
+            appendLine("Giorni con dati: $totalDays")
+            appendLine("Totale esercizi registrati: $totalExercises")
+            appendLine("Totale wellness tracker: $totalWellness")
+            appendLine("Totale attivita': ${totalExercises + totalWellness}")
+            appendLine()
+            appendLine("Export generato da Good Habits")
+            appendLine("=".repeat(70))
+        }
+    }
+    
+    /**
+     * Generate TXT export for multiple sessions (human-readable format)
+     * @deprecated Use generateDailyDiaryTXT for comprehensive daily diary
+     */
+    @Deprecated("Use generateDailyDiaryTXT for better daily transcription")
+    fun generateTXTExport(sessions: List<WorkoutSession>): String {
+        val dateFormat = SimpleDateFormat("dd MMMM yyyy 'alle' HH:mm", Locale.ITALIAN)
+        val exportDate = dateFormat.format(Date())
+        
+        val totalReps = sessions.sumOf { it.totalReps }
+        val avgFormScore = if (sessions.isNotEmpty()) {
+            (sessions.map { it.avgFormScore }.average() * 100).toInt()
+        } else 0
+        
+        val totalDurationMinutes = sessions.sumOf { 
+            (it.endTime - it.startTime) / 60000 
+        }
+        val hours = totalDurationMinutes / 60
+        val minutes = totalDurationMinutes % 60
+        
+        return buildString {
+            appendLine("═══════════════════════════════════════════════════")
+            appendLine("         GOOD HABITS - STORICO ALLENAMENTI         ")
+            appendLine("═══════════════════════════════════════════════════")
+            appendLine()
+            appendLine("📅 Export generato il: $exportDate")
+            appendLine()
+            appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            appendLine("RIEPILOGO GENERALE")
+            appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            appendLine()
+            appendLine("🏋️  Totale Sessioni: ${sessions.size}")
+            appendLine("💪 Totale Ripetizioni: $totalReps")
+            appendLine("⭐ Qualità Media: $avgFormScore%")
+            appendLine("⏱️  Tempo Totale: ${hours}h ${minutes}min")
+            appendLine()
+            appendLine()
+            appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            appendLine("DETTAGLIO SESSIONI")
+            appendLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            appendLine()
+            
+            sessions.sortedByDescending { it.startTime }.forEachIndexed { index, session ->
+                val sessionDate = dateFormat.format(Date(session.startTime))
+                val duration = (session.endTime - session.startTime) / 60000
+                val formScore = (session.avgFormScore * 100).toInt()
+                val depthScore = (session.avgDepthScore * 100).toInt()
+                
+                appendLine("┌─ SESSIONE #${index + 1} ─────────────────────────────────")
+                appendLine("│")
+                appendLine("│ 📅 Data: $sessionDate")
+                appendLine("│ 🏋️  Esercizio: ${session.exerciseType}")
+                appendLine("│ ⏱️  Durata: ${duration} minuti")
+                appendLine("│")
+                appendLine("│ 📊 Statistiche:")
+                appendLine("│   • Ripetizioni: ${session.totalReps}")
+                appendLine("│   • Qualità Form: $formScore%")
+                appendLine("│   • Profondità Media: $depthScore%")
+                appendLine("│   • Velocità Media: ${String.format("%.1f", session.avgSpeed)}s/rep")
+                appendLine("│")
+                
+                if (!session.notes.isNullOrBlank()) {
+                    appendLine("│ 📝 Note:")
+                    session.notes.lines().forEach { line ->
+                        appendLine("│   $line")
+                    }
+                    appendLine("│")
+                }
+                
+                appendLine("└───────────────────────────────────────────────────")
+                appendLine()
+            }
+            
+            appendLine()
+            appendLine("═══════════════════════════════════════════════════")
+            appendLine("    Continua a migliorare ogni giorno! 💪🔥")
+            appendLine("═══════════════════════════════════════════════════")
+        }
+    }
+    
     // ============================================================
     // PRIVATE TEMPLATE GENERATORS
     // ============================================================

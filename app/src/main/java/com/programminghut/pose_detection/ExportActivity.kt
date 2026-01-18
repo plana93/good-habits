@@ -29,13 +29,19 @@ class ExportActivity : ComponentActivity() {
         
         // Setup database and repository
         val database = AppDatabase.getDatabase(applicationContext)
-        val repository = SessionRepository(
+        val sessionRepository = SessionRepository(
             sessionDao = database.sessionDao(),
             repDao = database.repDao()
         )
+        val dailySessionRepository = com.programminghut.pose_detection.data.repository.DailySessionRepository(
+            dailySessionDao = database.dailySessionDao(),
+            dailySessionRelationDao = database.dailySessionRelationDao(),
+            exerciseDao = database.exerciseDao(),
+            workoutDao = database.workoutDao()
+        )
         
         // Initialize ViewModel
-        val factory = ExportViewModelFactory(repository)
+        val factory = ExportViewModelFactory(sessionRepository, dailySessionRepository)
         viewModel = ViewModelProvider(this, factory)[ExportViewModel::class.java]
         
         setContent {

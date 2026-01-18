@@ -38,6 +38,9 @@ fun WellnessSection(
     onItemDelete: (DailySessionItemWithDetails) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // ✅ State per espansione/contrazione
+    var isExpanded by remember { mutableStateOf(false) }
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -51,9 +54,15 @@ fun WellnessSection(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Header
+            // Header (clickable per espandere/contrarre)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { 
+                        if (wellnessItems.isNotEmpty()) {
+                            isExpanded = !isExpanded 
+                        }
+                    },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -90,29 +99,41 @@ fun WellnessSection(
                     }
                 }
                 
-                if (wellnessItems.isNotEmpty()) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text = "${wellnessItems.size}",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (wellnessItems.isNotEmpty()) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Text(
+                                text = "${wellnessItems.size}",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        
+                        // ✅ Icona per espandere/contrarre
+                        Icon(
+                            imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = if (isExpanded) "Collapse" else "Expand",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
                 }
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            // Wellness items
+            // ✅ Contenuto espandibile
             if (wellnessItems.isEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
                 // Empty state
                 EmptyWellnessState(onAddClick = onAddWellnessClick)
-            } else {
+            } else if (isExpanded) {
+                Spacer(modifier = Modifier.height(12.dp))
                 // Lista wellness trackers
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp)

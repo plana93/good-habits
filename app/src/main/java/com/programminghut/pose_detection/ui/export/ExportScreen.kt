@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 /**
  * Export Screen - Composable
@@ -23,9 +24,12 @@ import androidx.compose.ui.unit.dp
 fun ExportScreen(
     viewModel: ExportViewModel,
     onBackClick: () -> Unit,
+    onSettingsClick: () -> Unit = {},
     onExportClick: (String, String, String) -> Unit // (content, fileName, mimeType)
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
+    var isExporting by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -34,6 +38,11 @@ fun ExportScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Indietro")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(Icons.Filled.Settings, contentDescription = "Impostazioni Export")
                     }
                 }
             )
@@ -52,22 +61,61 @@ fun ExportScreen(
             }
             
             is ExportUiState.Success -> {
-                ExportContent(
-                    sessionsCount = state.sessions.size,
-                    onExportCSV = {
-                        val csv = viewModel.generateCSV()
-                        val fileName = "good_habits_export_${System.currentTimeMillis()}.csv"
-                        onExportClick(csv, fileName, "text/csv")
-                    },
-                    onExportJSON = {
-                        val json = viewModel.generateJSON()
-                        val fileName = "good_habits_export_${System.currentTimeMillis()}.json"
-                        onExportClick(json, fileName, "application/json")
-                    },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                )
+                val totalDays = state.dailyData.keys.size
+                val totalItems = state.dailyData.values.flatten().size
+                val displayCount = if (totalDays > 0) "$totalDays giorni con dati" else "${state.sessions.size} sessioni"
+                
+                Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                    ExportContent(
+                        sessionsCount = displayCount,
+                        totalItems = totalItems,
+                        onExportCSV = {
+                            val csv = viewModel.generateCSV()
+                            val fileName = "good_habits_export_${System.currentTimeMillis()}.csv"
+                            onExportClick(csv, fileName, "text/csv")
+                        },
+                        onExportJSON = {
+                            val json = viewModel.generateJSON()
+                            val fileName = "good_habits_export_${System.currentTimeMillis()}.json"
+                            onExportClick(json, fileName, "application/json")
+                        },
+                        onExportTXT = {
+                            // Use suspend version to ensure all data is loaded
+                            isExporting = true
+                            scope.launch {
+                                val txt = viewModel.generateTXTSuspend()
+                                val fileName = "good_habits_diary_${System.currentTimeMillis()}.txt"
+                                onExportClick(txt, fileName, "text/plain")
+                                isExporting = false
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    
+                    // Loading overlay during export
+                    if (isExporting) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Card(
+                                modifier = Modifier.padding(32.dp),
+                                elevation = CardDefaults.cardElevation(8.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    CircularProgressIndicator()
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text("Caricamento dati in corso...")
+                                }
+                            }
+                        }
+                    }
+                }
             }
             
             is ExportUiState.Error -> {
@@ -96,9 +144,11 @@ fun ExportScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExportContent(
-    sessionsCount: Int,
+    sessionsCount: String,
+    totalItems: Int,
     onExportCSV: () -> Unit,
     onExportJSON: () -> Unit,
+    onExportTXT: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -114,26 +164,34 @@ fun ExportContent(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             )
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Info,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Column {
-                    Text(
-                        text = "Dati Disponibili",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    Text(
-                        text = "$sessionsCount sessioni di allenamento",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Column {
+                        Text(
+                            text = "Dati Disponibili",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = sessionsCount,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        if (totalItems > 0) {
+                            Text(
+                                text = "$totalItems attività totali",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -207,6 +265,43 @@ fun ExportContent(
                     )
                     Text(
                         text = "Formato dati strutturato per sviluppatori e integrazioni avanzate",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Filled.ArrowForward,
+                    contentDescription = null
+                )
+            }
+        }
+        
+        // TXT Export Card (NEW)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onExportTXT
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "TXT (Testo Leggibile)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "File di testo leggibile con contesto personalizzato. Perfetto per condividere il tuo percorso!",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

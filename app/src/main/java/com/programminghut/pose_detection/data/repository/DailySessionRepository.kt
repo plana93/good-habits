@@ -174,10 +174,17 @@ class DailySessionRepository(
     }
     
     /**
-     * Ottieni elementi della sessione con dettagli
+     * Ottieni elementi della sessione con dettagli (Flow)
      */
     fun getSessionItemsWithDetails(sessionId: Long): Flow<List<DailySessionItemWithDetails>> {
         return dailySessionRelationDao.getSessionItemsWithDetailsFlow(sessionId)
+    }
+    
+    /**
+     * Ottieni elementi della sessione con dettagli (Suspend - per export sincronizzato)
+     */
+    suspend fun getSessionItemsWithDetailsDirect(sessionId: Long): List<DailySessionItemWithDetails> {
+        return dailySessionRelationDao.getSessionItemsWithDetails(sessionId)
     }
     
     // ============================================================================
