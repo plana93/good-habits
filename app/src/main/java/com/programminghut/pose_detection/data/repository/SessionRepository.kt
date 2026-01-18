@@ -479,7 +479,17 @@ class SessionRepository(
     suspend fun calculateStreakWithRecovery(): Int {
         val oneDayMillis = 24 * 60 * 60 * 1000L
         var streak = 0
-        var currentDay = getStartOfDay(System.currentTimeMillis()) - oneDayMillis
+        val today = getStartOfDay(System.currentTimeMillis())
+        
+        // 🔥 FIX: Check if TODAY has activity first
+        val todayEnd = today + oneDayMillis
+        val todayHasSessions = sessionDao.hasSessionsForDay(today, todayEnd)
+        val todayAllSessions = sessionDao.getSessionsForDay(today, todayEnd)
+        val todayHasRecovery = todayAllSessions.any { it.sessionType == "RECOVERY" }
+        val todayHasActivity = todayHasSessions || todayHasRecovery
+        
+        // Start from today if has activity, otherwise start from yesterday
+        var currentDay = if (todayHasActivity) today else (today - oneDayMillis)
         
         // Go backwards day by day
         while (true) {
@@ -508,7 +518,18 @@ class SessionRepository(
     ): Int {
         val oneDayMillis = 24 * 60 * 60 * 1000L
         var streak = 0
-        var currentDay = getStartOfDay(System.currentTimeMillis()) // 🔥 INIZIA DA OGGI, NON DA IERI!
+        val today = getStartOfDay(System.currentTimeMillis())
+        
+        // 🔥 FIX: Check if TODAY has activity first
+        val todayEnd = today + oneDayMillis
+        val todayHasSessions = sessionDao.hasSessionsForDay(today, todayEnd)
+        val todayAllSessions = sessionDao.getSessionsForDay(today, todayEnd)
+        val todayHasRecovery = todayAllSessions.any { it.sessionType == "RECOVERY" }
+        val todayHasDailySession = dailySummaries.containsKey(today)
+        val todayHasActivity = todayHasSessions || todayHasRecovery || todayHasDailySession
+        
+        // Start from today if has activity, otherwise start from yesterday
+        var currentDay = if (todayHasActivity) today else (today - oneDayMillis)
         
         // Go backwards day by day
         while (true) {
