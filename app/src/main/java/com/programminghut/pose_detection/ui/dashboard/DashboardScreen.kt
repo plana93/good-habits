@@ -264,8 +264,8 @@ fun KpiCardsGrid(kpiData: KpiData) {
                 modifier = Modifier.weight(1f)
             )
             KpiCard(
-                title = "Serie",
-                value = "${kpiData.currentStreak} 🔥",
+                title = "Streak",
+                value = "${kpiData.currentStreak}",
                 icon = Icons.Filled.Star,
                 color = Color(0xFFF44336),
                 modifier = Modifier.weight(1f)

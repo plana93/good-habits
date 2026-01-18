@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -170,55 +171,49 @@ fun CalendarContent(
     }
 }
 
+/**
+ * Zero Dopamine Streak Display
+ * Clean number display without gamification (no flames, no colors, no celebrations)
+ */
 @Composable
 fun StreakCard(currentStreak: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (currentStreak > 0) 
-                Color(0xFFFF9800).copy(alpha = 0.1f) 
-            else 
-                MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(24.dp), // Generous padding (Zero Dopamine: more whitespace)
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Star,
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp),
-                    tint = Color(0xFFFF9800)
+                Text(
+                    text = "Streak",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Column {
-                    Text(
-                        text = "Streak Attuale",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (currentStreak > 0) 
-                            "Mantieni il ritmo!" 
-                        else 
-                            "Inizia oggi!",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = if (currentStreak > 0) 
+                        "Giorni consecutivi" 
+                    else 
+                        "Inizia oggi",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
             }
+            // Simple number display - no emojis, no colors, just facts
             Text(
-                text = "$currentStreak 🔥",
-                style = MaterialTheme.typography.headlineMedium,
+                text = "$currentStreak",
+                style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFFF9800)
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
