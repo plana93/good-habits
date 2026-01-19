@@ -1,26 +1,26 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Good Habits - App Android per fitness con AI-powered pose detection e tracking completo degli allenamenti">
-    <meta name="keywords" content="fitness, Android, AI, TensorFlow, squat detection, workout tracking">
+    <meta name="description" content="Good Habits - Your phone counts your squats. For real. AI-powered fitness tracker built with Kotlin, Computer Vision, and TensorFlow Lite.">
+    <meta name="keywords" content="fitness, Android, AI, TensorFlow, pose detection, workout tracking, Atomic Habits, Jetpack Compose">
     <meta name="author" content="Mirco">
     
     <title>Good Habits - AI-Powered Fitness Tracker</title>
     
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://plana93.github.io/good-habits/">
-    <meta property="og:title" content="Good Habits - AI-Powered Fitness Tracker">
-    <meta property="og:description" content="App Android moderna con AI pose detection, tracking allenamenti e wellness monitoring">
-    <meta property="og:image" content="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/dashboard.png">
+    <meta property="og:title" content="Good Habits - Your Phone Counts Your Squats">
+    <meta property="og:description" content="An experiment in Computer Vision, Kotlin, and building systems that make good habits effortless.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/ai_squat_detection.jpg">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://plana93.github.io/good-habits/">
-    <meta property="twitter:title" content="Good Habits - AI-Powered Fitness Tracker">
-    <meta property="twitter:description" content="App Android moderna con AI pose detection, tracking allenamenti e wellness monitoring">
+    <meta property="twitter:title" content="Good Habits - AI Squat Counter">
+    <meta property="twitter:description" content="Kotlin + Computer Vision + TensorFlow Lite = Your phone counting squats in real-time">
     
     <style>
         * {
@@ -33,27 +33,28 @@
             --primary: #6200EE;
             --primary-dark: #3700B3;
             --secondary: #03DAC6;
-            --background: #FFFFFF;
-            --surface: #F5F5F5;
-            --error: #B00020;
-            --on-primary: #FFFFFF;
-            --on-background: #000000;
-            --on-surface: #000000;
-            --shadow: rgba(0, 0, 0, 0.1);
+            --accent: #FF6B35;
+            --background: #FAFAFA;
+            --surface: #FFFFFF;
+            --text-primary: #1A1A1A;
+            --text-secondary: #666666;
+            --shadow: rgba(0, 0, 0, 0.08);
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
-            color: var(--on-background);
+            color: var(--text-primary);
             background: var(--background);
+            overflow-x: hidden;
         }
 
-        /* Header / Hero Section */
+        /* Hero Section */
         .hero {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: var(--on-primary);
-            padding: 80px 20px;
+            background: var(--gradient);
+            color: white;
+            padding: 120px 20px 80px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -66,9 +67,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,144C960,149,1056,139,1152,128C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
-            background-size: cover;
-            opacity: 0.3;
+            background: url('data:image/svg+xml,<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
+            opacity: 0.5;
         }
 
         .hero-content {
@@ -79,34 +79,44 @@
         }
 
         .hero h1 {
-            font-size: 3.5rem;
-            font-weight: 700;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
             margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: -1px;
         }
 
-        .hero p {
-            font-size: 1.3rem;
-            margin-bottom: 30px;
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 2vw, 1.5rem);
+            font-weight: 300;
+            margin-bottom: 15px;
             opacity: 0.95;
+        }
+
+        .hero-tagline {
+            font-size: 1.1rem;
+            opacity: 0.85;
+            font-style: italic;
+            margin-bottom: 40px;
         }
 
         .badges {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
             margin: 30px 0;
         }
 
         .badge {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
             padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             font-size: 0.9rem;
             font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .cta-buttons {
@@ -118,18 +128,20 @@
         }
 
         .btn {
-            display: inline-block;
-            padding: 15px 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 32px;
             border-radius: 50px;
             text-decoration: none;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .btn-primary {
-            background: var(--on-primary);
+            background: white;
             color: var(--primary);
         }
 
@@ -140,12 +152,12 @@
 
         .btn-secondary {
             background: transparent;
-            color: var(--on-primary);
-            border: 2px solid var(--on-primary);
+            color: white;
+            border: 2px solid white;
         }
 
         .btn-secondary:hover {
-            background: var(--on-primary);
+            background: white;
             color: var(--primary);
         }
 
@@ -161,29 +173,59 @@
             padding: 80px 20px;
         }
 
-        section:nth-child(even) {
-            background: var(--surface);
-        }
-
         .section-title {
             text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 50px;
-            color: var(--primary);
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            margin-bottom: 20px;
             font-weight: 700;
+            color: var(--text-primary);
         }
 
-        /* Screenshots Grid */
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 50px;
+            font-style: italic;
+        }
+
+        /* Quote */
+        .quote {
+            background: var(--surface);
+            border-left: 4px solid var(--primary);
+            padding: 30px 40px;
+            margin: 40px auto;
+            max-width: 800px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px var(--shadow);
+        }
+
+        .quote-text {
+            font-size: 1.3rem;
+            font-style: italic;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .quote-author {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* Screenshots */
         .screenshots-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 50px;
         }
 
         .screenshot-card {
-            background: white;
-            border-radius: 16px;
+            background: var(--surface);
+            border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 4px 20px var(--shadow);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -191,7 +233,7 @@
 
         .screenshot-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
         .screenshot-card img {
@@ -200,37 +242,37 @@
             display: block;
         }
 
-        .screenshot-caption {
-            padding: 20px;
+        .screenshot-info {
+            padding: 25px;
             text-align: center;
         }
 
-        .screenshot-caption h3 {
-            font-size: 1.2rem;
-            color: var(--primary);
+        .screenshot-title {
+            font-size: 1.3rem;
+            font-weight: 700;
             margin-bottom: 8px;
+            color: var(--text-primary);
         }
 
-        .screenshot-caption p {
-            font-size: 0.95rem;
-            color: #666;
+        .screenshot-desc {
+            color: var(--text-secondary);
+            font-size: 1rem;
         }
 
-        /* Features Grid */
+        /* Features */
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
+            gap: 30px;
             margin-top: 50px;
         }
 
         .feature-card {
-            background: white;
-            padding: 40px 30px;
+            background: var(--surface);
+            padding: 35px;
             border-radius: 16px;
-            box-shadow: 0 4px 20px var(--shadow);
+            box-shadow: 0 2px 15px var(--shadow);
             transition: transform 0.3s ease;
-            text-align: center;
         }
 
         .feature-card:hover {
@@ -238,30 +280,36 @@
         }
 
         .feature-icon {
-            font-size: 4rem;
+            font-size: 3rem;
             margin-bottom: 20px;
         }
 
-        .feature-card h3 {
-            font-size: 1.5rem;
-            color: var(--primary);
-            margin-bottom: 15px;
+        .feature-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
         }
 
-        .feature-card ul {
-            text-align: left;
+        .feature-desc {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .feature-list {
             list-style: none;
             margin-top: 15px;
         }
 
-        .feature-card li {
+        .feature-list li {
             padding: 8px 0;
             padding-left: 25px;
             position: relative;
+            color: var(--text-secondary);
         }
 
-        .feature-card li::before {
-            content: "✓";
+        .feature-list li::before {
+            content: '✓';
             position: absolute;
             left: 0;
             color: var(--secondary);
@@ -270,423 +318,307 @@
 
         /* Tech Stack */
         .tech-stack {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 40px;
+            background: var(--surface);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 2px 15px var(--shadow);
+            max-width: 800px;
+            margin: 0 auto;
         }
 
-        .tech-item {
-            background: white;
-            padding: 20px 30px;
+        .tech-stack pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .code-comment {
+            color: #6a9955;
+        }
+
+        /* 4 Laws */
+        .laws-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+
+        .law-card {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 30px;
             border-radius: 12px;
-            box-shadow: 0 2px 10px var(--shadow);
-            font-weight: 600;
-            color: var(--primary);
-            transition: all 0.3s ease;
-        }
-
-        .tech-item:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(98, 0, 238, 0.3);
-        }
-
-        /* Download Section */
-        .download-section {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: var(--on-primary);
             text-align: center;
         }
 
-        .download-box {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 50px;
-            max-width: 700px;
-            margin: 40px auto;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+        .law-number {
+            font-size: 2rem;
+            font-weight: 800;
+            opacity: 0.3;
+            margin-bottom: 10px;
         }
 
-        .download-box h3 {
-            font-size: 1.8rem;
-            margin-bottom: 20px;
+        .law-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
         }
 
-        .download-box p {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
+        .law-desc {
+            font-size: 0.95rem;
             opacity: 0.9;
         }
 
         /* Footer */
         footer {
-            background: #1a1a1a;
+            background: var(--text-primary);
             color: white;
+            padding: 50px 20px;
             text-align: center;
-            padding: 40px 20px;
         }
 
-        .footer-links {
-            display: flex;
-            gap: 30px;
-            justify-content: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .footer-links a {
-            color: white;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .footer-links a:hover {
+        footer a {
             color: var(--secondary);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-quote {
+            font-size: 1.2rem;
+            font-style: italic;
+            margin: 20px 0;
+            opacity: 0.8;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
+            .hero {
+                padding: 80px 20px 60px;
             }
 
-            .hero p {
-                font-size: 1.1rem;
+            section {
+                padding: 60px 20px;
             }
 
-            .section-title {
-                font-size: 2rem;
-            }
-
-            .cta-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .screenshots-grid {
+            .screenshots-grid,
+            .features-grid {
                 grid-template-columns: 1fr;
             }
-        }
-
-        /* Scroll animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .fade-in {
-            animation: fadeInUp 0.8s ease-out;
         }
     </style>
 </head>
 <body>
-    <!-- Hero Section -->
-    <header class="hero">
+    <!-- Hero -->
+    <section class="hero">
         <div class="hero-content">
             <h1>🏋️ Good Habits</h1>
-            <p>AI-Powered Fitness Tracker per Android</p>
-            <p>Intelligenza artificiale, pose detection e gestione completa degli allenamenti in un'unica app moderna</p>
+            <p class="hero-subtitle">Your phone counts your squats. For real.</p>
+            <p class="hero-tagline">An experiment in Kotlin, Computer Vision, and AI</p>
             
             <div class="badges">
-                <span class="badge">📱 Android 7.0+</span>
-                <span class="badge">🤖 AI TensorFlow Lite</span>
-                <span class="badge">🎨 Material3 Design</span>
-                <span class="badge">💯 Kotlin 100%</span>
+                <span class="badge">Android 7.0+</span>
+                <span class="badge">Kotlin</span>
+                <span class="badge">Jetpack Compose</span>
+                <span class="badge">TensorFlow Lite</span>
+                <span class="badge">100% Open Source</span>
             </div>
 
             <div class="cta-buttons">
-                <a href="https://github.com/plana93/good-habits/releases" class="btn btn-primary">📥 Download APK</a>
-                <a href="https://github.com/plana93/good-habits" class="btn btn-secondary">⭐ View on GitHub</a>
+                <a href="https://github.com/plana93/good-habits/releases" class="btn btn-primary">
+                    📥 Download APK
+                </a>
+                <a href="https://github.com/plana93/good-habits" class="btn btn-secondary">
+                    ⭐ View on GitHub
+                </a>
             </div>
         </div>
-    </header>
+    </section>
 
-    <!-- Screenshots Section -->
-    <section id="screenshots">
+    <!-- Why Section -->
+    <section>
         <div class="container">
-            <h2 class="section-title">📸 App Screenshots</h2>
+            <h2 class="section-title">💡 Why This Exists</h2>
             
-            <h3 style="text-align: center; margin-bottom: 30px; color: #666;">Dashboard & Navigazione</h3>
-            <div class="screenshots-grid">
-                <div class="screenshot-card fade-in">
-                    <img src="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/dashboard.png" alt="Dashboard">
-                    <div class="screenshot-caption">
-                        <h3>Dashboard</h3>
-                        <p>Statistiche real-time e KPIs principali</p>
-                    </div>
+            <div class="quote">
+                <p class="quote-text">"You do not rise to the level of your goals. You fall to the level of your systems."</p>
+                <p class="quote-author">— James Clear, Atomic Habits</p>
+            </div>
+
+            <p style="text-align: center; font-size: 1.2rem; max-width: 800px; margin: 40px auto; line-height: 1.8; color: var(--text-secondary);">
+                This project was born from a simple question: <strong>What if technology could make good habits effortless?</strong>
+                <br><br>
+                Inspired by <strong>Atomic Habits</strong>, I wanted to build a system that makes habits <strong>obvious, attractive, easy, and satisfying</strong>. 
+                But beyond habit formation, this was my personal journey to explore <strong>Computer Vision</strong>, master <strong>TensorFlow Lite</strong>, 
+                and build with <strong>Jetpack Compose</strong>.
+            </p>
+
+            <div class="laws-grid">
+                <div class="law-card">
+                    <div class="law-number">01</div>
+                    <div class="law-title">Make it Obvious</div>
+                    <div class="law-desc">AI counts reps automatically</div>
                 </div>
-                <div class="screenshot-card fade-in">
-                    <img src="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/today_screen.png" alt="Today Screen">
-                    <div class="screenshot-caption">
-                        <h3>Today Screen</h3>
-                        <p>Gestione sessione giornaliera modulare</p>
-                    </div>
+                <div class="law-card">
+                    <div class="law-number">02</div>
+                    <div class="law-title">Make it Attractive</div>
+                    <div class="law-desc">Beautiful UI, instant feedback</div>
                 </div>
-                <div class="screenshot-card fade-in">
-                    <img src="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/calendar.png" alt="Calendar">
-                    <div class="screenshot-caption">
-                        <h3>Calendario</h3>
-                        <p>Streak tracking e visualizzazione progressi</p>
-                    </div>
+                <div class="law-card">
+                    <div class="law-number">03</div>
+                    <div class="law-title">Make it Easy</div>
+                    <div class="law-desc">Just point camera and start</div>
+                </div>
+                <div class="law-card">
+                    <div class="law-number">04</div>
+                    <div class="law-title">Make it Satisfying</div>
+                    <div class="law-desc">See progress, break the chain</div>
                 </div>
             </div>
 
-            <h3 style="text-align: center; margin: 60px 0 30px; color: #666;">AI Detection & Workout</h3>
-            <div class="screenshots-grid">
-                <div class="screenshot-card fade-in">
-                    <img src="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/ai_squat_detection.png" alt="AI Squat Detection">
-                    <div class="screenshot-caption">
-                        <h3>AI Detection</h3>
-                        <p>Conteggio automatico squat con MoveNet</p>
-                    </div>
-                </div>
-                <div class="screenshot-card fade-in">
-                    <img src="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/exercise_library.png" alt="Exercise Library">
-                    <div class="screenshot-caption">
-                        <h3>Libreria Esercizi</h3>
-                        <p>Template personalizzabili e grid layout</p>
-                    </div>
-                </div>
-                <div class="screenshot-card fade-in">
-                    <img src="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/workout_builder.png" alt="Workout Builder">
-                    <div class="screenshot-caption">
-                        <h3>Workout Builder</h3>
-                        <p>Crea allenamenti completi multi-esercizio</p>
-                    </div>
-                </div>
+            <div class="quote" style="margin-top: 50px;">
+                <p class="quote-text">"Every action you take is a vote for the type of person you wish to become."</p>
+                <p class="quote-author">This app votes for consistency. One squat at a time.</p>
             </div>
+        </div>
+    </section>
 
-            <h3 style="text-align: center; margin: 60px 0 30px; color: #666;">Wellness & Export</h3>
+    <!-- Screenshots -->
+    <section style="background: var(--surface);">
+        <div class="container">
+            <h2 class="section-title">📱 See It In Action</h2>
+            
             <div class="screenshots-grid">
-                <div class="screenshot-card fade-in">
-                    <img src="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/wellness_tracking.png" alt="Wellness Tracking">
-                    <div class="screenshot-caption">
-                        <h3>Wellness Tracking</h3>
-                        <p>18 tracker emotivi e mentali separati</p>
+                <div class="screenshot-card">
+                    <img src="screenshots/ai_squat_detection.jpg" alt="AI Squat Detection">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">🤖 AI Squat Counter</div>
+                        <div class="screenshot-desc">Real-time pose detection at 30 FPS</div>
                     </div>
                 </div>
-                <div class="screenshot-card fade-in">
-                    <img src="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/export_data.png" alt="Export Data">
-                    <div class="screenshot-caption">
-                        <h3>Export Dati</h3>
-                        <p>CSV/JSON/TXT per analisi esterne</p>
+                
+                <div class="screenshot-card">
+                    <img src="screenshots/today_screen.jpg" alt="Today Screen">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">📅 Daily Session</div>
+                        <div class="screenshot-desc">Track workouts effortlessly</div>
                     </div>
                 </div>
-                <div class="screenshot-card fade-in">
-                    <img src="https://raw.githubusercontent.com/plana93/good-habits/master/screenshots/recovery_system.png" alt="Recovery System">
-                    <div class="screenshot-caption">
-                        <h3>Recovery System</h3>
-                        <p>Recupera giorni persi con 20 AI squat</p>
+                
+                <div class="screenshot-card">
+                    <img src="screenshots/calendar.jpg" alt="Calendar">
+                    <div class="screenshot-info">
+                        <div class="screenshot-title">🔥 Streak Tracking</div>
+                        <div class="screenshot-desc">Don't break the chain</div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Features Section -->
-    <section id="features">
+    <!-- Features -->
+    <section>
         <div class="container">
-            <h2 class="section-title">✨ Features Principali</h2>
+            <h2 class="section-title">🎯 What It Does</h2>
             
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon">🤖</div>
-                    <h3>AI Detection</h3>
-                    <p>Riconoscimento posture in tempo reale</p>
-                    <ul>
-                        <li>MoveNet TensorFlow Lite</li>
-                        <li>Conteggio automatico squat</li>
-                        <li>Camera front/back</li>
-                        <li>Calibrazione automatica</li>
-                        <li>~30 FPS processing</li>
-                    </ul>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">📅</div>
-                    <h3>Sessioni Modulari</h3>
-                    <p>Gestione completa allenamenti</p>
-                    <ul>
-                        <li>Organizzazione giornaliera</li>
-                        <li>Multi-esercizi personalizzati</li>
-                        <li>Template workout completi</li>
-                        <li>Navigazione temporale</li>
-                        <li>Storico 365 giorni</li>
-                    </ul>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Dashboard Analytics</h3>
-                    <p>Statistiche real-time</p>
-                    <ul>
-                        <li>Overview KPIs principali</li>
-                        <li>Calendario integrato</li>
-                        <li>Streak tracking</li>
-                        <li>Export CSV/JSON/TXT</li>
-                        <li>Aggiornamenti live</li>
-                    </ul>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🧘</div>
-                    <h3>Wellness Tracking</h3>
-                    <p>Monitoraggio benessere mentale</p>
-                    <ul>
-                        <li>18 tracker predefiniti</li>
-                        <li>Rating emotivi 0-5</li>
-                        <li>Tracking retroattivo</li>
-                        <li>Note opzionali</li>
-                        <li>Export dedicato</li>
-                    </ul>
+                    <div class="feature-title">AI-Powered Detection</div>
+                    <div class="feature-desc">
+                        <ul class="feature-list">
+                            <li>Real-time pose recognition (30 FPS)</li>
+                            <li>Automatic rep counting</li>
+                            <li>Front/back camera support</li>
+                            <li>100% on-device (no cloud)</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-icon">💪</div>
-                    <h3>Gamification</h3>
-                    <p>Motivazione e costanza</p>
-                    <ul>
-                        <li>Streak giorni consecutivi</li>
-                        <li>Recovery system innovativo</li>
-                        <li>30+ frasi motivazionali</li>
-                        <li>Visual feedback colori</li>
-                        <li>Obiettivi personalizzabili</li>
-                    </ul>
+                    <div class="feature-title">Complete Tracking</div>
+                    <div class="feature-desc">
+                        <ul class="feature-list">
+                            <li>90+ exercises ready to use</li>
+                            <li>Custom workouts & templates</li>
+                            <li>Streak tracking calendar</li>
+                            <li>Export to CSV/JSON/TXT</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">🎨</div>
-                    <h3>Modern UI/UX</h3>
-                    <p>Design all'avanguardia</p>
-                    <ul>
-                        <li>Material3 Design System</li>
-                        <li>Jetpack Compose</li>
-                        <li>Dark/Light theme</li>
-                        <li>Navigazione context-aware</li>
-                        <li>Animazioni fluide</li>
-                    </ul>
+                    <div class="feature-icon">🧘</div>
+                    <div class="feature-title">Wellness Monitoring</div>
+                    <div class="feature-desc">
+                        <ul class="feature-list">
+                            <li>Track mood, energy, sleep</li>
+                            <li>18 emotional trackers</li>
+                            <li>Separate from workouts</li>
+                            <li>Mental health matters too</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Tech Stack Section -->
-    <section id="tech">
+    <!-- Tech Stack -->
+    <section style="background: var(--surface);">
         <div class="container">
-            <h2 class="section-title">🛠️ Tech Stack</h2>
-            <p style="text-align: center; font-size: 1.2rem; margin-bottom: 40px; color: #666;">
-                Tecnologie moderne per un'app performante e scalabile
-            </p>
+            <h2 class="section-title">🛠️ How It's Built</h2>
+            <p class="section-subtitle">"A habit must be established before it can be improved."<br>This app establishes the system. You improve the reps.</p>
             
             <div class="tech-stack">
-                <div class="tech-item">Kotlin 100%</div>
-                <div class="tech-item">Jetpack Compose</div>
-                <div class="tech-item">Material3</div>
-                <div class="tech-item">Room Database</div>
-                <div class="tech-item">TensorFlow Lite</div>
-                <div class="tech-item">MoveNet AI</div>
-                <div class="tech-item">Coroutines + Flow</div>
-                <div class="tech-item">MVVM Architecture</div>
-                <div class="tech-item">Navigation Compose</div>
-                <div class="tech-item">CameraX</div>
-            </div>
+                <pre><code><span class="code-comment">// Core Stack</span>
+Jetpack Compose + Material3  <span class="code-comment">// Modern UI</span>
+TensorFlow Lite + MoveNet    <span class="code-comment">// AI pose detection</span>
+Room Database + Coroutines   <span class="code-comment">// Data persistence</span>
+MVVM + Clean Architecture    <span class="code-comment">// Solid foundation</span>
 
-            <div style="margin-top: 60px; text-align: center;">
-                <h3 style="font-size: 1.8rem; color: var(--primary); margin-bottom: 30px;">📐 Architecture</h3>
-                <div style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px var(--shadow); display: inline-block;">
-                    <pre style="text-align: left; font-family: monospace; font-size: 0.95rem; line-height: 1.8;">
-┌──────────────────────────────────────────┐
-│         GOOD HABITS APP                  │
-│      (Clean Architecture + MVVM)         │
-└───────────────┬──────────────────────────┘
-                │
-    ┌───────────┼───────────┐
-    │           │           │
-┌───▼────┐  ┌──▼────┐  ┌───▼────┐
-│   UI   │  │DOMAIN │  │  DATA  │
-│ Layer  │  │ Layer │  │ Layer  │
-└───┬────┘  └──┬────┘  └───┬────┘
-    │          │           │
- Compose   ViewModels  Repository
- Screens   + Factory   + Database
-                    </pre>
-                </div>
+<span class="code-comment">// The Interesting Part</span>
+MoveNet Lightning  →  Optimized ML model (~4MB)
+GPU-accelerated    →  Hardware inference
+17 body keypoints  →  Full pose tracking
+Custom squat logic →  Validates proper form</code></pre>
             </div>
         </div>
     </section>
 
-    <!-- Download Section -->
-    <section class="download-section">
+    <!-- For Developers -->
+    <section>
         <div class="container">
-            <h2 class="section-title" style="color: white;">📥 Download</h2>
-            
-            <div class="download-box">
-                <h3>Pronto per iniziare?</h3>
-                <p><strong>Requisiti</strong></p>
-                <p>📱 Android 7.0 (API 24) o superiore</p>
-                <p>📷 Permessi Camera (per AI detection)</p>
-                <p>💾 ~50 MB spazio disponibile</p>
-                
-                <div class="cta-buttons" style="margin-top: 40px;">
-                    <a href="https://github.com/plana93/good-habits/releases" class="btn btn-primary">
-                        📥 Scarica APK
-                    </a>
-                    <a href="https://github.com/plana93/good-habits" class="btn btn-secondary">
-                        💻 Codice Sorgente
-                    </a>
-                </div>
-            </div>
-
-            <div style="margin-top: 50px; opacity: 0.9;">
-                <h3 style="font-size: 1.5rem; margin-bottom: 20px;">Build da Sorgente</h3>
-                <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; text-align: left; display: inline-block;">
-                    <code style="display: block; font-family: monospace;">
-                        git clone https://github.com/plana93/good-habits.git<br>
-                        cd good-habits<br>
-                        ./gradlew assembleDebug<br>
-                        adb install app/build/outputs/apk/debug/app-debug.apk
-                    </code>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contributing Section -->
-    <section id="contributing">
-        <div class="container">
-            <h2 class="section-title">🤝 Contributing</h2>
-            <p style="text-align: center; font-size: 1.2rem; max-width: 800px; margin: 0 auto 40px;">
-                Contributi sono benvenuti! Good Habits è un progetto open source e accettiamo pull request, bug reports e suggerimenti.
+            <h2 class="section-title">🎓 For Developers</h2>
+            <p class="section-subtitle">
+                "The purpose of setting goals is to win the game. The purpose of building systems is to continue playing the game."
             </p>
+            
+            <div style="max-width: 700px; margin: 0 auto; text-align: center;">
+                <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 30px; line-height: 1.8;">
+                    This project is <strong>open source</strong> for a reason. Want to explore <strong>TensorFlow Lite</strong> on Android? 
+                    Learn <strong>Jetpack Compose</strong> in a real project? Study <strong>Clean Architecture</strong>? 
+                    Experiment with <strong>Computer Vision</strong>?
+                </p>
+                
+                <p style="font-size: 1.3rem; font-weight: 600; color: var(--primary); margin: 30px 0;">
+                    Clone it. Break it. Fix it. Learn.
+                </p>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; margin-top: 40px;">
-                <div style="text-align: center; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 15px var(--shadow);">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">🐛</div>
-                    <h3 style="color: var(--primary); margin-bottom: 10px;">Report Bugs</h3>
-                    <p>Segnala problemi o comportamenti inaspettati</p>
-                    <a href="https://github.com/plana93/good-habits/issues" style="color: var(--primary); text-decoration: none; font-weight: 600;">Apri Issue →</a>
-                </div>
-
-                <div style="text-align: center; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 15px var(--shadow);">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">💡</div>
-                    <h3 style="color: var(--primary); margin-bottom: 10px;">Suggerisci Features</h3>
-                    <p>Proponi nuove funzionalità e miglioramenti</p>
-                    <a href="https://github.com/plana93/good-habits/discussions" style="color: var(--primary); text-decoration: none; font-weight: 600;">Discussioni →</a>
-                </div>
-
-                <div style="text-align: center; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 15px var(--shadow);">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">🔧</div>
-                    <h3 style="color: var(--primary); margin-bottom: 10px;">Contribuisci al Codice</h3>
-                    <p>Fork, migliora e invia pull request</p>
-                    <a href="https://github.com/plana93/good-habits/blob/master/README.md#contributing" style="color: var(--primary); text-decoration: none; font-weight: 600;">Guida →</a>
+                <div class="cta-buttons">
+                    <a href="https://github.com/plana93/good-habits" class="btn btn-primary">
+                        📖 Read the Code
+                    </a>
+                    <a href="https://github.com/plana93/good-habits/blob/master/update_docs/TECHNICAL_GUIDE.md" class="btn btn-secondary">
+                        🛠️ Technical Guide
+                    </a>
                 </div>
             </div>
         </div>
@@ -695,59 +627,26 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <div class="footer-links">
-                <a href="https://github.com/plana93/good-habits">GitHub</a>
-                <a href="https://github.com/plana93/good-habits/issues">Issues</a>
-                <a href="https://github.com/plana93/good-habits/releases">Releases</a>
-                <a href="../update_docs/TECHNICAL_GUIDE.md">Documentation</a>
-                <a href="../LICENSE">License</a>
-            </div>
-            
-            <p style="margin-top: 20px; opacity: 0.8;">
-                Made with ❤️ and 💪 by <a href="https://github.com/plana93" style="color: var(--secondary); text-decoration: none;">Mirco</a>
+            <p class="footer-quote">
+                "You do not rise to the level of your goals. You fall to the level of your systems."<br>
+                <strong>This is my system for building systems.</strong>
             </p>
             
-            <p style="margin-top: 10px; font-size: 0.9rem; opacity: 0.7;">
-                © 2026 Good Habits. Licensed under MIT License.
+            <p style="margin: 30px 0; font-size: 1.1rem;">
+                Built with curiosity, passion, and too much caffeine ☕
             </p>
-
-            <div style="margin-top: 30px;">
-                <a href="https://github.com/plana93/good-habits" class="btn btn-secondary" style="display: inline-block;">
-                    ⭐ Star on GitHub
-                </a>
-            </div>
+            
+            <p>
+                <strong>Mirco</strong> • 
+                <a href="https://github.com/plana93">@plana93</a> • 
+                2026
+            </p>
+            
+            <p style="margin-top: 30px; opacity: 0.7; font-size: 0.9rem;">
+                Open source under MIT License • 
+                <a href="https://github.com/plana93/good-habits">View on GitHub</a>
+            </p>
         </div>
     </footer>
-
-    <script>
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-
-        // Lazy load animation on scroll
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('fade-in');
-                }
-            });
-        }, observerOptions);
-
-        document.querySelectorAll('.screenshot-card, .feature-card').forEach(el => {
-            observer.observe(el);
-        });
-    </script>
 </body>
 </html>
