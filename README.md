@@ -8,33 +8,44 @@
 ![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-blue.svg)
 ![AI](https://img.shields.io/badge/AI-TensorFlow%20Lite-orange.svg)
 
-### **Il tuo smartphone ti conta gli squat. Davvero.**
+### **Your phone counts your squats. For real.**
 
-*Un esperimento nato dalla passione: Kotlin, Computer Vision e AI sul palmo della mano.*
+*An experiment born from curiosity: Kotlin, Computer Vision, and AI in your pocket.*
 
-[📥 Download](#-download) • [🎯 Features](#-cosa-fa) • [🛠️ Tech](#-come-è-fatto)
+[📥 Download](#-download) • [🎯 Features](#-what-it-does) • [🛠️ Tech](#-how-its-built)
 
 </div>
 
 ---
 
-## 🤔 Perché esiste questo progetto?
+## 💡 Why This Project Exists
 
-**Ti sei mai chiesto** cosa ci vuole per insegnare a uno smartphone a riconoscere il tuo corpo mentre ti alleni?
+> *"You do not rise to the level of your goals. You fall to the level of your systems."*  
+> — **James Clear, Atomic Habits**
 
-Questo progetto nasce da quella curiosità. **Non è un'app fatta da un team di sviluppatori**—è l'esplorazione personale di uno sviluppatore che voleva:
+This project was born from a simple question: **What if technology could make good habits effortless?**
 
-✨ **Sporcarsi le mani** con Computer Vision su Android  
-✨ **Capire davvero** come funziona TensorFlow Lite  
-✨ **Sperimentare** con Jetpack Compose e Kotlin moderno  
-✨ **Costruire qualcosa di utile** (e che contasse gli squat al posto mio)
+Inspired by **Atomic Habits**, I wanted to build a system that:
 
-> *"E se il mio telefono capisse quando faccio uno squat corretto?"*  
-> Spoiler: ora lo fa. E conta pure quanti ne fai.
+✨ **Makes habits obvious** → AI counts your reps automatically  
+✨ **Makes them attractive** → Beautiful UI, instant feedback  
+✨ **Makes them easy** → Just point your camera and start  
+✨ **Makes them satisfying** → See your progress, break the chain
+
+But beyond habit formation, this was my personal journey to:
+
+🔬 **Explore Computer Vision** on Android (pose detection is hard!)  
+🧠 **Master TensorFlow Lite** (ML on-device is fascinating)  
+🎨 **Build with Jetpack Compose** (declarative UI done right)  
+📚 **Learn by doing** (not just reading docs)
+
+> *"Every action you take is a vote for the type of person you wish to become."*
+
+This app votes for consistency. One squat at a time.
 
 ---
 
-## 📱 Guarda come funziona
+## 📱 See It In Action
 
 <div align="center">
 <table>
@@ -42,23 +53,23 @@ Questo progetto nasce da quella curiosità. **Non è un'app fatta da un team di 
     <td align="center">
       <img src="screenshots/ai_squat_detection.jpg" width="250" alt="AI Detection"/>
       <br/>
-      <b>🤖 AI che conta squat</b>
+      <b>🤖 AI Squat Counter</b>
       <br/>
       <i>Real-time pose detection</i>
     </td>
     <td align="center">
       <img src="screenshots/today_screen.jpg" width="250" alt="Today Screen"/>
       <br/>
-      <b>📅 Sessione giornaliera</b>
+      <b>📅 Daily Session</b>
       <br/>
-      <i>Allenamenti organizzati</i>
+      <i>Track your workouts</i>
     </td>
     <td align="center">
       <img src="screenshots/calendar.jpg" width="250" alt="Calendar"/>
       <br/>
-      <b>🔥 Streak tracking</b>
+      <b>🔥 Streak Tracking</b>
       <br/>
-      <i>Motivazione visiva</i>
+      <i>Don't break the chain</i>
     </td>
   </tr>
 </table>
@@ -66,71 +77,60 @@ Questo progetto nasce da quella curiosità. **Non è un'app fatta da un team di 
 
 ---
 
-## 🎯 Cosa fa?
+## 🎯 What It Does
 
-### 🤖 **L'AI ti guarda mentre ti alleni** (non è inquietante, giuro)
-- Riconosce la tua postura in **tempo reale** (30 FPS)
-- Conta **automaticamente** gli squat
-- Funziona con **camera frontale o posteriore**
-- **Zero cloud**, tutto on-device (privacy first)
+### 🤖 **AI-Powered Squat Detection**
+- Real-time pose recognition (**30 FPS**)
+- Automatic rep counting
+- Front/back camera support
+- **100% on-device** (privacy first, no cloud)
 
-### 📊 **Traccia tutto** (ossessivamente, ma in modo carino)
-- **90+ esercizi** pronti all'uso (squat, flessioni, plank, cardio, stretching...)
-- Crea **workout personalizzati** o usa i template
-- **Calendario** con streak di continuità
-- **Export dati** in CSV/JSON/TXT (per i data nerd)
+### � **Complete Workout Tracking**
+- **90+ exercises** ready to use (squats, push-ups, planks, cardio, stretching)
+- Create custom workouts or use templates
+- Calendar with **streak tracking** (don't break the chain!)
+- Export data in **CSV/JSON/TXT**
 
-### 🧘 **Wellness tracking** (perché non sei solo muscoli)
-- Traccia **mood, sonno, stress, energia**
-- **18 tracker emozionali** predefiniti
-- Separato dagli allenamenti (non influenza le statistiche)
+### 🧘 **Wellness Tracking**
+- Track mood, energy, sleep, stress
+- **18 emotional trackers** built-in
+- Separate from workouts (mental health matters too)
 
 ---
 
-## 🛠️ Come è fatto?
+## 🛠️ How It's Built
 
-### **Tech Stack** (quello che ho voluto imparare)
-
+**Core Stack:**
 ```kotlin
-// 🎨 UI moderna
-Jetpack Compose + Material3
-
-// 🧠 Intelligenza Artificiale
-TensorFlow Lite + MoveNet (pose detection)
-
-// 💾 Persistenza dati
-Room Database + Kotlin Coroutines
-
-// 🏗️ Architettura pulita
-MVVM + Repository Pattern
-
-// 📱 100% Kotlin nativo
-Zero XML layouts, zero Java legacy
+Jetpack Compose + Material3  // Modern UI
+TensorFlow Lite + MoveNet    // AI pose detection
+Room Database + Coroutines   // Data persistence
+MVVM + Clean Architecture    // Solid foundation
 ```
 
-### **La parte interessante** (il cuore pulsante)
+**The Interesting Part:**
+- **MoveNet Lightning** → Optimized ML model (~4MB)
+- **GPU-accelerated** → Hardware inference when available
+- **17 body keypoints** → Full pose tracking
+- **Custom squat logic** → Validates proper form
 
-- **MoveNet Lightning**: modello ML ottimizzato per mobile (~4MB)
-- **GPU-accelerated**: inferenza hardware quando disponibile
-- **Pose tracking**: 17 keypoints del corpo umano
-- **Squat logic**: algoritmo custom per validare la forma corretta
-
-> *"TensorFlow Lite su Android non è facile. Ma quando funziona, è magia."*
+> *"A habit must be established before it can be improved."*  
+> This app establishes the system. You improve the reps.
 
 ---
 
 ## 📥 Download
 
-### **Opzione 1: APK Release**
+### **Quick Install**
 ```bash
-# Scarica l'ultima versione
+# Download latest release
 https://github.com/plana93/good-habits/releases
 
-# Installa sul telefono
+# Install via ADB
 adb install good-habits-v1.1.0-debug.apk
 ```
 
-### **Opzione 2: Build da sorgente**
+### **Build from Source**
 ```bash
 git clone https://github.com/plana93/good-habits.git
 cd good-habits
@@ -138,75 +138,56 @@ cd good-habits
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
-**Requisiti**: Android 7.0+ (API 24) | ~50 MB spazio | Permesso camera
+**Requirements:** Android 7.0+ (API 24) | ~50 MB | Camera permission
 
 ---
 
-## 🧪 Cosa ho imparato (Spoiler: tanto)
+## 🎓 For Developers Who Want to Learn
 
-### **Computer Vision è difficile**
-- Calibrare soglie per riconoscere squat "giusti" vs "sbagliati"
-- Gestire angolazioni camera diverse
-- Ottimizzare performance per evitare lag
+This project is **open source** for a reason. If you want to:
 
-### **Jetpack Compose è potente**
-- UI dichiarativa cambia il paradigma
-- Recomposition intelligente
-- State management con StateFlow
+- 🔬 Explore **TensorFlow Lite** on Android
+- 🎨 Learn **Jetpack Compose** in a real-world project
+- 🏗️ Study **Clean Architecture + MVVM**
+- 🤖 Experiment with **Computer Vision**
 
-### **ML on-device ha limiti**
-- Modelli compressi perdono precisione
-- GPU non sempre disponibile
-- Batteria soffre (ottimizzazioni necessarie)
+**Clone it. Break it. Fix it. Learn.**
 
-### **Architettura conta**
-- Clean Architecture salva la vita (e il refactoring)
-- Repository Pattern mantiene UI disaccoppiata
-- Migrations database sono insidiose
+> *"The purpose of setting goals is to win the game. The purpose of building systems is to continue playing the game."*
+
+### Technical Documentation
+- [📖 Technical Guide](update_docs/TECHNICAL_GUIDE.md) - Deep architecture dive
+- [🏗️ Build Guide](update_docs/05_BUILD_DEPLOY_GUIDE.md) - Development setup
+- [📋 Roadmap](update_docs/02_DEVELOPMENT_ROADMAP.md) - What's next
 
 ---
 
-## 🎓 Per chi volesse sperimentare
+## 🤝 Contributing
 
-Questo progetto è **open source** proprio per questo. Se vuoi:
+Got an idea? Found a bug? Want to add an exercise?
 
-- 🔬 **Esplorare** TensorFlow Lite su Android
-- 🎨 **Imparare** Jetpack Compose in un progetto reale
-- 🏗️ **Studiare** Clean Architecture + MVVM
-- 🤖 **Sperimentare** con Computer Vision
+1. **Fork** the repo
+2. **Experiment** in your branch
+3. **Submit** a Pull Request
 
-**Clona, modifica, rompi, ripara.** È così che si impara.
-
-### Documentazione tecnica
-- [📖 Technical Guide](update_docs/TECHNICAL_GUIDE.md) - Architettura approfondita
-- [🏗️ Build Guide](update_docs/05_BUILD_DEPLOY_GUIDE.md) - Setup sviluppo
-- [📋 Roadmap](update_docs/02_DEVELOPMENT_ROADMAP.md) - Prossimi step
+No corporate BS. Just clean code and curiosity.
 
 ---
 
-## 🤝 Contributi benvenuti
+## 📄 License
 
-Hai un'idea? Hai trovato un bug? Vuoi aggiungere un esercizio?
-
-1. **Fork** il repo
-2. **Sperimenta** nel tuo branch
-3. **Proponi** una Pull Request
-
-Nessuna formalità eccessiva, solo codice pulito e voglia di imparare.
-
----
-
-## 📄 Licenza
-
-**MIT License** - Fai quello che vuoi, ma cita la fonte 🙏
+**MIT License** - Do what you want, just give credit 🙏
 
 ---
 
 <div align="center">
 
-### **⭐ Se ti incuriosisce, lascia una stella ⭐**
+### **⭐ If this sparks your curiosity, leave a star ⭐**
 
-*Built with passion, curiosity, and too much caffeine ☕*
+> *"You do not rise to the level of your goals. You fall to the level of your systems."*  
+> **This is my system for building systems.**
+
+*Built with curiosity, passion, and too much caffeine ☕*
 
 **Mirco** • [@plana93](https://github.com/plana93) • 2026
 
