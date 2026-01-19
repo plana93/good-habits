@@ -1,0 +1,14 @@
+{
+  "id": 196,
+  "name": "Spinal Twists (Seated)",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Torsioni spinali seduto: seduto gambe incrociate, ruota busto lateralmente tenendo con mano opposta il ginocchio. Mobilità colonna rotazionale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

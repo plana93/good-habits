@@ -1,0 +1,14 @@
+{
+  "id": 169,
+  "name": "Boat Pose Hold",
+  "type": "STRENGTH",
+  "mode": "TIME",
+  "description": "Tenuta barca (yoga): seduto, gambe e busto sollevati formando V, braccia in avanti. Isometria core intensa.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsBoat",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

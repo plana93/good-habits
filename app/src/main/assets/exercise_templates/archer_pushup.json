@@ -1,0 +1,14 @@
+{
+  "id": 127,
+  "name": "Archer Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti arciere: braccia larghe, scendi spostando il peso su un braccio mentre l'altro si estende lateralmente. Transizione verso one-arm push-up.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 6,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

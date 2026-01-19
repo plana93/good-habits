@@ -1,0 +1,14 @@
+{
+  "id": 142,
+  "name": "Swimming",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Nuoto a terra: dalla posizione superman, alterna braccia e gambe con movimento di nuoto. Lower back, glutei, spalle posteriori.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Pool",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

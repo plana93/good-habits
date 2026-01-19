@@ -1,0 +1,14 @@
+{
+  "id": 164,
+  "name": "Plank Rotations",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Rotazioni in plank: dalla high plank, ruota aprendo braccio verso l'alto a side plank, alterna lati. Core rotazionale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Rotate90DegreesCcw",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

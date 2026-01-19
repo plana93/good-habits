@@ -1,0 +1,14 @@
+{
+  "id": 173,
+  "name": "High Knees",
+  "type": "CARDIO",
+  "mode": "TIME",
+  "description": "Ginocchia alte: corri sul posto sollevando ginocchia verso il petto rapidamente. Cardio intenso, hip flexors.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

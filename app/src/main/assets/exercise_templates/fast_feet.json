@@ -1,0 +1,14 @@
+{
+  "id": 177,
+  "name": "Fast Feet (In-Place)",
+  "type": "CARDIO",
+  "mode": "TIME",
+  "description": "Corsa veloce sul posto: appoggi rapidissimi dei piedi, piccoli passi veloci. Cardio esplosivo, agilità.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": null,
+  "defaultTime": 20,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

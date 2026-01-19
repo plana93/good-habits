@@ -1,0 +1,14 @@
+{
+  "id": 146,
+  "name": "Shadow Boxing",
+  "type": "CARDIO",
+  "mode": "TIME",
+  "description": "Boxe a vuoto: pugni alternati nell'aria con movimento delle gambe. Cardio, spalle, core rotazionale, coordinazione.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SportsKabaddi",
+  "defaultReps": null,
+  "defaultTime": 60,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

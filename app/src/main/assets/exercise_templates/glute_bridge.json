@@ -1,0 +1,14 @@
+{
+  "id": 105,
+  "name": "Glute Bridge",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Ponte glutei: schiena a terra, piedi piantati, solleva i fianchi contraendo i glutei. Attiva glutei, femorali e core.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

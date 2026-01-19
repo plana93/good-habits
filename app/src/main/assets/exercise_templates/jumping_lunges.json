@@ -1,0 +1,14 @@
+{
+  "id": 104,
+  "name": "Jumping Lunges",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Affondi saltati: dalla posizione di affondo, salta e cambia gamba in aria. Esplosività, potenza e cardio ad alta intensità.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 16,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

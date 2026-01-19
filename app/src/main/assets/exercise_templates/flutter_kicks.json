@@ -1,0 +1,14 @@
+{
+  "id": 152,
+  "name": "Flutter Kicks",
+  "type": "STRENGTH",
+  "mode": "TIME",
+  "description": "Calci flutter: supino, gambe sollevate, alterna piccoli calci su/giù mantenendo core attivo. Resistenza addome inferiore.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Pool",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

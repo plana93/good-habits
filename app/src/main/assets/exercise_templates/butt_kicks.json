@@ -1,0 +1,14 @@
+{
+  "id": 174,
+  "name": "Butt Kicks",
+  "type": "CARDIO",
+  "mode": "TIME",
+  "description": "Calci glutei: corri sul posto portando talloni verso i glutei rapidamente. Cardio, femorali dinamici.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

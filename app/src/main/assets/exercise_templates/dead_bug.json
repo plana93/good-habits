@@ -1,0 +1,14 @@
+{
+  "id": 157,
+  "name": "Dead Bug",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Insetto morto: supino, braccia e gambe sollevate, abbassa braccio e gamba opposti mantenendo schiena piatta. Anti-estensione core.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "BugReport",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

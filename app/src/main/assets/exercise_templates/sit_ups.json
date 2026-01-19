@@ -1,0 +1,14 @@
+{
+  "id": 172,
+  "name": "Sit-ups",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Sit-up completi: supino, solleva completamente il busto fino a posizione seduta, torna. Range completo rispetto al crunch.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

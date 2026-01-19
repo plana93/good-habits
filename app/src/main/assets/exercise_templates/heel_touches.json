@@ -1,0 +1,14 @@
+{
+  "id": 156,
+  "name": "Heel Touches",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Tocchi tallone: supino, gambe piegate, crunch laterale toccando alternamente i talloni. Obliqui, flessione laterale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "PanTool",
+  "defaultReps": 30,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

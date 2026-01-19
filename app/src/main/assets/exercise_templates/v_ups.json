@@ -1,0 +1,14 @@
+{
+  "id": 154,
+  "name": "V-ups",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "V-up completi: supino, solleva simultaneamente busto e gambe tese formando V. Avanzato, full core activation.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

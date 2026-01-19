@@ -1,0 +1,14 @@
+{
+  "id": 159,
+  "name": "Forearm Plank",
+  "type": "STRENGTH",
+  "mode": "TIME",
+  "description": "Plank sui gomiti: avambracci a terra, corpo dritto da testa a talloni. Isometria core fondamentale, stabilità totale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": null,
+  "defaultTime": 45,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

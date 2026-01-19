@@ -1,0 +1,14 @@
+{
+  "id": 183,
+  "name": "Child's Pose",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Posizione del bambino (yoga): in ginocchio, seduto sui talloni, braccia in avanti, fronte a terra. Rilassamento schiena, spalle, stretching globale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 45,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

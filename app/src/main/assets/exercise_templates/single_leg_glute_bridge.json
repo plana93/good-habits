@@ -1,0 +1,14 @@
+{
+  "id": 106,
+  "name": "Single Leg Glute Bridge",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Ponte glutei su una gamba: come il ponte classico ma con una gamba tesa in aria. Maggiore attivazione glutei e richiesta di stabilità.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

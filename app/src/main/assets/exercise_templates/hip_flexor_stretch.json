@@ -1,0 +1,14 @@
+{
+  "id": 192,
+  "name": "Hip Flexor Stretch (Lunge)",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Stretching flessori anca in affondo: affondo profondo, ginocchio posteriore a terra, spingi bacino avanti. Flessori anca, quadricipiti.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

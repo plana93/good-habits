@@ -1,0 +1,14 @@
+{
+  "id": 121,
+  "name": "Diamond Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti a diamante: mani vicine a formare un diamante con pollici e indici. Enfasi maggiore sui tricipiti rispetto al push-up standard.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 8,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

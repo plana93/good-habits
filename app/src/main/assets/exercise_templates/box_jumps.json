@@ -1,0 +1,14 @@
+{
+  "id": 178,
+  "name": "Box Jumps (Bodyweight)",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Salti su gradino/rialzo: salta esplosivamente su superficie stabile, scendi controllato. Potenza gambe, pliometria.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

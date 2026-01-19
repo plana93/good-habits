@@ -1,0 +1,14 @@
+{
+  "id": 155,
+  "name": "Russian Twists (Bodyweight)",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Torsioni russe: seduto con piedi sollevati, ruota il busto lateralmente toccando terra a destra e sinistra. Obliqui, rotazione.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Sync",
+  "defaultReps": 30,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

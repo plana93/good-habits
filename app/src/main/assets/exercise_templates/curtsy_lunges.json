@@ -1,0 +1,14 @@
+{
+  "id": 103,
+  "name": "Curtsy Lunges",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Affondi incrociati: porta la gamba indietro in diagonale (dietro l'altra gamba) come una riverenza. Ottimo per glutei e stabilità dell'anca.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

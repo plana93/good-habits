@@ -1,0 +1,14 @@
+{
+  "id": 116,
+  "name": "Step-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Salita su gradino/sedia: sali su un supporto stabile spingendo con una gamba, scendi controllato. Simula scale, ottimo per glutei e quadricipiti.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

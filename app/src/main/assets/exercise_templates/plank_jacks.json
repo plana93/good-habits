@@ -1,0 +1,14 @@
+{
+  "id": 137,
+  "name": "Plank Jacks",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Saltelli in plank: dalla plank, divarica e richiudi i piedi saltando come jumping jacks. Cardio + core + spalle.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

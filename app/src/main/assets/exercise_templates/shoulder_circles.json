@@ -1,0 +1,14 @@
+{
+  "id": 193,
+  "name": "Shoulder Circles",
+  "type": "STRETCHING",
+  "mode": "REPS",
+  "description": "Cerchi spalle: ruota le spalle in cerchi ampi avanti e indietro. Mobilità articolazione spalla, riscaldamento.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Autorenew",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

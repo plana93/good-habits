@@ -1,0 +1,14 @@
+{
+  "id": 139,
+  "name": "Prone T Raises",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Sollevamenti T proni: a pancia in giù, braccia laterali a 90° formando T, solleva dal pavimento. Rinforzo parte superiore schiena.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

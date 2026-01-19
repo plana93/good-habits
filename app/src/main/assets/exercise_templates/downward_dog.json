@@ -1,0 +1,14 @@
+{
+  "id": 186,
+  "name": "Downward Dog",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Cane a testa in giù (yoga): V invertita, mani e piedi a terra, glutei in alto. Stretching catena posteriore, spalle, polpacci.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

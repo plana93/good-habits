@@ -1,0 +1,14 @@
+{
+  "id": 108,
+  "name": "Donkey Kicks",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Slanci posteriori a quattro zampe: solleva la gamba piegata spingendo il tallone verso l'alto. Attivazione glutei e femorali.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": 132,
+  "name": "Tricep Floor Press (Self-Resistance)",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Pressa tricipiti a terra: supino, premi una mano contro l'altra fornendo resistenza manuale mentre estendi i gomiti verso l'alto.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": 168,
+  "name": "Ab Tucks / Knee Tucks",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Raccolte addome: seduto, porta ginocchia al petto contraendo addome, estendi. Lavoro completo retto addominale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

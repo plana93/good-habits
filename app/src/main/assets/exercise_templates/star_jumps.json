@@ -1,0 +1,14 @@
+{
+  "id": 182,
+  "name": "Star Jumps",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Salti a stella: salta allargando braccia e gambe formando stella, richiudi. Jumping jacks esplosivi.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Star",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

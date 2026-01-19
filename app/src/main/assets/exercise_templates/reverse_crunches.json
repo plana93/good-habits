@@ -1,0 +1,14 @@
+{
+  "id": 150,
+  "name": "Reverse Crunches",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Crunch inversi: supino, solleva bacino e gambe verso petto arrotolando lower abs. Target: addome inferiore.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

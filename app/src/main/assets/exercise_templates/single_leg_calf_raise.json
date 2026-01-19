@@ -1,0 +1,14 @@
+{
+  "id": 111,
+  "name": "Single Leg Calf Raise",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Sollevamento polpacci su una gamba: come il calf raise ma su un piede solo. Maggiore intensità e lavoro di equilibrio.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

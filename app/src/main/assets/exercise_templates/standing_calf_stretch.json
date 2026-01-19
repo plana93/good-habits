@@ -1,0 +1,14 @@
+{
+  "id": 191,
+  "name": "Standing Calf Stretch",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Stretching polpacci in piedi: gamba posteriore tesa, anteriore piegata, tallone posteriore a terra. Polpacci, tendine d'Achille.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

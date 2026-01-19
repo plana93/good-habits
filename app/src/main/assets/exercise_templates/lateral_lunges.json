@@ -1,0 +1,14 @@
+{
+  "id": 102,
+  "name": "Lateral Lunges",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Affondi laterali: passo largo sul lato, piega il ginocchio mantenendo l'altra gamba tesa. Target: adduttori, abduttori e glutei.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": 175,
+  "name": "Lateral Skaters",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Skaters laterali: salta lateralmente da una gamba all'altra imitando pattinatore. Cardio, potenza laterale, equilibrio.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "IceSkating",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

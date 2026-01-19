@@ -1,0 +1,14 @@
+{
+  "id": 107,
+  "name": "Frog Pump",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Ponte glutei variante rana: piedi uniti per le piante, ginocchia aperte. Solleva i fianchi contraendo solo i glutei. Isolamento glutei puro.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

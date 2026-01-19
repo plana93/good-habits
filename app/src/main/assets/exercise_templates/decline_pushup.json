@@ -1,0 +1,14 @@
+{
+  "id": 124,
+  "name": "Decline Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti in discesa: piedi su superficie elevata, mani a terra. Versione più intensa, maggior carico sulle spalle e petto superiore.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 8,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

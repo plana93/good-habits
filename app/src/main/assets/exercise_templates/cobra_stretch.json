@@ -1,0 +1,14 @@
+{
+  "id": 184,
+  "name": "Cobra Stretch",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Posizione cobra: prono, spalle su braccia tese, bacino a terra, petto aperto. Stretching addome, flessori anca, estensione colonna.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

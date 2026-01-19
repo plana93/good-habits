@@ -1,0 +1,14 @@
+{
+  "id": 176,
+  "name": "Sprawl",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Sprawl: squat jump con mani a terra, calcia gambe indietro in plank, ritorna. Simile burpee senza push-up, più veloce.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

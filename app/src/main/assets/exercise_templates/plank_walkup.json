@@ -1,0 +1,14 @@
+{
+  "id": 134,
+  "name": "Plank Walk-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Camminata plank su/giù: da plank sui gomiti, sali sulle mani una alla volta, poi ridiscendi sui gomiti. Core e spalle dinamici.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

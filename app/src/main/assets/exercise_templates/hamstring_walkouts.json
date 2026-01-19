@@ -1,0 +1,14 @@
+{
+  "id": 117,
+  "name": "Hamstring Walkouts",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Camminata femorali: dalla posizione di ponte glutei, 'cammina' con i talloni allontanandoti dal corpo, poi torna indietro. Intenso per femorali e core.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 8,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

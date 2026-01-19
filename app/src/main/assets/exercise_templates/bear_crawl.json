@@ -1,0 +1,14 @@
+{
+  "id": 171,
+  "name": "Bear Crawl",
+  "type": "STRENGTH",
+  "mode": "TIME",
+  "description": "Camminata orso: quadrupedia con ginocchia sollevate da terra, 'cammina' avanti/indietro. Core anti-estensione, spalle, coordinazione.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Pets",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": 118,
+  "name": "Prone Leg Curls",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Curl femorali a pancia in giù: sdraiati proni, fletti le gambe portando i talloni verso i glutei contraendo i femorali. Senza resistenza esterna.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

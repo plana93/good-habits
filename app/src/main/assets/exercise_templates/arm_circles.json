@@ -1,0 +1,14 @@
+{
+  "id": 194,
+  "name": "Arm Circles",
+  "type": "STRETCHING",
+  "mode": "REPS",
+  "description": "Cerchi braccia: braccia tese lateralmente, ruota in cerchi piccoli/grandi. Mobilità spalle, riscaldamento upper body.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Autorenew",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

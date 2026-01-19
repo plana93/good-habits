@@ -1,0 +1,14 @@
+{
+  "id": 185,
+  "name": "Cat-Cow Stretch",
+  "type": "STRETCHING",
+  "mode": "REPS",
+  "description": "Gatto-mucca (yoga): in quadrupedia, alterna incurvamento schiena (gatto) ed estensione (mucca). Mobilità colonna vertebrale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Pets",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

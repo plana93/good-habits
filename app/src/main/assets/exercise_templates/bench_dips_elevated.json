@@ -1,0 +1,14 @@
+{
+  "id": 130,
+  "name": "Bench Dips (Feet Elevated)",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Dip su panca con piedi elevati: piedi su seconda panca/sedia per maggior intensità. Versione avanzata dei tricep dips standard.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

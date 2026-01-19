@@ -1,0 +1,14 @@
+{
+  "id": 151,
+  "name": "Leg Raises",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Sollevamenti gambe: supino, gambe tese, solleva verso 90° mantenendo lower back a terra. Intenso per addome inferiore.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

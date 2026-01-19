@@ -1,0 +1,14 @@
+{
+  "id": 140,
+  "name": "Prone W Raises",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Sollevamenti W proni: a pancia in giù, gomiti piegati a 90° formando W, solleva. Focus su romboidi e mid-back, salute posturale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

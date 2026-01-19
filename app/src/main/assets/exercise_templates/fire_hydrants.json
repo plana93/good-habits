@@ -1,0 +1,14 @@
+{
+  "id": 109,
+  "name": "Fire Hydrants",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Aperture laterali a quattro zampe: solleva la gamba piegata lateralmente come un cane. Target: gluteo medio, abduttori e stabilizzatori dell'anca.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

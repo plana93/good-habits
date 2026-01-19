@@ -1,0 +1,14 @@
+{
+  "id": 181,
+  "name": "Lunge Jumps (Alternating)",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Affondi saltati alternati: dall'affondo salta cambiando gamba in aria. Pliometria gambe, equilibrio dinamico.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": 187,
+  "name": "Pigeon Pose",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Posizione piccione: gamba anteriore piegata, posteriore estesa, abbassa bacino. Stretching profondo glutei, rotatori anca, flessori anca.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 45,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": 170,
+  "name": "Lying Windshield Wipers",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Tergicristalli sdraiati: supino, gambe sollevate a 90°, ruota lateralmente le gambe mantenendo spalle a terra. Obliqui avanzato.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Sync",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

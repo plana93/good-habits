@@ -1,0 +1,14 @@
+{
+  "id": 147,
+  "name": "Scapular Push-ups",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti scapolari: in plank, braccia tese, muovi solo le scapole avvicinandole e allontanandole. Stabilità scapolare, salute spalle.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": 158,
+  "name": "Hollow Body Hold",
+  "type": "STRENGTH",
+  "mode": "TIME",
+  "description": "Tenuta hollow body: supino, solleva spalle e gambe tese formando 'barca', schiena premuta a terra. Fondamentale ginnastica, massima tensione core.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 20,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

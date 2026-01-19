@@ -1,0 +1,14 @@
+{
+  "id": 195,
+  "name": "Neck Rolls",
+  "type": "STRETCHING",
+  "mode": "REPS",
+  "description": "Rotazioni collo: ruota la testa lentamente in cerchio, cambia direzione. Mobilità cervicale, rilassamento tensione collo.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Autorenew",
+  "defaultReps": 8,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": 190,
+  "name": "Standing Quad Stretch",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Stretching quadricipiti in piedi: in equilibrio, afferra caviglia dietro portando tallone verso gluteo. Quadricipiti, flessori anca.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

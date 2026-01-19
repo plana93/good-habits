@@ -1,0 +1,14 @@
+{
+  "id": 115,
+  "name": "Cossack Squat",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Affondo laterale estremo: piedi molto larghi, scendi lateralmente su una gamba piegandola completamente mentre l'altra rimane tesa. Mobilità anca e forza.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 8,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

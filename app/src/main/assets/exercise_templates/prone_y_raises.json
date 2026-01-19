@@ -1,0 +1,14 @@
+{
+  "id": 138,
+  "name": "Prone Y Raises",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Sollevamenti Y proni: a pancia in giù, braccia in diagonale a formare Y, solleva dal pavimento. Target: deltoidi posteriori, trapezio.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": 110,
+  "name": "Calf Raise",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Sollevamento polpacci: in piedi, solleva i talloni sulle punte contraendo i polpacci. Può essere eseguito su un gradino per ROM maggiore.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

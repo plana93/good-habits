@@ -1,0 +1,14 @@
+{
+  "id": 144,
+  "name": "Crab Walk",
+  "type": "STRENGTH",
+  "mode": "TIME",
+  "description": "Camminata del granchio: dalla reverse plank, 'cammina' muovendo mani e piedi alternativamente. Tricipiti, glutei, coordinazione.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsWalk",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

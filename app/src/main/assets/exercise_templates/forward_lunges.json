@@ -1,0 +1,14 @@
+{
+  "id": 100,
+  "name": "Forward Lunges",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Affondi in avanti: passo lungo avanti, abbassa il ginocchio posteriore senza toccare il pavimento. Quadricipiti, glutei e core.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

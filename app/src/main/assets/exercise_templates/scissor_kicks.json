@@ -1,0 +1,14 @@
+{
+  "id": 153,
+  "name": "Scissor Kicks",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Calci a forbice: supino, gambe sollevate, alterna incrocio gambe come forbice. Hip flexors, addome inferiore.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "ContentCut",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

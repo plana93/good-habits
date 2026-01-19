@@ -1,0 +1,14 @@
+{
+  "id": 114,
+  "name": "Good Morning (Bodyweight)",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Flessione busto a gambe semi-tese: piedi larghezza spalle, piega il busto in avanti mantenendo schiena dritta. Target: femorali, glutei, lower back.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

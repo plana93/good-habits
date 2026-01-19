@@ -1,0 +1,14 @@
+{
+  "id": 166,
+  "name": "Cross-Body Mountain Climbers",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Mountain climbers incrociati: dalla plank, porta ginocchio verso gomito opposto alternando. Cardio + obliqui rotazionali.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Terrain",
+  "defaultReps": 30,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

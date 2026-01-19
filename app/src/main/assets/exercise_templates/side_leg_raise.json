@@ -1,0 +1,14 @@
+{
+  "id": 112,
+  "name": "Side Leg Raise",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Abduzioni gamba da sdraiati sul fianco: solleva la gamba superiore mantenendola tesa. Target: abduttori (gluteo medio), stabilità laterale dell'anca.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

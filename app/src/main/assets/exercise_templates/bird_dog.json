@@ -1,0 +1,14 @@
+{
+  "id": 145,
+  "name": "Bird-Dog",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Cane-uccello: in quadrupedia, estendi braccio opposto alla gamba mantenendo equilibrio e schiena piatta. Anti-rotazione core, stabilità lombare.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Pets",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

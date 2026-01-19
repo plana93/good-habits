@@ -1,0 +1,14 @@
+{
+  "id": 129,
+  "name": "Tricep Dips",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Dip per tricipiti: su sedia/panca, mani dietro il corpo, abbassa il corpo piegando i gomiti all'indietro. Intenso per tricipiti e spalle posteriori.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

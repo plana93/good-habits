@@ -1,0 +1,14 @@
+{
+  "id": 101,
+  "name": "Backward Lunges",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Affondi all'indietro: passo lungo indietro, abbassa il ginocchio verso il pavimento. Maggiore attivazione glutei rispetto agli affondi frontali.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

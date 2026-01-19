@@ -1,0 +1,14 @@
+{
+  "id": 180,
+  "name": "Squat Jumps",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Squat con salto: scendi in squat, esplodi verso l'alto saltando, atterra morbido. Potenza quadricipiti, glutei.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

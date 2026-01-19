@@ -1,0 +1,14 @@
+{
+  "id": 148,
+  "name": "Crunches",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Crunch addominali: supino, gambe piegate, solleva testa e spalle contraendo addome. Classico esercizio per retto addominale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

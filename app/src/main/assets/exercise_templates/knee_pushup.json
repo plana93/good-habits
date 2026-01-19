@@ -1,0 +1,14 @@
+{
+  "id": 120,
+  "name": "Knee Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti sulle ginocchia: versione facilitata del push-up classico, mantieni il corpo dritto dalle ginocchia alle spalle. Ottimo per principianti.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

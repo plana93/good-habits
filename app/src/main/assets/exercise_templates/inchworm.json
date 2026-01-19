@@ -1,0 +1,14 @@
+{
+  "id": 135,
+  "name": "Inchworm",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Camminata bruco: in piedi, piegati e cammina con le mani in avanti fino alla plank, poi cammina coi piedi verso le mani. Full body, flessibilità.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsWalk",
+  "defaultReps": 8,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

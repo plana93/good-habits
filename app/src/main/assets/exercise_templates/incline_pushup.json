@@ -1,0 +1,14 @@
+{
+  "id": 123,
+  "name": "Incline Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti in salita: mani su superficie elevata (panca, muro). Versione più facile del push-up classico, enfasi su petto inferiore.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

@@ -53,7 +53,11 @@ object ExerciseTemplateFileManager {
             Log.e(TAG, "Errore caricamento template esercizi", e)
         }
 
-        return templates
+        // ✅ Ordina: Squat sempre per primo, poi alfabetico
+        return templates.sortedWith(compareBy(
+            { if (it.name == "Squat") 0 else 1 },  // Squat ha priorità 0
+            { it.name }  // Poi ordine alfabetico
+        ))
     }
 
     /**

@@ -1,0 +1,14 @@
+{
+  "id": 128,
+  "name": "Staggered Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti sfalsati: una mano più avanti dell'altra. Distribuzione asimmetrica del carico, lavoro unilaterale maggiore.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 8,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

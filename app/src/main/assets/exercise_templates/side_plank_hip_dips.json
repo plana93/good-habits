@@ -1,0 +1,14 @@
+{
+  "id": 163,
+  "name": "Side Plank Hip Dips",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Plank laterale con abbassamenti anca: dalla side plank, abbassa e solleva il bacino. Obliqui dinamici, controllo.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

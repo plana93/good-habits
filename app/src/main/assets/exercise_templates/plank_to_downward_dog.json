@@ -1,0 +1,14 @@
+{
+  "id": 133,
+  "name": "Plank to Downward Dog",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Transizione plank-downward dog: dalla plank, spingi glutei verso l'alto formando V invertita, poi torna. Spalle, core, flessibilità.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

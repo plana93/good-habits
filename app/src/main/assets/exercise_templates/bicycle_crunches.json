@@ -1,0 +1,14 @@
+{
+  "id": 149,
+  "name": "Bicycle Crunches",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Crunch bicicletta: supino, porta gomito verso ginocchio opposto alternando. Rotazione core, obliqui, coordinazione.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsBike",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

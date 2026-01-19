@@ -1,0 +1,14 @@
+{
+  "id": 122,
+  "name": "Wide Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti a braccia larghe: mani più larghe delle spalle. Maggior attivazione del petto (pettorale) rispetto alla versione standard.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

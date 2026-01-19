@@ -1,0 +1,14 @@
+{
+  "id": 167,
+  "name": "Plank to Pike",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Plank a pike: dalla plank, solleva glutei formando V invertita mantenendo gambe tese, torna. Spalle, core, flessibilità femorali.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 10,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

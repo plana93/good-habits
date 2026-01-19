@@ -1,0 +1,14 @@
+{
+  "id": 131,
+  "name": "Overhead Tricep Extension (Bodyweight)",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Estensioni tricipiti overhead contro muro: corpo inclinato, braccia sopra la testa contro il muro, fletti gomiti mantenendo braccia verticali.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 12,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

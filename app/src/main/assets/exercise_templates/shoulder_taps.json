@@ -1,0 +1,14 @@
+{
+  "id": 136,
+  "name": "Shoulder Taps",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Tocchi spalle in plank: dalla posizione plank, tocca alternamente la spalla opposta con una mano. Anti-rotazione core e stabilità spalle.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

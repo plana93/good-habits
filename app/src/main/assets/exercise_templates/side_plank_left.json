@@ -1,0 +1,14 @@
+{
+  "id": 161,
+  "name": "Side Plank (Left)",
+  "type": "STRENGTH",
+  "mode": "TIME",
+  "description": "Plank laterale sinistra: su fianco sinistro, avambraccio a terra, corpo dritto. Obliqui sinistra, stabilità laterale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

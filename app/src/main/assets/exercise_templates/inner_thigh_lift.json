@@ -1,0 +1,14 @@
+{
+  "id": 113,
+  "name": "Inner Thigh Lift",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Sollevamento interno coscia: sdraiati sul fianco, gamba superiore piegata davanti, solleva la gamba inferiore tesa. Target: adduttori.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "DirectionsRun",
+  "defaultReps": 15,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

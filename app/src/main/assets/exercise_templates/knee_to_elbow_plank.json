@@ -1,0 +1,14 @@
+{
+  "id": 165,
+  "name": "Knee-to-Elbow Plank",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Plank ginocchio-gomito: dalla high plank, porta ginocchio verso gomito stesso lato. Obliqui, flessione laterale dinamica.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 20,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

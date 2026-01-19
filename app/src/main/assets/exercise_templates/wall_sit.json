@@ -1,0 +1,14 @@
+{
+  "id": 119,
+  "name": "Wall Sit",
+  "type": "STRENGTH",
+  "mode": "TIME",
+  "description": "Tenuta isometrica al muro: schiena contro il muro, scendi fino a formare 90° con le ginocchia, mantieni la posizione. Resistenza muscolare quadricipiti.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "Timer",
+  "defaultReps": null,
+  "defaultTime": 30,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

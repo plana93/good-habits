@@ -1,0 +1,14 @@
+{
+  "id": 125,
+  "name": "Pike Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti a V rovesciata: glutei in alto a formare V col corpo, scendi con la testa verso il pavimento. Target: spalle (deltoidi anteriori).",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 8,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

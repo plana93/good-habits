@@ -1,0 +1,14 @@
+{
+  "id": 126,
+  "name": "Handstand Push-up",
+  "type": "STRENGTH",
+  "mode": "REPS",
+  "description": "Piegamenti in verticale: contro il muro, corpo invertito, fletti le braccia portando la testa verso il pavimento. Avanzato, richiede forza spalle eccezionale.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 3,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

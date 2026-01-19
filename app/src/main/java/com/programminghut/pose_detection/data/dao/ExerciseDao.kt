@@ -45,8 +45,9 @@ interface ExerciseDao {
     
     /**
      * Ottieni tutti gli esercizi
+     * Squat sempre per primo, poi ordine alfabetico
      */
-    @Query("SELECT * FROM exercises ORDER BY name ASC")
+    @Query("SELECT * FROM exercises ORDER BY CASE WHEN name = 'Squat' THEN 0 ELSE 1 END, name ASC")
     fun getAllExercises(): Flow<List<Exercise>>
     
     /**

@@ -1,0 +1,14 @@
+{
+  "id": 188,
+  "name": "Butterfly Stretch",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Farfalla: seduto, piante piedi unite, ginocchia aperte lateralmente, spingi ginocchia verso terra. Stretching adduttori, interno coscia.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 45,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

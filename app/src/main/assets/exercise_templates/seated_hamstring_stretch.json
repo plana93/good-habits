@@ -1,0 +1,14 @@
+{
+  "id": 189,
+  "name": "Seated Hamstring Stretch",
+  "type": "STRETCHING",
+  "mode": "TIME",
+  "description": "Stretching femorali seduto: seduto, gambe tese, piega busto in avanti raggiungendo i piedi. Femorali, lower back.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "SelfImprovement",
+  "defaultReps": null,
+  "defaultTime": 45,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}

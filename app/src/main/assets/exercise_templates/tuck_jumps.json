@@ -1,0 +1,14 @@
+{
+  "id": 179,
+  "name": "Tuck Jumps",
+  "type": "CARDIO",
+  "mode": "REPS",
+  "description": "Salti raccolti: salta portando ginocchia al petto. Pliometria esplosiva, potenza core e gambe.",
+  "imagePath": null,
+  "thumbnailPath": null,
+  "iconName": "FitnessCenter",
+  "defaultReps": 8,
+  "defaultTime": null,
+  "createdAt": 1737244800000,
+  "isCustom": false
+}
